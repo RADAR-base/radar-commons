@@ -119,6 +119,26 @@ idea {
     }
 }
 
+jacocoTestReport {
+    reports {
+        xml.enabled true
+        csv.enabled false
+        html.enabled false
+    }
+}
+
+task downloadDependencies(type: Exec) {
+    configurations.codacy.files
+    commandLine 'echo', 'Downloaded all dependencies'
+}
+
+task sendCoverageToCodacy(type: JavaExec, dependsOn: jacocoTestReport) {
+    main = 'com.codacy.CodacyCoverageReporter'
+    classpath = configurations.codacy
+    args = ['-l', 'Java', '-r', "${buildDir}/reports/jacoco/test/jacocoTestReport.xml"]
+}
+
+
 task wrapper(type: Wrapper) {
     gradleVersion = '3.2.1'
     distributionUrl distributionUrl.replace("bin", "all")
