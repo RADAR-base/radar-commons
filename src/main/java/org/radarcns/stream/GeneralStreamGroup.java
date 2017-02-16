@@ -79,7 +79,7 @@ public class GeneralStreamGroup implements StreamGroup {
     @Override
     public List<String> getTopicNames() {
         List<String> topicList = new ArrayList<>(topicNames);
-        topicList.sort(String.CASE_INSENSITIVE_ORDER);
+        Collections.sort(topicList, String.CASE_INSENSITIVE_ORDER);
         return topicList;
     }
 }
