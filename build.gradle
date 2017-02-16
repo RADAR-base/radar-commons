@@ -88,7 +88,7 @@ dependencies {
 // AVRO file manipulation                                                    //
 //---------------------------------------------------------------------------//
 task generateAvro(type: com.commercehub.gradle.plugin.avro.GenerateAvroJavaTask) {
-    source("src/main/resources/avro")
+    source("schema/common")
     outputDir = file("build/avro")
 }
 
