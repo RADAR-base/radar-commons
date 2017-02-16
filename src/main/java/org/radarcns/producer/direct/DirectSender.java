@@ -61,7 +61,7 @@ public class DirectSender<K, V> implements KafkaSender<K, V> {
         @Override
         public void send(List<Record<L, W>> records) throws IOException {
             for (Record<L, W> record : records) {
-                producer.send(new ProducerRecord<>(topic.getName(), record.key, record.value));
+                producer.send(new ProducerRecord<K, V>(topic.getName(), record.key, record.value));
             }
             lastOffset = records.get(records.size() - 1).offset;
         }

@@ -17,6 +17,7 @@
 package org.radarcns.stream;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -78,7 +79,7 @@ public class GeneralStreamGroup implements StreamGroup {
     @Override
     public List<String> getTopicNames() {
         List<String> topicList = new ArrayList<>(topicNames);
-        topicList.sort(String::compareToIgnoreCase);
+        topicList.sort(String.CASE_INSENSITIVE_ORDER);
         return topicList;
     }
 }
