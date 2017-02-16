@@ -1,6 +1,6 @@
 package org.radarcns.mock;
 
-import com.opencsv.CSVReader;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -17,6 +17,7 @@ import org.radarcns.topic.AvroTopic;
 import org.radarcns.producer.KafkaSender;
 import org.radarcns.producer.KafkaTopicSender;
 import org.radarcns.key.MeasurementKey;
+import org.radarcns.util.CsvParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +29,9 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("unchecked")
 public class MockFile {
     private static final Logger logger = LoggerFactory.getLogger(MockFile.class);
+    private static final char ARRAY_SEPARATOR = ';';
+    private static final char ARRAY_START = '[';
+    private static final char ARRAY_END = ']';
 
     private final MockDataConfig config;
     private final File baseFile;
@@ -68,14 +72,16 @@ public class MockFile {
 
         try (KafkaTopicSender topicSender = sender.sender(topic);
                 FileReader fileReader = new FileReader(csvFile);
-                CSVReader csvReader = new CSVReader(fileReader)) {
-            String[] header = csvReader.readNext();
+                BufferedReader bufferedReader = new BufferedReader(fileReader)) {
+            CsvParser csvReader = new CsvParser(bufferedReader);
+
+            List<String> header = csvReader.parseLine();
             Map<String, Integer> headerMap = new HashMap<>();
-            for (int i = 0; i < header.length; i++) {
-                headerMap.put(header[i], i);
+            for (int i = 0; i < header.size(); i++) {
+                headerMap.put(header.get(i), i);
             }
 
-            String[] rawValues = csvReader.readNext();
+            List<String> rawValues = csvReader.parseLine();
             while (rawValues != null) {
                 SpecificRecord key = parseRecord(rawValues, headerMap,
                         topic.getKeyClass(), topic.getKeySchema());
@@ -85,18 +91,18 @@ public class MockFile {
                 topicSender.send(offset, key, value);
                 logger.info("Sent key {} and value {}", key, value);
 
-                rawValues = csvReader.readNext();
+                rawValues = csvReader.parseLine();
                 offset++;
             }
         }
     }
 
-    private SpecificRecord parseRecord(String[] rawValues, Map<String, Integer> header,
+    private SpecificRecord parseRecord(List<String> rawValues, Map<String, Integer> header,
             Class<?> recordClass, Schema schema) {
         SpecificRecord record = (SpecificRecord) SpecificData.newInstance(recordClass, schema);
 
         for (Field field : schema.getFields()) {
-            String fieldString = rawValues[header.get(field.name())];
+            String fieldString = rawValues.get(header.get(field.name()));
             Object fieldValue = parseValue(field.schema(), fieldString);
             record.put(field.pos(), fieldValue);
         }
@@ -127,8 +133,8 @@ public class MockFile {
     }
 
     private static List<Object> parseArray(Schema schema, String fieldString) {
-        if (fieldString.charAt(0) != '['
-                || fieldString.charAt(fieldString.length() - 1) != ']') {
+        if (fieldString.charAt(0) != ARRAY_START
+                || fieldString.charAt(fieldString.length() - 1) != ARRAY_END) {
             throw new IllegalArgumentException("Array must be enclosed by brackets.");
         }
 
@@ -136,14 +142,14 @@ public class MockFile {
         StringBuilder buffer = new StringBuilder(fieldString.length());
         int depth = 0;
         for (char c : fieldString.substring(1, fieldString.length() - 1).toCharArray()) {
-            if (c == ';' && depth == 0) {
+            if (c == ARRAY_SEPARATOR && depth == 0) {
                 subStrings.add(buffer.toString());
                 buffer.setLength(0);
             } else {
                 buffer.append(c);
-                if (c == '[') {
+                if (c == ARRAY_START) {
                     depth++;
-                } else if (c == ']') {
+                } else if (c == ARRAY_END) {
                     depth--;
                 }
             }
