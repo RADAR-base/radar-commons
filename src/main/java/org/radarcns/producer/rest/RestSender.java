@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.radarcns.producer;
+package org.radarcns.producer.rest;
 
 import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonFactory;
@@ -38,6 +38,10 @@ import okio.BufferedSink;
 import okio.Okio;
 import okio.Sink;
 import org.apache.avro.Schema;
+import org.radarcns.data.AvroEncoder;
+import org.radarcns.data.Record;
+import org.radarcns.producer.KafkaSender;
+import org.radarcns.producer.KafkaTopicSender;
 import org.radarcns.topic.AvroTopic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
