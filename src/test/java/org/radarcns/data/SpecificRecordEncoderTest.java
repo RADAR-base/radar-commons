@@ -1,9 +1,7 @@
-package radarcns.data;
+package org.radarcns.data;
 
 import junit.framework.TestCase;
 
-import org.radarcns.data.AvroEncoder;
-import org.radarcns.data.SpecificRecordEncoder;
 import org.radarcns.empatica.EmpaticaE4BloodVolumePulse;
 import org.radarcns.key.MeasurementKey;
 

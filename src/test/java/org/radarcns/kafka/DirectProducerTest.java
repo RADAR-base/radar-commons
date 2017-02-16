@@ -1,4 +1,4 @@
-//package radarcns.kafka;
+//package org.radarcns.kafka;
 //
 //import junit.framework.TestCase;
 //
