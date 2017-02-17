@@ -1,18 +1,24 @@
+/*
+ * Copyright 2017 Kings College London and The Hyve
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.radarcns.producer.rest;
 
 import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-
-import org.apache.avro.Schema;
-import org.radarcns.data.AvroEncoder;
-import org.radarcns.data.Record;
-import org.radarcns.topic.AvroTopic;
-import org.radarcns.producer.KafkaSender;
-import org.radarcns.producer.KafkaTopicSender;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -21,7 +27,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
+import javax.annotation.Nonnull;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -31,14 +37,24 @@ import okhttp3.Response;
 import okio.BufferedSink;
 import okio.Okio;
 import okio.Sink;
+import org.apache.avro.Schema;
+import org.radarcns.data.AvroEncoder;
+import org.radarcns.data.Record;
+import org.radarcns.producer.KafkaSender;
+import org.radarcns.producer.KafkaTopicSender;
+import org.radarcns.topic.AvroTopic;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RestSender<K, V> implements KafkaSender<K, V> {
     private static final Logger logger = LoggerFactory.getLogger(RestSender.class);
     private final AvroEncoder keyEncoder;
     private final AvroEncoder valueEncoder;
     private final JsonFactory jsonFactory;
-    public static final String KAFKA_REST_ACCEPT_ENCODING = "application/vnd.kafka.v1+json, application/vnd.kafka+json, application/json";
-    public static final MediaType KAFKA_REST_AVRO_ENCODING = MediaType.parse("application/vnd.kafka.avro.v1+json; charset=utf-8");
+    public static final String KAFKA_REST_ACCEPT_ENCODING =
+            "application/vnd.kafka.v1+json, application/vnd.kafka+json, application/json";
+    public static final MediaType KAFKA_REST_AVRO_ENCODING =
+            MediaType.parse("application/vnd.kafka.avro.v1+json; charset=utf-8");
 
     private URL kafkaUrl;
     private HttpUrl schemalessKeyUrl;
@@ -55,7 +71,9 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
      * @param valueEncoder Avro encoder for values
      * @param connectionTimeout socket connection timeout in seconds
      */
-    public RestSender( URL kafkaUrl, SchemaRetriever schemaRetriever, AvroEncoder keyEncoder, AvroEncoder valueEncoder, long connectionTimeout) {
+    public RestSender(@Nonnull String kafkaUrl, @Nonnull SchemaRetriever schemaRetriever,
+            @Nonnull AvroEncoder keyEncoder, @Nonnull AvroEncoder valueEncoder,
+            long connectionTimeout) {
         setKafkaUrl(kafkaUrl);
         setSchemaRetriever(schemaRetriever);
         this.keyEncoder = keyEncoder;
@@ -79,23 +97,24 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         return httpClient;
     }
 
-    public final synchronized void setKafkaUrl( URL kafkaUrl) {
-        if (kafkaUrl.equals(this.kafkaUrl)) {
-            return;
-        }
-        this.kafkaUrl = kafkaUrl;
-
+    public final synchronized void setKafkaUrl(@Nonnull String kafkaUrlString) {
         try {
+            URL newKafkaUrl = new URL(kafkaUrlString);
+            if (newKafkaUrl.equals(kafkaUrl)) {
+                return;
+            }
+            kafkaUrl = newKafkaUrl;
+
             schemalessKeyUrl = HttpUrl.get(new URL(kafkaUrl, "topics/schemaless-key"));
             schemalessValueUrl = HttpUrl.get(new URL(kafkaUrl, "topics/schemaless-value"));
-        } catch (MalformedURLException e) {
-            throw new IllegalArgumentException("Schemaless topics do not have a valid URL");
+        } catch (MalformedURLException ex) {
+            throw new IllegalArgumentException("Schemaless topics do not have a valid URL", ex);
         }
 
         isConnectedRequest = new Request.Builder().url(kafkaUrl).head().build();
     }
 
-    public final synchronized void setSchemaRetriever( SchemaRetriever retriever) {
+    public final synchronized void setSchemaRetriever(@Nonnull SchemaRetriever retriever) {
         this.schemaRetriever = retriever;
     }
 
@@ -115,13 +134,13 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         return isConnectedRequest;
     }
 
-    class RestTopicSender<L extends K, W extends V> implements KafkaTopicSender<L, W> {
+    private class RestTopicSender<L extends K, W extends V> implements KafkaTopicSender<L, W> {
         private long lastOffsetSent = -1L;
         private final AvroTopic<L, W> topic;
         private final HttpUrl url;
         private final TopicRequestBody requestBody;
 
-        RestTopicSender(AvroTopic<L, W> topic) throws IOException {
+        private RestTopicSender(AvroTopic<L, W> topic) throws IOException {
             this.topic = topic;
             URL rawUrl = new URL(kafkaUrl, "topics/" + topic.getName());
             url = HttpUrl.get(rawUrl);
@@ -145,7 +164,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
          * @throws IOException if records could not be sent
          */
         @Override
-        public void send( List<Record<L, W>> records) throws IOException {
+        public void send(@Nonnull List<Record<L, W>> records) throws IOException {
             if (records.isEmpty()) {
                 return;
             }
@@ -155,23 +174,28 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
 
             HttpUrl sendToUrl = url;
 
+            requestBody.reset();
             try {
-                ParsedSchemaMetadata metadata = getSchemaRetriever().getOrSetSchemaMetadata(sendTopic, false, topic.getKeySchema());
+                ParsedSchemaMetadata metadata = getSchemaRetriever()
+                        .getOrSetSchemaMetadata(sendTopic, false, topic.getKeySchema());
                 requestBody.keySchemaId = metadata.getId();
             } catch (IOException ex) {
                 sendToUrl = getSchemalessKeyUrl();
-                requestBody.keySchemaId = null;
             }
-            requestBody.keySchemaString = requestBody.keySchemaId == null ? topic.getKeySchema().toString() : null;
+            if (requestBody.keySchemaId == null) {
+                requestBody.keySchemaString = topic.getKeySchema().toString();
+            }
 
             try {
-                ParsedSchemaMetadata metadata = getSchemaRetriever().getOrSetSchemaMetadata(sendTopic, true, valueSchema);
+                ParsedSchemaMetadata metadata = getSchemaRetriever().getOrSetSchemaMetadata(
+                        sendTopic, true, valueSchema);
                 requestBody.valueSchemaId = metadata.getId();
             } catch (IOException ex) {
                 sendToUrl = getSchemalessValueUrl();
-                requestBody.valueSchemaId = null;
             }
-            requestBody.valueSchemaString = requestBody.valueSchemaId == null ? topic.getValueSchema().toString() : null;
+            if (requestBody.valueSchemaId == null) {
+                requestBody.valueSchemaString = topic.getValueSchema().toString();
+            }
             requestBody.records = records;
 
             Request request = new Request.Builder()
@@ -184,16 +208,20 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                 // Evaluate the result
                 if (response.isSuccessful()) {
                     if (logger.isDebugEnabled()) {
-                        logger.info("Added message to topic {} -> {}", sendTopic, response.body().string());
+                        logger.debug("Added message to topic {} -> {}",
+                                sendTopic, response.body().string());
                     }
                     lastOffsetSent = records.get(records.size() - 1).offset;
                 } else {
                     String content = response.body().string();
-                    logger.error("FAILED to transmit message: {} -> {}...", content, requestBody.content().substring(0, 255));
-                    throw new IOException("Failed to submit (HTTP status code " + response.code() + "): " + content);
+                    logger.error("FAILED to transmit message: {} -> {}...",
+                            content, requestBody.content().substring(0, 255));
+                    throw new IOException("Failed to submit (HTTP status code " + response.code()
+                            + "): " + content);
                 }
             } catch (IOException ex) {
-                logger.error("FAILED to transmit message:\n{}...", requestBody.content().substring(0, 255) );
+                logger.error("FAILED to transmit message:\n{}...",
+                        requestBody.content().substring(0, 255) );
                 throw ex;
             }
         }
@@ -219,15 +247,17 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
             // noop
         }
 
-        class TopicRequestBody extends RequestBody {
-            Integer keySchemaId, valueSchemaId;
-            String keySchemaString, valueSchemaString;
-            final AvroEncoder.AvroWriter<L> keyWriter;
-            final AvroEncoder.AvroWriter<W> valueWriter;
+        private class TopicRequestBody extends RequestBody {
+            private Integer keySchemaId;
+            private Integer valueSchemaId;
+            private String keySchemaString;
+            private String valueSchemaString;
+            private final AvroEncoder.AvroWriter<L> keyWriter;
+            private final AvroEncoder.AvroWriter<W> valueWriter;
 
-            List<Record<L, W>> records;
+            private List<Record<L, W>> records;
 
-            TopicRequestBody() throws IOException {
+            private TopicRequestBody() throws IOException {
                 keyWriter = keyEncoder.writer(topic.getKeySchema(), topic.getKeyClass());
                 valueWriter = valueEncoder.writer(topic.getValueSchema(), topic.getValueClass());
             }
@@ -239,7 +269,8 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
 
             @Override
             public void writeTo(BufferedSink sink) throws IOException {
-                try (OutputStream out = sink.outputStream(); JsonGenerator writer = jsonFactory.createGenerator(out, JsonEncoding.UTF8)) {
+                try (OutputStream out = sink.outputStream();
+                     JsonGenerator writer = jsonFactory.createGenerator(out, JsonEncoding.UTF8)) {
                     writer.writeStartObject();
                     if (keySchemaId != null) {
                         writer.writeNumberField("key_schema_id", keySchemaId);
@@ -268,19 +299,29 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                 }
             }
 
-            String content() throws IOException {
+            private String content() throws IOException {
                 try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-                    try (Sink sink = Okio.sink(out); BufferedSink bufferedSink = Okio.buffer(sink)) {
+                    try (Sink sink = Okio.sink(out);
+                            BufferedSink bufferedSink = Okio.buffer(sink)) {
                         writeTo(bufferedSink);
                     }
                     return out.toString();
                 }
             }
+
+            private void reset() {
+                keySchemaId = null;
+                keySchemaString = null;
+                valueSchemaId = null;
+                valueSchemaString = null;
+                records = null;
+            }
         }
     }
 
     @Override
-    public <L extends K, W extends V> KafkaTopicSender<L, W> sender(AvroTopic<L, W> topic) throws IOException {
+    public <L extends K, W extends V> KafkaTopicSender<L, W> sender(AvroTopic<L, W> topic)
+            throws IOException {
         return new RestTopicSender<>(topic);
     }
 
@@ -294,7 +335,8 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
             if (response.isSuccessful()) {
                 return true;
             } else {
-                logger.warn("Failed to make heartbeat request to {} (HTTP status code {}): {}", kafkaUrl, response.code(), response.body().string());
+                logger.warn("Failed to make heartbeat request to {} (HTTP status code {}): {}",
+                        kafkaUrl, response.code(), response.body().string());
                 return false;
             }
         } catch (IOException ex) {
