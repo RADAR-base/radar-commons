@@ -68,12 +68,10 @@ public class CsvParser {
                     store.add(curVal.toString());
                     curVal = new StringBuffer();
                     started = false;
-                } else if (ch == '\r') {
-                    //ignore LF characters
                 } else if (ch == '\n') {
                     //end of a line, break out
                     break;
-                } else {
+                } else if (ch != '\r') {  //ignore LF characters
                     curVal.append((char)ch);
                 }
             }

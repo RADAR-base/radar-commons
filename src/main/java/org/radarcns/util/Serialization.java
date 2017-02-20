@@ -7,7 +7,7 @@ public class Serialization {
         long result = 0;
         for (int i = 0; i < 8; i++) {
             result <<= 8;
-            result |= (b[i + startIndex] & 0xFF);
+            result |= b[i + startIndex] & 0xFF;
         }
         return result;
     }
@@ -16,7 +16,7 @@ public class Serialization {
         int result = 0;
         for (int i = 0; i < 4; i++) {
             result <<= 8;
-            result |= (b[i + startIndex] & 0xFF);
+            result |= b[i + startIndex] & 0xFF;
         }
         return result;
     }
@@ -25,7 +25,7 @@ public class Serialization {
         short result = 0;
         for (int i = 0; i < 2; i++) {
             result <<= 8;
-            result |= (b[i + startIndex] & 0xFF);
+            result |= b[i + startIndex] & 0xFF;
         }
         return result;
     }
