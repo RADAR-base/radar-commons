@@ -27,7 +27,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.Nonnull;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -71,8 +70,8 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
      * @param valueEncoder Avro encoder for values
      * @param connectionTimeout socket connection timeout in seconds
      */
-    public RestSender(@Nonnull String kafkaUrl, @Nonnull SchemaRetriever schemaRetriever,
-            @Nonnull AvroEncoder keyEncoder, @Nonnull AvroEncoder valueEncoder,
+    public RestSender(String kafkaUrl, SchemaRetriever schemaRetriever,
+            AvroEncoder keyEncoder, AvroEncoder valueEncoder,
             long connectionTimeout) {
         setKafkaUrl(kafkaUrl);
         setSchemaRetriever(schemaRetriever);
@@ -97,7 +96,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         return httpClient;
     }
 
-    public final synchronized void setKafkaUrl(@Nonnull String kafkaUrlString) {
+    public final synchronized void setKafkaUrl(String kafkaUrlString) {
         try {
             URL newKafkaUrl = new URL(kafkaUrlString);
             if (newKafkaUrl.equals(kafkaUrl)) {
@@ -114,7 +113,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         isConnectedRequest = new Request.Builder().url(kafkaUrl).head().build();
     }
 
-    public final synchronized void setSchemaRetriever(@Nonnull SchemaRetriever retriever) {
+    public final synchronized void setSchemaRetriever(SchemaRetriever retriever) {
         this.schemaRetriever = retriever;
     }
 
@@ -164,7 +163,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
          * @throws IOException if records could not be sent
          */
         @Override
-        public void send(@Nonnull List<Record<L, W>> records) throws IOException {
+        public void send(List<Record<L, W>> records) throws IOException {
             if (records.isEmpty()) {
                 return;
             }
@@ -300,11 +299,10 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
             }
 
             private String content() throws IOException {
-                try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-                    try (Sink sink = Okio.sink(out);
-                            BufferedSink bufferedSink = Okio.buffer(sink)) {
-                        writeTo(bufferedSink);
-                    }
+                try (ByteArrayOutputStream out = new ByteArrayOutputStream();
+                        Sink sink = Okio.sink(out);
+                        BufferedSink bufferedSink = Okio.buffer(sink)) {
+                    writeTo(bufferedSink);
                     return out.toString();
                 }
             }

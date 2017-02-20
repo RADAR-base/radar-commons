@@ -3,27 +3,11 @@ package org.radarcns.util;
 //import android.os.Bundle;
 
 public class Serialization {
-//    public static String bundleToString(Bundle bundle) {
-//        StringBuilder sb = new StringBuilder(bundle.size() * 40);
-//        sb.append('{');
-//        boolean first = true;
-//        for (String key : bundle.keySet()) {
-//            if (first) {
-//                first = false;
-//            } else {
-//                sb.append(", ");
-//            }
-//            sb.append(key).append(": ").append(bundle.get(key));
-//        }
-//        sb.append('}');
-//        return sb.toString();
-//    }
-
     public static long bytesToLong(byte[] b, int startIndex) {
         long result = 0;
         for (int i = 0; i < 8; i++) {
             result <<= 8;
-            result |= (b[i + startIndex] & 0xFF);
+            result |= b[i + startIndex] & 0xFF;
         }
         return result;
     }
@@ -32,7 +16,7 @@ public class Serialization {
         int result = 0;
         for (int i = 0; i < 4; i++) {
             result <<= 8;
-            result |= (b[i + startIndex] & 0xFF);
+            result |= b[i + startIndex] & 0xFF;
         }
         return result;
     }
@@ -41,7 +25,7 @@ public class Serialization {
         short result = 0;
         for (int i = 0; i < 2; i++) {
             result <<= 8;
-            result |= (b[i + startIndex] & 0xFF);
+            result |= b[i + startIndex] & 0xFF;
         }
         return result;
     }

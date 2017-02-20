@@ -15,3 +15,6 @@ log/
 
 # Build
 /build/
+
+# Generated Avro files
+/src/avroSources/java/
