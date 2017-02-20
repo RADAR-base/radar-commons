@@ -16,8 +16,6 @@
 
 package org.radarcns.topic;
 
-import javax.annotation.Nonnull;
-
 /**
  * Set of Avro Topics
  * It defines:<ul>
@@ -30,25 +28,13 @@ import javax.annotation.Nonnull;
 public class KafkaTopic {
     private final String name;
 
-    /** Topic suffixes for different use cases. */
-    private enum Suffix {
-        output("output"), store("store");
-
-        private final String param;
-
-        Suffix(String param) {
-            this.param = param;
-        }
-
-        public String getParam() {
-            return param;
-        }
-    }
-
     /**
      * @param name topic name inside the Kafka cluster
      */
-    public KafkaTopic(@Nonnull String name) {
+    public KafkaTopic(String name) {
+        if (name == null) {
+            throw new IllegalArgumentException("Kafka topic name may not be null");
+        }
         this.name = name;
     }
 

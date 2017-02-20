@@ -16,14 +16,16 @@
 
 package org.radarcns.stream;
 
-import javax.annotation.Nonnull;
 import org.radarcns.topic.KafkaTopic;
 
 public class StreamDefinition {
     private final KafkaTopic inputTopic;
     private final KafkaTopic outputTopic;
 
-    public StreamDefinition(@Nonnull KafkaTopic input, @Nonnull KafkaTopic output) {
+    public StreamDefinition(KafkaTopic input, KafkaTopic output) {
+        if (input == null || output == null) {
+            throw new IllegalArgumentException("Input and output topic may not be null");
+        }
         this.inputTopic = input;
         this.outputTopic = output;
     }

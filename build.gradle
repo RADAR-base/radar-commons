@@ -21,7 +21,6 @@ ext.kafkaVersion = '0.10.1.1'
 ext.avroVersion = '1.8.1'
 ext.confluentVersion = '3.1.2'
 ext.log4jVersion = '2.7'
-ext.findbugsVersion = '3.0.1'
 ext.jacksonVersion='2.8.5'
 ext.okhttpVersion = '3.5.0'
 ext.okioVersion = '1.11.0'
@@ -34,6 +33,12 @@ ext.codacyVersion = '1.0.10'
 // Sources and classpath configurations                                      //
 //---------------------------------------------------------------------------//
 
+configurations {
+    codacy
+    avroSources
+    compile.extendsFrom avroSources
+}
+
 sourceSets {
     // Note that just declaring this sourceset creates two configurations.
     integrationTest {
@@ -42,10 +47,13 @@ sourceSets {
             runtimeClasspath += main.output
         }
     }
+    avroSources {
+        compileClasspath = configurations.avroSources
+    }
 }
 
-configurations {
-    codacy
+compileJava {
+    source += sourceSets.avroSources.java
 }
 
 // In this section you declare where to find the dependencies of your project
@@ -60,19 +68,19 @@ repositories {
 
 // In this section you declare the dependencies for your production and test code
 dependencies {
+    avroSources group: 'org.apache.avro', name: 'avro', version: avroVersion
+
     // The production code uses the SLF4J logging API at compile time
     compile group: 'org.slf4j', name:'slf4j-api', version: slf4jVersion
 
     // to implement producers and consumers
     compile group: 'org.apache.kafka', name: 'kafka-clients', version: kafkaVersion
-    compile group: 'org.apache.avro', name: 'avro', version: avroVersion
     compile (group: 'io.confluent', name: 'kafka-avro-serializer', version: confluentVersion) {
         exclude group: 'org.slf4j', module: 'slf4j-log4j12'
         exclude group: 'log4j'
         exclude group: 'jline'
         exclude group: 'com.101tec'
     }
-    compile group: 'com.google.code.findbugs', name: 'jsr305', version: findbugsVersion
     compile group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
     compile group: 'com.squareup.okhttp3', name: 'okhttp', version: okhttpVersion
     compile group: 'com.squareup.okio', name: 'okio', version: okioVersion
@@ -88,25 +96,14 @@ dependencies {
 //---------------------------------------------------------------------------//
 task generateAvro(type: com.commercehub.gradle.plugin.avro.GenerateAvroJavaTask) {
     source("schema/common")
-    outputDir = file("build/avro")
+    outputDir = file("src/avroSources/java")
 }
 
-compileJava.source(generateAvro.outputs)
-idea.module.sourceDirs += file("build/avro")
+compileAvroSourcesJava.dependsOn generateAvro
+compileJava.dependsOn generateAvro
 
-//---------------------------------------------------------------------------//
-// Packaging                                                                 //
-//---------------------------------------------------------------------------//
-
-
-jar {
-    manifest {
-        attributes 'Implementation-Title': 'RADAR-CNS commons',
-                    'Implementation-Version': version
-    }
-    from {
-        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
-    }
+clean {
+    delete 'src/avroSources/java'
 }
 
 //---------------------------------------------------------------------------//
