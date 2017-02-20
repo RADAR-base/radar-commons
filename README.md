@@ -3,35 +3,28 @@
 
 Common utilities library containing basic schemas, streaming features, testing bridges and utils.
 
-# Dependencies
-  1. [RADAR-Schema](https://github.com/RADAR-CNS/RADAR-Schemas)
+# Installation
 
-# Using in other repositories
+First, add the current repository as a submodule to your Git repository
 
-## Use as a submodule
-    
 ```shell
-git submodule add https://github.com/RADAR-CNS/RADAR-Commons.git your-folder
-
+git submodule add https://github.com/RADAR-CNS/RADAR-Commons.git commons
 git submodule update --init --recursive
 ```
 
-## Use it as a dependency
+Then, add it as a dependency in Gradle by adding the following dependency in your `build.gradle`:
 
-```shell
-wget https://github.com/RADAR-CNS/RADAR-Commons/releases/download/0.1-SNAPSHOT/radar-commons-0.1-SNAPSHOT.jar
-```
-Add the `jar` file as a dependency
-
-For gradle users, add
-```
+```gradle
 dependencies {
-....
-....
-compile group: 'org.radarcns', name: 'radar-commons', version: 0.1-SNAPSHOT
+    compile project(':commons')
 }
 ```
-under in your `build.gradle`
+and adding the line
+
+```gradle
+include ':commons'
+```
+in your `settings.gradle`.
 
 Note: This repository is still in WIP. Expect frequent changes. 
 For latest code use `dev` branch 
