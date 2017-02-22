@@ -24,4 +24,17 @@ public class TimedInt {
         this.value.set(value);
         time.set(System.currentTimeMillis());
     }
+
+    public synchronized boolean equals(Object other) {
+        if (other == null || !getClass().equals(other.getClass())) {
+            return false;
+        }
+        TimedInt timedOther = (TimedInt)other;
+        return value.equals(timedOther.value) && time.equals(timedOther.time);
+    }
+
+    @Override
+    public int hashCode() {
+        return 31 * value.hashCode() + time.hashCode();
+    }
 }
