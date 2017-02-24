@@ -20,11 +20,11 @@ public class SpecificRecordDecorderTest {
         AvroDecoder.AvroReader<MeasurementKey> keyDecoder = decoder.reader(topic.getKeySchema(), topic.getKeyClass());
         AvroDecoder.AvroReader<EmpaticaE4BloodVolumePulse> valueDecoder = decoder.reader(topic.getValueSchema(), topic.getValueClass());
 
-        MeasurementKey key = keyDecoder.decode( new String("{\"userId\":\"a\",\"sourceId\":\"b\"}").getBytes());
+        MeasurementKey key = keyDecoder.decode("{\"userId\":\"a\",\"sourceId\":\"b\"}".getBytes());
         assertEquals(key.get("userId"), "a");
         assertEquals(key.get("sourceId"), "b");
 
-        EmpaticaE4BloodVolumePulse value = valueDecoder.decode(new String("{\"time\":0.0,\"timeReceived\":0.0,\"bloodVolumePulse\":0.0}").getBytes());
+        EmpaticaE4BloodVolumePulse value = valueDecoder.decode("{\"time\":0.0,\"timeReceived\":0.0,\"bloodVolumePulse\":0.0}".getBytes());
         assertEquals(value.get("time"), 0.0d);
         assertEquals(value.get("timeReceived"), 0.0d);
         assertEquals(value.get("bloodVolumePulse"), 0.0f);
