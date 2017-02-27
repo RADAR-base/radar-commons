@@ -15,3 +15,16 @@ before_install:
   - ./gradlew downloadDependencies
 after_script:
   - ./gradlew sendCoverageToCodacy
+
+deploy:
+  provider: releases
+  api_key:
+    secure: ${GH_TOKEN}
+  override: true
+  file:
+    - RADAR-Commons-0.1.jar
+    - RADAR-Commons-0.1-javadoc.jar
+    - RADAR-Commons-0.1-sources.jar
+  skip_cleanup: true
+  on:
+    tags: true
