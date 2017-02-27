@@ -21,9 +21,9 @@ deploy:
   api_key:
     secure: ${GH_TOKEN}
   file:
-    - build/libs/RADAR-Commons-0.1.jar
-    - build/libs/RADAR-Commons-0.1-javadoc.jar
-    - build/libs/RADAR-Commons-0.1-sources.jar
+    - build/libs/*.jar
+    - build/libs/*-javadoc.jar
+    - build/libs/*-sources.jar
   skip_cleanup: true
   on:
     tags: true
