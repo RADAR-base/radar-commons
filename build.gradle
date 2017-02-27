@@ -5,13 +5,15 @@ plugins {
     id 'com.commercehub.gradle.plugin.avro-base' version '0.9.0'
     id 'jacoco'
     id 'pmd'
+    id "com.jfrog.bintray" version "1.7.3"
+    id 'maven-publish'
 }
 
 //---------------------------------------------------------------------------//
 // Configuration                                                             //
 //---------------------------------------------------------------------------//
 
-version = '0.1-SNAPSHOT'
+version = 'v0.1-alpha.2'
 
 targetCompatibility = '1.7'
 sourceCompatibility = '1.7'
@@ -174,6 +176,79 @@ task sendCoverageToCodacy(type: JavaExec, dependsOn: jacocoTestReport) {
     args = ['-l', 'Java', '-r', "${buildDir}/reports/jacoco/test/jacocoTestReport.xml"]
 }
 
+def pomConfig = {
+    licenses {
+        license {
+            name "The Apache Software License, Version 2.0"
+            url "http://www.apache.org/licenses/LICENSE-2.0.txt"
+            distribution "pre-release"
+        }
+    }
+    developers {
+        developer {
+            id "radar-cns"
+            name "Nivethika"
+            email "nivethika@thehyve.nl"
+        }
+    }
+}
+// custom tasks for creating source/javadoc jars
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.output
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+// add javadoc/source jar tasks as artifacts
+artifacts {
+    archives sourcesJar, javadocJar
+}
+
+
+publishing {
+    publications {
+        RadarCommonsPublication(MavenPublication) {
+            from components.java
+            artifact sourcesJar
+            artifact javadocJar
+            groupId 'org.radarcns'
+            artifactId 'RADAR-Commons'
+            version System.getenv('TRAVIS_TAG')
+            pom.withXml {
+                def root = asNode()
+                root.appendNode('description', 'Common utilities library containing basic schemas, streaming features, testing bridges and utils.')
+                root.appendNode('name', 'RADAR-Commons')
+                root.appendNode('url', 'https://github.com/RADAR-CNS/RADAR-Commons.git')
+                root.children().last() + pomConfig
+            }
+        }
+    }
+}
+
+
+
+bintray {
+    user = System.getenv('bintrayUser')? System.getenv('bintrayUser') : project.property('bintrayUser')
+    key = System.getenv('bintrayApiKey') ? System.getenv('bintrayApiKey') : project.property('bintrayApiKey')
+    override = false
+    publications = ['RadarCommonsPublication']
+    pkg {
+        repo = 'org.radarcns'
+        name = 'RADAR-Commons'
+        userOrg = 'radar-cns'
+        licenses = ['Apache-2.0']
+        vcsUrl = 'https://github.com/RADAR-CNS/RADAR-Commons.git'
+        version {
+            name = System.getenv('TRAVIS_TAG')
+            desc = 'RADAR-Commons unitilies: Initial snapshot'
+            vcsTag = System.getenv('TRAVIS_TAG')
+        }
+    }
+}
 
 task wrapper(type: Wrapper) {
     gradleVersion = '3.2.1'
