@@ -176,58 +176,59 @@ task sendCoverageToCodacy(type: JavaExec, dependsOn: jacocoTestReport) {
     args = ['-l', 'Java', '-r', "${buildDir}/reports/jacoco/test/jacocoTestReport.xml"]
 }
 
-def pomConfig = {
-    licenses {
-        license {
-            name "The Apache Software License, Version 2.0"
-            url "http://www.apache.org/licenses/LICENSE-2.0.txt"
-            distribution "pre-release"
-        }
-    }
-    developers {
-        developer {
-            id "radar-cns"
-            name "Nivethika"
-            email "nivethika@thehyve.nl"
-        }
-    }
-}
-// custom tasks for creating source/javadoc jars
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
-    from sourceSets.main.output
-}
-
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
-    from javadoc.destinationDir
-}
-
-// add javadoc/source jar tasks as artifacts
-artifacts {
-    archives sourcesJar, javadocJar
-}
-
-
-publishing {
-    publications {
-        RadarCommonsPublication(MavenPublication) {
-            from components.java
-            artifact sourcesJar
-            artifact javadocJar
-            groupId 'org.radarcns'
-            artifactId 'radar-commons'
-            version 0.1
-            pom.withXml {
-                def root = asNode()
-                root.appendNode('description', 'Common utilities library containing basic schemas, streaming features, testing bridges and utils.')
-                root.appendNode('name', 'RADAR-Commons')
-                root.appendNode('url', 'https://github.com/RADAR-CNS/RADAR-Commons.git')
-                root.children().last() + pomConfig
-            }
-        }
-    }
-}
+//def pomConfig = {
+//    licenses {
+//        license {
+//            name "The Apache Software License, Version 2.0"
+//            url "http://www.apache.org/licenses/LICENSE-2.0.txt"
+//            distribution "pre-release"
+//        }
+//    }
+//    developers {
+//        developer {
+//            id "radar-cns"
+//            name "Nivethika"
+//            email "nivethika@thehyve.nl"
+//        }
+//    }
+//}
+//// custom tasks for creating source/javadoc jars
+//task sourcesJar(type: Jar, dependsOn: classes) {
+//    classifier = 'sources'
+//    from sourceSets.main.output
+//}
+//
+//task javadocJar(type: Jar, dependsOn: javadoc) {
+//    classifier = 'javadoc'
+//    from javadoc.destinationDir
+//}
+//
+//// add javadoc/source jar tasks as artifacts
+//artifacts {
+//    archives sourcesJar, javadocJar
+//}
+//
+//
+//
+//publishing {
+//    publications {
+//        RadarCommonsPublication(MavenPublication) {
+//            from components.java
+////            artifact sourcesJar
+////            artifact javadocJar
+//            groupId 'org.radarcns'
+//            artifactId 'radar-commons'
+//            version System.getenv('BINTRAY_USER')
+//            pom.withXml {
+//                def root = asNode()
+//                root.appendNode('description', 'Common utilities library containing basic schemas, streaming features, testing bridges and utils.')
+//                root.appendNode('name', 'RADAR-Commons')
+//                root.appendNode('url', 'https://github.com/RADAR-CNS/RADAR-Commons.git')
+//                root.children().last() + pomConfig
+//            }
+//        }
+//    }
+//}
 
 
 
@@ -235,7 +236,10 @@ bintray {
     user = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
     key = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
     override = false
-    publications = ['RadarCommonsPublication']
+    versionValue = System.getenv('TRAVIS_TAG')
+    configurations = ['archives']
+
+//    publications = ['RadarCommonsPublication']
     pkg {
         repo = 'org.radarcns'
         name = 'radar-commons'
@@ -243,9 +247,9 @@ bintray {
         licenses = ['Apache-2.0']
         vcsUrl = 'https://github.com/RADAR-CNS/RADAR-Commons.git'
         version {
-            name = 0.1
+            name = versionValue
             desc = 'RADAR-Commons unitilies: Initial snapshot'
-            vcsTag = 0.1
+            vcsTag = versionValue
         }
     }
 }
