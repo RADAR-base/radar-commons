@@ -232,8 +232,8 @@ publishing {
 
 
 bintray {
-    user = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
-    key = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
+    user = System.getenv('bintrayUser')? System.getenv('bintrayUser') : project.property('bintrayUser')
+    key = System.getenv('bintrayApiKey') ? System.getenv('bintrayApiKey') : project.property('bintrayApiKey')
     override = false
     publications = ['RadarCommonsPublication']
     pkg {
