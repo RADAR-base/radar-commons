@@ -42,10 +42,16 @@ public class SpecificRecordDecoder implements AvroDecoder {
         }
 
         public T decode(byte[] record) throws IOException {
+            return decode(record, 0);
+        }
+
+        public T decode(byte[] record, int offset) throws IOException {
             if (binary) {
-                decoder = decoderFactory.binaryDecoder(record, (BinaryDecoder) decoder);
+                decoder = decoderFactory.binaryDecoder(record, offset, record.length - offset,
+                        (BinaryDecoder) decoder);
             } else {
-                decoder = decoderFactory.jsonDecoder(schema, new ByteArrayInputStream(record));
+                decoder = decoderFactory.jsonDecoder(schema,
+                        new ByteArrayInputStream(record, offset, record.length - offset));
             }
             return reader.read(null, decoder);
         }

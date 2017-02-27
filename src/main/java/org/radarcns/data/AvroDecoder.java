@@ -12,5 +12,6 @@ public interface AvroDecoder {
     interface AvroReader<T> {
         /** Encode an object to String. This method is not thread-safe. */
         T decode(byte[] object) throws IOException;
+        T decode(byte[] object, int start) throws IOException;
     }
 }
