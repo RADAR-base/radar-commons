@@ -22,9 +22,9 @@ deploy:
     secure: ${GH_TOKEN}
   override: true
   file:
-    - RADAR-Commons-0.1.jar
-    - RADAR-Commons-0.1-javadoc.jar
-    - RADAR-Commons-0.1-sources.jar
+    - build/libs/RADAR-Commons-0.1.jar
+    - build/libs/RADAR-Commons-0.1-javadoc.jar
+    - build/libs/RADAR-Commons-0.1-sources.jar
   skip_cleanup: true
   on:
     tags: true
