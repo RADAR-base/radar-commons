@@ -29,4 +29,4 @@ deploy:
     tags: true
 
 after_deploy:
-  - ./gradlew bintrayUpload
+  - ./gradlew bintrayUpload -- stacktrace -- info
