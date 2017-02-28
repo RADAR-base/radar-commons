@@ -21,9 +21,9 @@ deploy:
   api_key:
     secure: ${GH_TOKEN}
   file:
-    - build/libs/RADAR-Commons-${TRAVIS_TAG}.jar
-    - build/libs/RADAR-Commons-${TRAVIS_TAG}-javadoc.jar
-    - build/libs/RADAR-Commons-${TRAVIS_TAG}-sources.jar
+    - build/libs/radar-commons-${TRAVIS_TAG}.jar
+    - build/libs/radar-commons-${TRAVIS_TAG}-javadoc.jar
+    - build/libs/radar-commons-${TRAVIS_TAG}-sources.jar
   skip_cleanup: true
   on:
     tags: true
