@@ -13,7 +13,7 @@ plugins {
 // Configuration                                                             //
 //---------------------------------------------------------------------------//
 
-version = 'v0.1-alpha.2'
+version = 'v0.1-alpha.3'
 
 targetCompatibility = '1.7'
 sourceCompatibility = '1.7'
@@ -216,12 +216,12 @@ publishing {
             artifact sourcesJar
             artifact javadocJar
             groupId 'org.radarcns'
-            artifactId 'RADAR-Commons'
+            artifactId 'radar-commons'
             version System.getenv('TRAVIS_TAG')
             pom.withXml {
                 def root = asNode()
                 root.appendNode('description', 'Common utilities library containing basic schemas, streaming features, testing bridges and utils.')
-                root.appendNode('name', 'RADAR-Commons')
+                root.appendNode('name', 'radar-commons')
                 root.appendNode('url', 'https://github.com/RADAR-CNS/RADAR-Commons.git')
                 root.children().last() + pomConfig
             }
@@ -238,7 +238,7 @@ bintray {
     publications = ['RadarCommonsPublication']
     pkg {
         repo = 'org.radarcns'
-        name = 'RADAR-Commons'
+        name = 'radar-commons'
         userOrg = 'radar-cns'
         licenses = ['Apache-2.0']
         vcsUrl = 'https://github.com/RADAR-CNS/RADAR-Commons.git'
