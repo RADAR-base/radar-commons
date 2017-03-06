@@ -217,7 +217,7 @@ publishing {
             artifact javadocJar
             groupId 'org.radarcns'
             artifactId 'radar-commons'
-            version System.getenv('TRAVIS_TAG')
+            version project.version
             pom.withXml {
                 def root = asNode()
                 root.appendNode('description', 'Common utilities library containing basic schemas, streaming features, testing bridges and utils.')
@@ -243,7 +243,7 @@ bintray {
         licenses = ['Apache-2.0']
         vcsUrl = 'https://github.com/RADAR-CNS/RADAR-Commons.git'
         version {
-            name = System.getenv('TRAVIS_TAG')
+            name = project.version
             desc = 'RADAR-Commons unitilies: Initial snapshot'
             vcsTag = System.getenv('TRAVIS_TAG')
         }
