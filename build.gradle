@@ -246,6 +246,7 @@ bintray {
             name = project.version
             desc = 'RADAR-Commons unitilies: Initial snapshot'
             vcsTag = System.getenv('TRAVIS_TAG')
+            released  = new Date()
         }
     }
 }
