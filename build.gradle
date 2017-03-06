@@ -13,7 +13,7 @@ plugins {
 // Configuration                                                             //
 //---------------------------------------------------------------------------//
 
-version = '0.1'
+version = '0.1-alpha.4'
 
 targetCompatibility = '1.7'
 sourceCompatibility = '1.7'
