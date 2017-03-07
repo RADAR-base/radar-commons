@@ -4,6 +4,20 @@
 
 Common utilities library containing basic schemas, streaming features, testing bridges and utils.
 
+# Usage
+
+Add the RADAR-Commons library to your project with Gradle by updating your `build.gradle` file with:
+
+```gradle
+repositories {
+    jcenter()
+}
+
+dependencies {
+    compile group: 'org.radarcns', name: 'radar-commons', version: '0.1'
+}
+```
+
 # Installation
 
 First, add the current repository as a submodule to your Git repository
