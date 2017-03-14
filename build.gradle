@@ -154,6 +154,7 @@ tasks.matching {it instanceof Test}.all {
 idea {
     module {
         downloadSources = true
+        generatedSourceDirs += file("src/avroSources/java")
     }
 }
 
@@ -243,12 +244,12 @@ bintray {
             name = project.version
             desc = 'RADAR-Commons unitilies: Initial snapshot'
             vcsTag = System.getenv('TRAVIS_TAG')
-            released  = new Date()
+            released = new Date()
         }
     }
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '3.2.1'
+    gradleVersion = '3.4.1'
     distributionUrl distributionUrl.replace("bin", "all")
 }
