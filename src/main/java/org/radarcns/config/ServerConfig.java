@@ -22,6 +22,7 @@ import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.Proxy.Type;
 import java.net.URL;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -49,8 +50,18 @@ public class ServerConfig {
     }
 
     /** Get the paths of a list of servers, concatenated with commas. */
-    public static String getPaths(@Nonnull List<ServerConfig> configList) {
-        return configList.stream().map(ServerConfig::getPath).collect(Collectors.joining(","));
+    public static String getPaths(List<ServerConfig> configList) {
+        StringBuilder builder = new StringBuilder(configList.size() * 40);
+        boolean first = true;
+        for (ServerConfig server : configList) {
+            if (first) {
+                first = false;
+            } else {
+                builder.append(',');
+            }
+            builder.append(server.getPath());
+        }
+        return builder.toString();
     }
 
     /**
