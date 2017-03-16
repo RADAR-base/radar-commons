@@ -62,7 +62,7 @@ public class MockFile {
     }
 
     /**
-     * Send data from the configured CSV file.
+     * Send data from the configured CSV file synchronously.
      * @throws IOException if data could not be read or sent.
      */
     public void send() throws IOException {
