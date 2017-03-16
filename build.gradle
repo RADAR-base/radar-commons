@@ -13,7 +13,7 @@ plugins {
 // Configuration                                                             //
 //---------------------------------------------------------------------------//
 
-version = '0.1-alpha.4'
+version = '0.1-alpha.5-SNAPSHOT'
 
 targetCompatibility = '1.7'
 sourceCompatibility = '1.7'
@@ -30,6 +30,7 @@ ext.junitVersion = '4.12'
 ext.mockitoVersion = '2.2.29'
 ext.hamcrestVersion = '1.3'
 ext.codacyVersion = '1.0.10'
+ext.avroSourcesDir = file("src/avroSources/java")
 
 //---------------------------------------------------------------------------//
 // Sources and classpath configurations                                      //
@@ -51,6 +52,11 @@ sourceSets {
     }
     avroSources {
         compileClasspath = configurations.avroSources
+    }
+    main {
+        java {
+            srcDir avroSourcesDir
+        }
     }
 }
 
@@ -98,14 +104,14 @@ dependencies {
 //---------------------------------------------------------------------------//
 task generateAvro(type: com.commercehub.gradle.plugin.avro.GenerateAvroJavaTask) {
     source("schema/common")
-    outputDir = file("src/avroSources/java")
+    outputDir = avroSourcesDir
 }
 
 compileAvroSourcesJava.dependsOn generateAvro
 compileJava.dependsOn generateAvro
 
 clean {
-    delete 'src/avroSources/java'
+    delete avroSourcesDir
 }
 
 //---------------------------------------------------------------------------//
@@ -154,7 +160,7 @@ tasks.matching {it instanceof Test}.all {
 idea {
     module {
         downloadSources = true
-        generatedSourceDirs += file("src/avroSources/java")
+        generatedSourceDirs += avroSourcesDir
     }
 }
 
