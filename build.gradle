@@ -1,6 +1,6 @@
 plugins {
     // Apply the java plugin to add support for Java
-    id 'java'
+    id 'java-library'
     id 'idea'
     id 'com.commercehub.gradle.plugin.avro-base' version '0.9.0'
     id 'jacoco'
@@ -24,7 +24,7 @@ ext.avroVersion = '1.8.1'
 ext.confluentVersion = '3.1.2'
 ext.log4jVersion = '2.7'
 ext.jacksonVersion='2.8.5'
-ext.okhttpVersion = '3.5.0'
+ext.okhttpVersion = '3.6.0'
 ext.okioVersion = '1.11.0'
 ext.junitVersion = '4.12'
 ext.mockitoVersion = '2.2.29'
@@ -39,7 +39,7 @@ ext.avroSourcesDir = file("src/avroSources/java")
 configurations {
     codacy
     avroSources
-    compile.extendsFrom avroSources
+    api.extendsFrom avroSources
 }
 
 sourceSets {
@@ -78,24 +78,25 @@ repositories {
 dependencies {
     avroSources group: 'org.apache.avro', name: 'avro', version: avroVersion
 
-    // The production code uses the SLF4J logging API at compile time
-    compile group: 'org.slf4j', name:'slf4j-api', version: slf4jVersion
-
     // to implement producers and consumers
-    compile group: 'org.apache.kafka', name: 'kafka-clients', version: kafkaVersion
-    compile (group: 'io.confluent', name: 'kafka-avro-serializer', version: confluentVersion) {
-        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
-        exclude group: 'log4j'
-        exclude group: 'jline'
+    api group: 'org.apache.kafka', name: 'kafka-clients', version: kafkaVersion
+    api (group: 'io.confluent', name: 'kafka-avro-serializer', version: confluentVersion) {
+        exclude group: 'io.confluent', module: 'kafka-schema-registry-client'
         exclude group: 'com.101tec'
     }
-    compile group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
-    compile group: 'com.squareup.okhttp3', name: 'okhttp', version: okhttpVersion
-    compile group: 'com.squareup.okio', name: 'okio', version: okioVersion
+    api group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
+    api group: 'com.squareup.okhttp3', name: 'okhttp', version: okhttpVersion
 
-    testCompile group: 'junit', name: 'junit', version: junitVersion
-    testCompile group: 'org.mockito', name: 'mockito-core', version: mockitoVersion
-    testCompile group: 'org.hamcrest', name: 'hamcrest-all', version: hamcrestVersion
+    // The data is serialized with okio
+    implementation group: 'com.squareup.okio', name: 'okio', version: okioVersion
+
+    // The production code uses the SLF4J logging API at compile time
+    implementation group: 'org.slf4j', name:'slf4j-api', version: slf4jVersion
+
+    testImplementation group: 'junit', name: 'junit', version: junitVersion
+    testImplementation group: 'org.mockito', name: 'mockito-core', version: mockitoVersion
+    testImplementation group: 'org.hamcrest', name: 'hamcrest-all', version: hamcrestVersion
+    testImplementation group: 'com.squareup.okhttp3', name: 'mockwebserver', version: okhttpVersion
     codacy group: 'com.github.codacy', name: 'codacy-coverage-reporter', version: codacyVersion
 }
 
