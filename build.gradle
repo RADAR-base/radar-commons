@@ -86,6 +86,10 @@ dependencies {
     }
     api group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
     api group: 'com.squareup.okhttp3', name: 'okhttp', version: okhttpVersion
+    api group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
+
+    // For ConfigLoader
+    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: jacksonVersion
 
     // The data is serialized with okio
     implementation group: 'com.squareup.okio', name: 'okio', version: okioVersion

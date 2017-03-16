@@ -32,7 +32,7 @@ public class ServerConfig {
     private String host;
     private int port = -1;
     private String protocol;
-    private String path = "/";
+    private String path = "";
     @JsonProperty("proxy_host")
     private String proxyHost;
     @JsonProperty("proxy_port")
