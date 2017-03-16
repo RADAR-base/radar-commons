@@ -26,6 +26,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
@@ -37,6 +38,7 @@ import okio.BufferedSink;
 import okio.Okio;
 import okio.Sink;
 import org.apache.avro.Schema;
+import org.radarcns.config.ServerConfig;
 import org.radarcns.data.AvroEncoder;
 import org.radarcns.data.Record;
 import org.radarcns.producer.KafkaSender;
@@ -55,62 +57,53 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
     public static final MediaType KAFKA_REST_AVRO_ENCODING =
             MediaType.parse("application/vnd.kafka.avro.v1+json; charset=utf-8");
 
-    private URL kafkaUrl;
     private HttpUrl schemalessKeyUrl;
     private HttpUrl schemalessValueUrl;
     private Request isConnectedRequest;
     private SchemaRetriever schemaRetriever;
-    private OkHttpClient httpClient;
+    private RestClient httpClient;
 
     /**
      * Construct a RestSender.
-     * @param kafkaUrl url to send data to
-     * @param schemaRetriever Retriever of avro schemas
-     * @param keyEncoder Avro encoder for keys
-     * @param valueEncoder Avro encoder for values
+     * @param kafkaConfig non-null server to send data to
+     * @param schemaRetriever non-null Retriever of avro schemas
+     * @param keyEncoder non-null Avro encoder for keys
+     * @param valueEncoder non-nullAvro encoder for values
      * @param connectionTimeout socket connection timeout in seconds
      */
-    public RestSender(String kafkaUrl, SchemaRetriever schemaRetriever,
+    public RestSender(ServerConfig kafkaConfig, SchemaRetriever schemaRetriever,
             AvroEncoder keyEncoder, AvroEncoder valueEncoder,
             long connectionTimeout) {
-        setKafkaUrl(kafkaUrl);
-        setSchemaRetriever(schemaRetriever);
+        Objects.requireNonNull(kafkaConfig);
+        Objects.requireNonNull(schemaRetriever);
+        Objects.requireNonNull(keyEncoder);
+        Objects.requireNonNull(valueEncoder);
+        this.schemaRetriever = schemaRetriever;
         this.keyEncoder = keyEncoder;
         this.valueEncoder = valueEncoder;
-        jsonFactory = new JsonFactory();
-        setConnectionTimeout(connectionTimeout);
+        this.jsonFactory = new JsonFactory();
+        this.httpClient = new RestClient(kafkaConfig, connectionTimeout);
     }
 
-    public final synchronized void setConnectionTimeout(long connectionTimeout) {
-        if (httpClient != null && httpClient.connectTimeoutMillis() == connectionTimeout) {
+    public synchronized void setConnectionTimeout(long connectionTimeout) {
+        if (connectionTimeout != httpClient.getTimeout()) {
+            httpClient = new RestClient(httpClient.getConfig(), connectionTimeout);
+        }
+    }
+
+    public synchronized void setKafkaConfig(ServerConfig kafkaConfig) {
+        Objects.requireNonNull(kafkaConfig);
+        if (kafkaConfig.equals(httpClient.getConfig())) {
             return;
         }
-        httpClient = new OkHttpClient.Builder()
-                .connectTimeout(connectionTimeout, TimeUnit.SECONDS)
-                .writeTimeout(connectionTimeout, TimeUnit.SECONDS)
-                .readTimeout(connectionTimeout, TimeUnit.SECONDS)
-                .build();
-    }
-
-    private synchronized OkHttpClient getHttpClient() {
-        return httpClient;
-    }
-
-    public final synchronized void setKafkaUrl(String kafkaUrlString) {
         try {
-            URL newKafkaUrl = new URL(kafkaUrlString);
-            if (newKafkaUrl.equals(kafkaUrl)) {
-                return;
-            }
-            kafkaUrl = newKafkaUrl;
-
-            schemalessKeyUrl = HttpUrl.get(new URL(kafkaUrl, "topics/schemaless-key"));
-            schemalessValueUrl = HttpUrl.get(new URL(kafkaUrl, "topics/schemaless-value"));
+            schemalessKeyUrl = HttpUrl.get(httpClient.getRelativeUrl("topics/schemaless-key"));
+            schemalessValueUrl = HttpUrl.get(httpClient.getRelativeUrl("topics/schemaless-value"));
+            isConnectedRequest = httpClient.requestBuilder("").head().build();
         } catch (MalformedURLException ex) {
             throw new IllegalArgumentException("Schemaless topics do not have a valid URL", ex);
         }
-
-        isConnectedRequest = new Request.Builder().url(kafkaUrl).head().build();
+        httpClient = new RestClient(kafkaConfig, httpClient.getTimeout());
     }
 
     public final synchronized void setSchemaRetriever(SchemaRetriever retriever) {
@@ -141,7 +134,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
 
         private RestTopicSender(AvroTopic<L, W> topic) throws IOException {
             this.topic = topic;
-            URL rawUrl = new URL(kafkaUrl, "topics/" + topic.getName());
+            URL rawUrl = httpClient.getRelativeUrl("topics/" + topic.getName());
             url = HttpUrl.get(rawUrl);
             if (url == null) {
                 throw new MalformedURLException("Cannot parse " + rawUrl);
@@ -203,7 +196,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                     .post(requestBody)
                     .build();
 
-            try (Response response = getHttpClient().newCall(request).execute()) {
+            try (Response response = httpClient.request(request)) {
                 // Evaluate the result
                 if (response.isSuccessful()) {
                     if (logger.isDebugEnabled()) {
@@ -329,16 +322,16 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
     }
 
     public boolean isConnected() {
-        try (Response response = getHttpClient().newCall(getIsConnectedRequest()).execute()) {
+        try (Response response = httpClient.request(getIsConnectedRequest())) {
             if (response.isSuccessful()) {
                 return true;
             } else {
                 logger.warn("Failed to make heartbeat request to {} (HTTP status code {}): {}",
-                        kafkaUrl, response.code(), response.body().string());
+                        httpClient, response.code(), response.body().string());
                 return false;
             }
         } catch (IOException ex) {
-            logger.debug("Failed to make heartbeat request to {}", kafkaUrl, ex);
+            logger.debug("Failed to make heartbeat request to {}", httpClient, ex);
             return false;
         }
     }

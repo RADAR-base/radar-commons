@@ -23,6 +23,7 @@ import java.net.Proxy;
 import java.net.Proxy.Type;
 import java.net.URL;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * POJO representing a ServerConfig configuration
@@ -31,18 +32,26 @@ public class ServerConfig {
     private String host;
     private int port = -1;
     private String protocol;
-    @JsonProperty("proxy")
-    private String proxy;
+    private String path = "/";
+    @JsonProperty("proxy_host")
+    private String proxyHost;
     @JsonProperty("proxy_port")
     private int proxyPort = -1;
 
-    /** Get the path of the server as a string. This does not include proxy information. */
-    public String getPath() {
+    /** Get the path of the server as a string. This does not include proxyHost information. */
+    public String getUrlString() {
+        return addUrlString(new StringBuilder(40)).toString();
+    }
+
+    private StringBuilder addUrlString(StringBuilder builder) {
         if (protocol != null) {
-            return protocol + "://" + host + ":" + port;
-        } else {
-            return host + ":" + port;
+            builder.append(protocol).append("://");
         }
+        builder.append(host).append(':').append(port);
+        if (path != null) {
+            builder.append(path);
+        }
+        return builder;
     }
 
     /** Get the paths of a list of servers, concatenated with commas. */
@@ -55,7 +64,7 @@ public class ServerConfig {
             } else {
                 builder.append(',');
             }
-            builder.append(server.getPath());
+            server.addUrlString(builder);
         }
         return builder.toString();
     }
@@ -66,30 +75,30 @@ public class ServerConfig {
      * @return URL to the server.
      * @throws MalformedURLException if protocol is not set or the host name is invalid.
      */
-    public URL getURL() throws MalformedURLException {
-        return new URL(protocol, host, port, "");
+    public URL getUrl() throws MalformedURLException {
+        return new URL(protocol, host, port, path == null ? "" : path);
     }
 
     /**
-     * Get the HTTP proxy associated to given server
-     * @return http proxy if specified, or null if none is specified.
-     * @throws IllegalStateException if proxy is set but proxyPort is not or if the server protocol
+     * Get the HTTP proxyHost associated to given server
+     * @return http proxyHost if specified, or null if none is specified.
+     * @throws IllegalStateException if proxyHost is set but proxyPort is not or if the server protocol
      *                               is not HTTP(s)
      */
     public Proxy getHttpProxy() {
-        if (proxy == null) {
+        if (proxyHost == null) {
             return null;
         } else if (proxyPort == -1) {
-            throw new IllegalStateException("proxy_port is not specified for server " + getPath()
-                    + " with proxy");
+            throw new IllegalStateException("proxy_port is not specified for server " + getUrlString()
+                    + " with proxyHost");
         }
         if (protocol != null
                 && !protocol.equalsIgnoreCase("http")
                 && !protocol.equalsIgnoreCase("https")) {
             throw new IllegalStateException(
-                    "Server is not an HTTP(S) server, so it cannot use a HTTP proxy.");
+                    "Server is not an HTTP(S) server, so it cannot use a HTTP proxyHost.");
         }
-        return new Proxy(Type.HTTP, new InetSocketAddress(proxy, proxyPort));
+        return new Proxy(Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
     }
 
     /** Server host name or IP address. */
@@ -123,13 +132,13 @@ public class ServerConfig {
     }
 
     /** Proxy host name. Null if not set. */
-    public String getProxy() {
-        return proxy;
+    public String getProxyHost() {
+        return proxyHost;
     }
 
-    /** Set proxy host name. */
-    public void setProxy(String proxy) {
-        this.proxy = proxy;
+    /** Set proxyHost host name. */
+    public void setProxyHost(String proxyHost) {
+        this.proxyHost = proxyHost;
     }
 
     /** Proxy port. Defaults to -1. */
@@ -137,13 +146,57 @@ public class ServerConfig {
         return proxyPort;
     }
 
-    /** Set proxy port. */
+    /** Set proxyHost port. */
     public void setProxyPort(int proxyPort) {
         this.proxyPort = proxyPort;
     }
 
+    public String getPath() {
+        return path;
+    }
+
+    public void setPath(String path) {
+        if (path == null) {
+            this.path = "/";
+        } else {
+            this.path = path.trim();
+            if (this.path.charAt(0) != '/') {
+                this.path = '/' + this.path;
+            }
+            if (this.path.charAt(this.path.length() - 1) != '/') {
+                this.path += '/';
+            }
+        }
+    }
+
     @Override
     public String toString() {
-        return getPath();
+        return getUrlString();
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
+        ServerConfig otherConfig = (ServerConfig) other;
+        return Objects.equals(host, otherConfig.host)
+                && port == otherConfig.port
+                && Objects.equals(protocol, otherConfig.protocol)
+                && Objects.equals(proxyHost, otherConfig.proxyHost)
+                && proxyPort == otherConfig.proxyPort;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = host != null ? host.hashCode() : 0;
+        result = 31 * result + port;
+        result = 31 * result + (protocol != null ? protocol.hashCode() : 0);
+        result = 31 * result + (proxyHost != null ? proxyHost.hashCode() : 0);
+        result = 31 * result + proxyPort;
+        return result;
     }
 }
