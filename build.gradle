@@ -13,7 +13,7 @@ plugins {
 // Configuration                                                             //
 //---------------------------------------------------------------------------//
 
-version = '0.1-alpha.4'
+version = '0.1-alpha.5'
 
 targetCompatibility = '1.7'
 sourceCompatibility = '1.7'
@@ -84,6 +84,7 @@ dependencies {
         exclude group: 'com.101tec'
     }
     compile group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
+    compile group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: jacksonVersion
     compile group: 'com.squareup.okhttp3', name: 'okhttp', version: okhttpVersion
     compile group: 'com.squareup.okio', name: 'okio', version: okioVersion
 
