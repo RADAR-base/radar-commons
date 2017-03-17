@@ -80,15 +80,10 @@ dependencies {
 
     // to implement producers and consumers
     api group: 'org.apache.kafka', name: 'kafka-clients', version: kafkaVersion
-    api (group: 'io.confluent', name: 'kafka-avro-serializer', version: confluentVersion) {
-        exclude group: 'io.confluent', module: 'kafka-schema-registry-client'
-        exclude group: 'com.101tec'
-    }
-    api group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
     api group: 'com.squareup.okhttp3', name: 'okhttp', version: okhttpVersion
-    api group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
 
-    // For ConfigLoader
+    // For POJO classes and ConfigLoader
+    implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
     implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: jacksonVersion
 
     // The data is serialized with okio
