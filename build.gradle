@@ -86,8 +86,14 @@ dependencies {
     implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
     implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: jacksonVersion
 
-    // The data is serialized with okio
+    // The REST data is serialized with okio
     implementation group: 'com.squareup.okio', name: 'okio', version: okioVersion
+
+    // Direct producer uses KafkaAvroSerializer if initialized
+    implementation (group: 'io.confluent', name: 'kafka-avro-serializer', version: confluentVersion) {
+        exclude group: 'io.confluent', module: 'kafka-schema-registry-client'
+        exclude group: 'com.101tec'
+    }
 
     // The production code uses the SLF4J logging API at compile time
     implementation group: 'org.slf4j', name:'slf4j-api', version: slf4jVersion
