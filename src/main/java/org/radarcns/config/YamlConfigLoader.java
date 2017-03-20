@@ -12,11 +12,11 @@ import java.io.IOException;
 /**
  * A YAML Config file loader, to load YAML files into equivalent POJO Objects
  */
-public class ConfigLoader {
+public class YamlConfigLoader {
 
     private final ObjectMapper mapper;
 
-    public ConfigLoader() {
+    public YamlConfigLoader() {
         mapper = new ObjectMapper(new YAMLFactory());
         mapper.setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
         // only serialize fields, not getters, etc.
