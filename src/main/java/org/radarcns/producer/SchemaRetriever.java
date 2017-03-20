@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.radarcns.producer.rest;
+package org.radarcns.producer;
 
 import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonFactory;
@@ -24,6 +24,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -33,7 +36,11 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import okio.BufferedSink;
 import org.apache.avro.Schema;
+import org.apache.avro.Schema.Type;
+import org.apache.avro.generic.GenericContainer;
 import org.radarcns.config.ServerConfig;
+import org.radarcns.producer.rest.ParsedSchemaMetadata;
+import org.radarcns.producer.rest.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +48,18 @@ import org.slf4j.LoggerFactory;
 public class SchemaRetriever {
     private static final Logger logger = LoggerFactory.getLogger(SchemaRetriever.class);
     private static final MediaType type = MediaType.parse("application/vnd.schemaregistry.v1+json; charset=utf-8");
+    private static final Schema NULL_SCHEMA = Schema.create(Type.NULL);
+    private static final Map<Class<?>, Schema> PRIMITIVE_SCHEMAS = new HashMap<>();
+    static {
+        PRIMITIVE_SCHEMAS.put(Long.class, Schema.create(Type.LONG));
+        PRIMITIVE_SCHEMAS.put(Integer.class, Schema.create(Type.INT));
+        PRIMITIVE_SCHEMAS.put(Float.class, Schema.create(Type.FLOAT));
+        PRIMITIVE_SCHEMAS.put(Double.class, Schema.create(Type.DOUBLE));
+        PRIMITIVE_SCHEMAS.put(String.class, Schema.create(Type.STRING));
+        PRIMITIVE_SCHEMAS.put(Boolean.class, Schema.create(Type.BOOLEAN));
+        PRIMITIVE_SCHEMAS.put(byte[].class, Schema.create(Type.BYTES));
+    }
+
     private final ConcurrentMap<String, ParsedSchemaMetadata> cache;
     private final ObjectReader reader;
     private final JsonFactory jsonFactory;
@@ -66,8 +85,9 @@ public class SchemaRetriever {
     }
 
     /** Retrieve schema metadata */
-    protected ParsedSchemaMetadata retrieveSchemaMetadata(String subject) throws IOException {
-        Request request = httpClient.requestBuilder("/subjects/" + subject + "/versions/latest")
+    protected ParsedSchemaMetadata retrieveSchemaMetadata(String subject, int version) throws IOException {
+        String versionString = version > 0 ? String.valueOf(version) : "latest";
+        Request request = httpClient.requestBuilder("/subjects/" + subject + "/versions/" + versionString)
                 .addHeader("Accept", "application/json")
                 .get()
                 .build();
@@ -78,18 +98,20 @@ public class SchemaRetriever {
                         + ": " + response.message() + ") -> " + response.body().string());
             }
             JsonNode node = reader.readTree(response.body().byteStream());
-            int version = node.get("version").asInt();
+            if (version < 1) {
+                version = node.get("version").asInt();
+            }
             int schemaId = node.get("id").asInt();
             Schema schema = parseSchema(node.get("schema").asText());
             return new ParsedSchemaMetadata(schemaId, version, schema);
         }
     }
 
-    public ParsedSchemaMetadata getSchemaMetadata(String topic, boolean ofValue) throws IOException {
+    public ParsedSchemaMetadata getSchemaMetadata(String topic, boolean ofValue, int version) throws IOException {
         String subject = subject(topic, ofValue);
         ParsedSchemaMetadata value = cache.get(subject);
         if (value == null) {
-            value = retrieveSchemaMetadata(subject);
+            value = retrieveSchemaMetadata(subject, version);
             ParsedSchemaMetadata oldValue = cache.putIfAbsent(subject, value);
             if (oldValue != null) {
                 value = oldValue;
@@ -133,11 +155,13 @@ public class SchemaRetriever {
 
     /**
      * Get schema metadata, and if none is found, add a new schema.
+     *
+     * @param version version to get or 0 if the latest version can be used.
      */
-    public ParsedSchemaMetadata getOrSetSchemaMetadata(String topic, boolean ofValue, Schema schema) throws IOException {
+    public ParsedSchemaMetadata getOrSetSchemaMetadata(String topic, boolean ofValue, Schema schema, int version) throws IOException {
         ParsedSchemaMetadata metadata;
         try {
-            metadata = getSchemaMetadata(topic, ofValue);
+            metadata = getSchemaMetadata(topic, ofValue, version);
             if (metadata.getSchema().equals(schema)) {
                 return metadata;
             }
@@ -172,5 +196,27 @@ public class SchemaRetriever {
                 writer.writeEndObject();
             }
         }
+    }
+
+    /**
+     * Get the schema of a generic object. This supports null, primitive types, String, and
+     * {@link org.apache.avro.generic.GenericContainer}.
+     * @param object object of recognized type
+     * @throws IllegalArgumentException if passed object is not a recognized type
+     */
+    public static Schema getSchema(Object object) {
+        if (object == null) {
+            return NULL_SCHEMA;
+        }
+        Schema schema = PRIMITIVE_SCHEMAS.get(object.getClass());
+        if (schema != null) {
+            return schema;
+        }
+        if (object instanceof GenericContainer) {
+            return ((GenericContainer)object).getSchema();
+        }
+        throw new IllegalArgumentException("Passed object " + object + " of class "
+                + object.getClass() + " can not be schematized. "
+                + "Pass null, a primitive type or a GenericContainer.");
     }
 }

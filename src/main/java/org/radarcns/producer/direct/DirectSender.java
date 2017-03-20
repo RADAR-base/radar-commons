@@ -33,7 +33,6 @@ public class DirectSender<K, V> implements KafkaSender<K, V> {
     private final KafkaProducer<K, V> producer;
 
     public DirectSender(Properties properties) {
-
         producer = new KafkaProducer<>(properties);
     }
 

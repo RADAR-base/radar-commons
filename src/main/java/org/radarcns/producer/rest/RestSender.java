@@ -41,6 +41,7 @@ import org.radarcns.data.AvroEncoder;
 import org.radarcns.data.Record;
 import org.radarcns.producer.KafkaSender;
 import org.radarcns.producer.KafkaTopicSender;
+import org.radarcns.producer.SchemaRetriever;
 import org.radarcns.topic.AvroTopic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -167,7 +168,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
             requestBody.reset();
             try {
                 ParsedSchemaMetadata metadata = getSchemaRetriever()
-                        .getOrSetSchemaMetadata(sendTopic, false, topic.getKeySchema());
+                        .getOrSetSchemaMetadata(sendTopic, false, topic.getKeySchema(), -1);
                 requestBody.keySchemaId = metadata.getId();
             } catch (IOException ex) {
                 sendToUrl = getSchemalessKeyUrl();
@@ -178,7 +179,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
 
             try {
                 ParsedSchemaMetadata metadata = getSchemaRetriever().getOrSetSchemaMetadata(
-                        sendTopic, true, valueSchema);
+                        sendTopic, true, valueSchema, -1);
                 requestBody.valueSchemaId = metadata.getId();
             } catch (IOException ex) {
                 sendToUrl = getSchemalessValueUrl();

@@ -44,12 +44,12 @@ public class SpecificRecordDecoder implements AvroDecoder {
         return new AvroRecordReader<>(schema, new SpecificDatumReader<T>(schema));
     }
 
-    class AvroRecordReader<T> implements AvroReader<T> {
+    private class AvroRecordReader<T> implements AvroReader<T> {
         private final DatumReader<T> reader;
         private final Schema schema;
         private Decoder decoder;
 
-        AvroRecordReader(Schema schema, DatumReader<T> reader) throws IOException {
+        private AvroRecordReader(Schema schema, DatumReader<T> reader) throws IOException {
             this.reader = reader;
             this.schema = schema;
             this.decoder = null;
