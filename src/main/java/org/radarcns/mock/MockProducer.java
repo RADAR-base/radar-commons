@@ -1,11 +1,10 @@
 package org.radarcns.mock;
 
-import static io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.BOOTSTRAP_SERVERS_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG;
+import static org.radarcns.util.serde.AbstractKafkaAvroSerde.SCHEMA_REGISTRY_CONFIG;
 
-import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -16,10 +15,11 @@ import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.data.SpecificRecordEncoder;
 import org.radarcns.key.MeasurementKey;
 import org.radarcns.producer.KafkaSender;
+import org.radarcns.producer.SchemaRetriever;
 import org.radarcns.producer.direct.DirectSender;
 import org.radarcns.producer.rest.BatchedKafkaSender;
 import org.radarcns.producer.rest.RestSender;
-import org.radarcns.producer.rest.SchemaRetriever;
+import org.radarcns.util.serde.KafkaAvroSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,19 +57,18 @@ public class MockProducer {
 
         if (mockConfig.isDirectProducer()) {
             for (int i = 0; i < numDevices; i++) {
+                SchemaRetriever retriever = new SchemaRetriever(mockConfig.getSchemaRegistry().get(i), 10);
                 Properties properties = new Properties();
                 properties.put(KEY_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
                 properties.put(VALUE_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
-
-                properties
-                        .put(SCHEMA_REGISTRY_URL_CONFIG, mockConfig.getSchemaRegistryPaths());
+                properties.put(SCHEMA_REGISTRY_CONFIG, retriever);
                 properties.put(BOOTSTRAP_SERVERS_CONFIG, mockConfig.getBrokerPaths());
 
                 senders.add(new DirectSender(properties));
             }
         } else {
             for (int i=0; i < numDevices ; i++) {
-                SchemaRetriever retriever = new SchemaRetriever(mockConfig.getSchemaRegistry().get(i), 10_1000);
+                SchemaRetriever retriever = new SchemaRetriever(mockConfig.getSchemaRegistry().get(i), 10);
 
                 RestSender<MeasurementKey, SpecificRecord> firstSender = new RestSender<>(
                         mockConfig.getBroker().get(0), retriever,
