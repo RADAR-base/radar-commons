@@ -34,11 +34,7 @@ public class MockProducer {
     private List<MockFile> files;
     private List<KafkaSender<MeasurementKey, SpecificRecord>> senders;
 
-    private MockProducer() {
-    }
-
     public MockProducer(BasicMockConfig mockConfig) throws IOException {
-
         int numDevices = 0;
         if (mockConfig.getData() != null) {
             numDevices = mockConfig.getData().size();
@@ -54,31 +50,7 @@ public class MockProducer {
         devices = new ArrayList<>(numDevices);
         senders = new ArrayList<>(numDevices);
         files = new ArrayList<>(numDevices);
-
-        if (mockConfig.isDirectProducer()) {
-            for (int i = 0; i < numDevices; i++) {
-                SchemaRetriever retriever = new SchemaRetriever(mockConfig.getSchemaRegistry().get(i), 10);
-                Properties properties = new Properties();
-                properties.put(KEY_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
-                properties.put(VALUE_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
-                properties.put(SCHEMA_REGISTRY_CONFIG, retriever);
-                properties.put(BOOTSTRAP_SERVERS_CONFIG, mockConfig.getBrokerPaths());
-
-                senders.add(new DirectSender(properties));
-            }
-        } else {
-            for (int i=0; i < numDevices ; i++) {
-                SchemaRetriever retriever = new SchemaRetriever(mockConfig.getSchemaRegistry().get(i), 10);
-
-                RestSender<MeasurementKey, SpecificRecord> firstSender = new RestSender<>(
-                        mockConfig.getBroker().get(0), retriever,
-                        new SpecificRecordEncoder(false), new SpecificRecordEncoder(false),
-                        10_000);
-
-                    senders.add(new BatchedKafkaSender<>(firstSender, 10_000, 1000));
-
-            }
-        }
+        senders = createSenders(mockConfig, numDevices);
 
         if (mockConfig.getData() == null) {
             for (int i = 0; i < numDevices; i++) {
@@ -96,6 +68,33 @@ public class MockProducer {
                 throw new IOException("Cannot instantiate mock file", ex);
             }
         }
+    }
+
+    private List<KafkaSender<MeasurementKey, SpecificRecord>> createSenders(BasicMockConfig mockConfig, int numDevices) {
+        List<KafkaSender<MeasurementKey, SpecificRecord>> result = new ArrayList<>(numDevices);
+        SchemaRetriever retriever = new SchemaRetriever(mockConfig.getSchemaRegistry(), 10);
+
+        if (mockConfig.isDirectProducer()) {
+            for (int i = 0; i < numDevices; i++) {
+                Properties properties = new Properties();
+                properties.put(KEY_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
+                properties.put(VALUE_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
+                properties.put(SCHEMA_REGISTRY_CONFIG, retriever);
+                properties.put(BOOTSTRAP_SERVERS_CONFIG, mockConfig.getBrokerPaths());
+
+                result.add(new DirectSender<MeasurementKey, SpecificRecord>(properties));
+            }
+        } else {
+            for (int i=0; i < numDevices ; i++) {
+                RestSender<MeasurementKey, SpecificRecord> firstSender = new RestSender<>(
+                        mockConfig.getRestProxy(), retriever,
+                        new SpecificRecordEncoder(false), new SpecificRecordEncoder(false),
+                        10);
+
+                result.add(new BatchedKafkaSender<>(firstSender, 10_000, 1000));
+            }
+        }
+        return result;
     }
 
     public void start() throws IOException, InterruptedException {

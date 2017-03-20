@@ -1,15 +1,30 @@
+/*
+ * Copyright 2017 Kings College London and The Hyve
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.radarcns.mock;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
+import java.util.Objects;
 import org.radarcns.config.ServerConfig;
-import org.radarcns.mock.MockDataConfig;
 
 /**
  * A Minimal Mock Config to talk to Kafka and stream data using a mock set-up.
  */
 public class BasicMockConfig {
-
     @JsonProperty("producer_mode")
     private String producerMode;
 
@@ -18,23 +33,13 @@ public class BasicMockConfig {
 
     private List<ServerConfig> broker;
 
-    private List<ServerConfig> zookeeper;
-
     @JsonProperty("rest_proxy")
     private ServerConfig restProxy;
 
     @JsonProperty("schema_registry")
-    private List<ServerConfig> schemaRegistry;
+    private ServerConfig schemaRegistry;
 
     private List<MockDataConfig> data;
-
-    public List<ServerConfig> getZookeeper() {
-        return zookeeper;
-    }
-
-    public void setZookeeper(List<ServerConfig> zookeeper) {
-        this.zookeeper = zookeeper;
-    }
 
     public List<ServerConfig> getBroker() {
         return broker;
@@ -44,11 +49,11 @@ public class BasicMockConfig {
         this.broker = broker;
     }
 
-    public List<ServerConfig> getSchemaRegistry() {
+    public ServerConfig getSchemaRegistry() {
         return schemaRegistry;
     }
 
-    public void setSchemaRegistry(List<ServerConfig> schemaRegistry) {
+    public void setSchemaRegistry(ServerConfig schemaRegistry) {
         this.schemaRegistry = schemaRegistry;
     }
 
@@ -85,36 +90,11 @@ public class BasicMockConfig {
     }
 
     public boolean isDirectProducer() {
-        return this.producerMode.trim().equals("direct") ? true : false;
-    }
-
-    public String getZookeeperPaths() {
-        if (zookeeper == null) {
-            throw new IllegalStateException("'zookeeper' is not configured");
-        }
-        return ServerConfig.getPaths(zookeeper);
+        return this.producerMode.trim().equalsIgnoreCase("direct");
     }
 
     public String getBrokerPaths() {
-        if (broker == null) {
-            throw new IllegalStateException("Kafka 'broker' is not configured");
-        }
+        Objects.requireNonNull(broker, "Kafka 'broker' is not configured");
         return ServerConfig.getPaths(broker);
-    }
-
-    public String getSchemaRegistryPaths() {
-        if (schemaRegistry == null) {
-            throw new IllegalStateException("'schema_registry' is not configured");
-        }
-
-        return ServerConfig.getPaths(schemaRegistry);
-    }
-
-    public String getRestProxyPath() {
-        if (restProxy == null) {
-            throw new IllegalStateException("'rest_proxy' is not configured");
-        }
-
-        return restProxy.getPath();
     }
 }

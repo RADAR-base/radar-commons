@@ -1,11 +1,3 @@
-
-
-#============================== Zookeeper ==============================#
-#List of Zookeeper instances
-zookeeper:
-    - host: localhost
-      port: 2181
-
 #================================ Kafka ================================#
 #List of Kafka brokers
 broker:
@@ -15,15 +7,15 @@ broker:
 #=========================== Schema Registry ===========================#
 #List of Schema Registry instances
 schema_registry:
-    - host: localhost
-      port: 8081
-      protocol: http
+    host: localhost
+    port: 8081
+    protocol: http
 #=========================== Rest Proxy  ===============================#
 # if the producer_mode is rest, you must provide rest_proxy values
-#rest_proxy:
-#    host: localhost
-#    port: 8082
-#    protocol: http
+rest_proxy:
+    host: localhost
+    port: 8082
+    protocol: http
 
 #Possible value are direct or rest
 producer_mode: direct
