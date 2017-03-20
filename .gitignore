@@ -21,3 +21,4 @@ log/
 
 # Generated compile files
 /out/
+backend.log
