@@ -18,6 +18,18 @@ schema_registry:
     - host: localhost
       port: 8081
       protocol: http
+#=========================== Rest Proxy  ===============================#
+# if the producer_mode is rest, you must provide rest_proxy values
+#rest_proxy:
+#    host: localhost
+#    port: 8082
+#    protocol: http
+
+#Possible value are direct or rest
+producer_mode: direct
+
+number_of_devices: 1
+
 data:
   - file: integration_test.csv
     topic: integration_test
