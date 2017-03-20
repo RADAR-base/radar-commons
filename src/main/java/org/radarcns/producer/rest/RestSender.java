@@ -67,7 +67,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
      * @param kafkaConfig non-null server to send data to
      * @param schemaRetriever non-null Retriever of avro schemas
      * @param keyEncoder non-null Avro encoder for keys
-     * @param valueEncoder non-nullAvro encoder for values
+     * @param valueEncoder non-null Avro encoder for values
      * @param connectionTimeout socket connection timeout in seconds
      */
     public RestSender(ServerConfig kafkaConfig, SchemaRetriever schemaRetriever,
@@ -81,7 +81,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         this.keyEncoder = keyEncoder;
         this.valueEncoder = valueEncoder;
         this.jsonFactory = new JsonFactory();
-        this.httpClient = new RestClient(kafkaConfig, connectionTimeout);
+        setRestClient(new RestClient(kafkaConfig, connectionTimeout));
     }
 
     public synchronized void setConnectionTimeout(long connectionTimeout) {
@@ -95,14 +95,18 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         if (kafkaConfig.equals(httpClient.getConfig())) {
             return;
         }
+        setRestClient(new RestClient(kafkaConfig, httpClient.getTimeout()));
+    }
+
+    private void setRestClient(RestClient newRestClient) {
         try {
-            schemalessKeyUrl = HttpUrl.get(httpClient.getRelativeUrl("topics/schemaless-key"));
-            schemalessValueUrl = HttpUrl.get(httpClient.getRelativeUrl("topics/schemaless-value"));
-            isConnectedRequest = httpClient.requestBuilder("").head().build();
+            schemalessKeyUrl = HttpUrl.get(newRestClient.getRelativeUrl("topics/schemaless-key"));
+            schemalessValueUrl = HttpUrl.get(newRestClient.getRelativeUrl("topics/schemaless-value"));
+            isConnectedRequest = newRestClient.requestBuilder("").head().build();
         } catch (MalformedURLException ex) {
             throw new IllegalArgumentException("Schemaless topics do not have a valid URL", ex);
         }
-        httpClient = new RestClient(kafkaConfig, httpClient.getTimeout());
+        httpClient = newRestClient;
     }
 
     public final synchronized void setSchemaRetriever(SchemaRetriever retriever) {

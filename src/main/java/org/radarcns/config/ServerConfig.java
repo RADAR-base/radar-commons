@@ -38,6 +38,21 @@ public class ServerConfig {
     @JsonProperty("proxy_port")
     private int proxyPort = -1;
 
+    public ServerConfig() {}
+
+    // Parses the config from URL
+    public ServerConfig(URL url) {
+        host = url.getHost();
+        port = url.getPort();
+        protocol = url.getProtocol();
+        path = url.getFile();
+    }
+
+    // Parses the config from URL
+    public ServerConfig(String urlString) throws MalformedURLException {
+        this(new URL(urlString));
+    }
+
     /** Get the path of the server as a string. This does not include proxyHost information. */
     public String getUrlString() {
         return addUrlString(new StringBuilder(40)).toString();
@@ -160,10 +175,10 @@ public class ServerConfig {
             this.path = "/";
         } else {
             this.path = path.trim();
-            if (this.path.charAt(0) != '/') {
+            if (!this.path.isEmpty() && this.path.charAt(0) != '/') {
                 this.path = '/' + this.path;
             }
-            if (this.path.charAt(this.path.length() - 1) != '/') {
+            if (!this.path.isEmpty() && this.path.charAt(this.path.length() - 1) != '/') {
                 this.path += '/';
             }
         }
