@@ -29,7 +29,9 @@ public class AvroTopic<K, V> extends KafkaTopic {
     private final Class<V> valueClass;
     private final Class<K> keyClass;
 
-    public AvroTopic(String name, Schema keySchema, Schema valueSchema, Class<K> keyClass, Class<V> valueClass) {
+    public AvroTopic(String name,
+            Schema keySchema, Schema valueSchema,
+            Class<K> keyClass, Class<V> valueClass) {
         super(name);
         this.keySchema = keySchema;
         this.valueSchema = valueSchema;
@@ -80,8 +82,12 @@ public class AvroTopic<K, V> extends KafkaTopic {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!super.equals(o)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!super.equals(o)) {
+            return false;
+        }
 
         AvroTopic topic = (AvroTopic) o;
 
@@ -90,6 +96,9 @@ public class AvroTopic<K, V> extends KafkaTopic {
 
     @Override
     public int hashCode() {
-        return super.hashCode();
+        int result = super.hashCode();
+        result = 31 * result + keyClass.hashCode();
+        result = 31 * result + valueClass.hashCode();
+        return result;
     }
 }

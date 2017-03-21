@@ -32,7 +32,9 @@ public class AbstractKafkaAvroSerde {
     protected final EncoderFactory encoderFactory = EncoderFactory.get();
     protected SchemaRetriever schemaRetriever;
 
-    public AbstractKafkaAvroSerde() {}
+    public AbstractKafkaAvroSerde() {
+        // Bean constructor
+    }
 
     public AbstractKafkaAvroSerde(SchemaRetriever retriever) {
         this.schemaRetriever = retriever;
@@ -56,5 +58,6 @@ public class AbstractKafkaAvroSerde {
     }
 
     public void close() {
+        // noop
     }
 }

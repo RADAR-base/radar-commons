@@ -93,10 +93,11 @@ public class RestClient {
      * @throws MalformedURLException if the path is malformed
      */
     public URL getRelativeUrl(String path) throws MalformedURLException {
-        while (!path.isEmpty() && path.charAt(0) == '/') {
-            path = path.substring(1);
+        String strippedPath = path;
+        while (!strippedPath.isEmpty() && strippedPath.charAt(0) == '/') {
+            strippedPath = strippedPath.substring(1);
         }
-        return new URL(getConfig().getUrl(), path);
+        return new URL(getConfig().getUrl(), strippedPath);
     }
 
     @Override
@@ -122,9 +123,6 @@ public class RestClient {
 
     @Override
     public String toString() {
-        return "RestClient{" +
-                "timeout=" + timeout +
-                ", config=" + config +
-                '}';
+        return "RestClient{timeout=" + timeout + ", config=" + config + '}';
     }
 }

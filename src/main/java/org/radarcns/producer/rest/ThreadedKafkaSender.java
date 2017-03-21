@@ -42,9 +42,9 @@ public class ThreadedKafkaSender<K, V> implements KafkaSender<K, V> {
     private static final Logger logger = LoggerFactory.getLogger(ThreadedKafkaSender.class);
     private static final int RETRIES = 3;
     private static final long HEARTBEAT_TIMEOUT_MILLIS = 60_000L;
-    private static final long HEARTBEAT_TIMEOUT_MARGIN = 10_000L;
+    private static final long HEARTBEAT_TIMEOUT_MARGIN = HEARTBEAT_TIMEOUT_MILLIS + 10_000L;
 
-    private final KafkaSender<K, V> sender;
+    private final KafkaSender<K, V> wrappedSender;
     private final ScheduledExecutorService executor;
     private final RollingTimeAverage opsSent;
     private final RollingTimeAverage opsRequests;
@@ -57,7 +57,7 @@ public class ThreadedKafkaSender<K, V> implements KafkaSender<K, V> {
      * @param sender Actual KafkaSender
      */
     public ThreadedKafkaSender(KafkaSender<K, V> sender) {
-        this.sender = sender;
+        this.wrappedSender = sender;
         this.wasDisconnected = true;
         this.lastConnection = 0L;
         this.executor = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
@@ -91,14 +91,15 @@ public class ThreadedKafkaSender<K, V> implements KafkaSender<K, V> {
         }, 0L, HEARTBEAT_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
     }
 
-    private class ThreadedTopicSender<L extends K, W extends V> implements KafkaTopicSender<L, W>, Runnable {
+    private class ThreadedTopicSender<L extends K, W extends V>
+            implements KafkaTopicSender<L, W>, Runnable {
         private final KafkaTopicSender<L, W> topicSender;
         private final List<List<Record<L, W>>> topicQueue;
         private final List<List<Record<L, W>>> threadLocalQueue;
         private Future<?> topicFuture;
 
         private ThreadedTopicSender(AvroTopic<L, W> topic) throws IOException {
-            topicSender = sender.sender(topic);
+            topicSender = wrappedSender.sender(topic);
             topicQueue = new ArrayList<>();
             threadLocalQueue = new ArrayList<>();
             topicFuture = null;
@@ -213,7 +214,7 @@ public class ThreadedKafkaSender<K, V> implements KafkaSender<K, V> {
     private boolean sendHeartbeat() {
         boolean success = false;
         for (int i = 0; !success && i < RETRIES; i++) {
-            success = sender.isConnected();
+            success = wrappedSender.isConnected();
         }
         return success;
     }
@@ -233,7 +234,7 @@ public class ThreadedKafkaSender<K, V> implements KafkaSender<K, V> {
         if (this.wasDisconnected) {
             return false;
         }
-        if (System.currentTimeMillis() - lastConnection > HEARTBEAT_TIMEOUT_MILLIS + HEARTBEAT_TIMEOUT_MARGIN) {
+        if (System.currentTimeMillis() - lastConnection > HEARTBEAT_TIMEOUT_MARGIN) {
             this.wasDisconnected = true;
             disconnect();
             return false;
@@ -246,7 +247,7 @@ public class ThreadedKafkaSender<K, V> implements KafkaSender<K, V> {
     public boolean resetConnection() {
         if (isConnected()) {
             return true;
-        } else if (sender.isConnected()) {
+        } else if (wrappedSender.isConnected()) {
             synchronized (this) {
                 lastConnection = System.currentTimeMillis();
                 this.wasDisconnected = false;
@@ -257,7 +258,8 @@ public class ThreadedKafkaSender<K, V> implements KafkaSender<K, V> {
     }
 
     @Override
-    public <L extends K, W extends V> KafkaTopicSender<L, W> sender(AvroTopic<L, W> topic) throws IOException {
+    public <L extends K, W extends V> KafkaTopicSender<L, W> sender(AvroTopic<L, W> topic)
+            throws IOException {
         return new ThreadedTopicSender<>(topic);
     }
 

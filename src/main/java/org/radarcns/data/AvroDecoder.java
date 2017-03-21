@@ -20,14 +20,23 @@ import org.apache.avro.Schema;
 
 import java.io.IOException;
 
-/** Decode Avro values with a given encoder */
+/** Decode Avro values with a given encoder. */
 public interface AvroDecoder {
     /** Create a new reader. This method is thread-safe, but the class it returns is not. */
     <T> AvroReader<T> reader(Schema schema, Class<T> clazz) throws IOException;
 
     interface AvroReader<T> {
-        /** Encode an object to String. This method is not thread-safe. */
+        /**
+         * Decode an object from bytes. This method is not thread-safe. Equivalent to calling
+         * decode(object, 0).
+         */
         T decode(byte[] object) throws IOException;
+
+        /**
+         * Decode an object from bytes. This method is not thread-safe.
+         * @param object bytes to decode from
+         * @param start start offset to decode from.
+         */
         T decode(byte[] object, int start) throws IOException;
     }
 }

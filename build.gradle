@@ -5,6 +5,7 @@ plugins {
     id 'com.commercehub.gradle.plugin.avro-base' version '0.9.0'
     id 'jacoco'
     id 'pmd'
+    id 'checkstyle'
     id "com.jfrog.bintray" version "1.7.3"
     id 'maven-publish'
 }
@@ -119,6 +120,35 @@ clean {
 }
 
 //---------------------------------------------------------------------------//
+// Style checking                                                            //
+//---------------------------------------------------------------------------//
+
+checkstyle {
+    // codacy version
+    toolVersion '6.16'
+    ignoreFailures false
+
+    // ignore tests
+    sourceSets = [sourceSets.main]
+    // ignore Avro sources
+    checkstyleMain.source = "src/main/java"
+}
+
+pmd {
+    // codacy version
+    toolVersion = '5.5.2'
+    ignoreFailures = false
+
+    // ignore tests
+    sourceSets = [sourceSets.main]
+
+    consoleOutput = true
+
+    ruleSets = []
+    ruleSetFiles = files("config/pmd/ruleset.xml")
+}
+
+//---------------------------------------------------------------------------//
 // Testing                                                                   //
 //---------------------------------------------------------------------------//
 
@@ -158,15 +188,10 @@ tasks.matching {it instanceof Test}.all {
     }
 }
 
+
 //---------------------------------------------------------------------------//
-// Build system metadata                                                     //
+// Code coverage and codacy                                                  //
 //---------------------------------------------------------------------------//
-idea {
-    module {
-        downloadSources = true
-        generatedSourceDirs += avroSourcesDir
-    }
-}
 
 jacocoTestReport {
     reports {
@@ -177,7 +202,9 @@ jacocoTestReport {
 }
 
 task downloadDependencies(type: Exec) {
+    configurations.testRuntime.files
     configurations.codacy.files
+    configurations.jacocoAnt.files
     commandLine 'echo', 'Downloaded all dependencies'
 }
 
@@ -185,6 +212,16 @@ task sendCoverageToCodacy(type: JavaExec, dependsOn: jacocoTestReport) {
     main = 'com.codacy.CodacyCoverageReporter'
     classpath = configurations.codacy
     args = ['-l', 'Java', '-r', "${buildDir}/reports/jacoco/test/jacocoTestReport.xml"]
+}
+
+//---------------------------------------------------------------------------//
+// Build system metadata                                                     //
+//---------------------------------------------------------------------------//
+idea {
+    module {
+        downloadSources = true
+        generatedSourceDirs += avroSourcesDir
+    }
 }
 
 def pomConfig = {
@@ -240,8 +277,8 @@ publishing {
 }
 
 bintray {
-    user = System.getenv('bintrayUser')? System.getenv('bintrayUser') : project.property('bintrayUser')
-    key = System.getenv('bintrayApiKey') ? System.getenv('bintrayApiKey') : project.property('bintrayApiKey')
+    user = System.getenv('BINTRAY_USER')? System.getenv('BINTRAY_USER') : project.property('bintrayUser')
+    key = System.getenv('BINTRAY_API_KEY') ? System.getenv('BINTRAY_API_KEY') : project.property('bintrayApiKey')
     override = false
     publications = ['RadarCommonsPublication']
     pkg {

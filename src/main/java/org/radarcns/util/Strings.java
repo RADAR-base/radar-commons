@@ -20,7 +20,12 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.regex.Pattern;
 
-public class Strings {
+public final class Strings {
+
+    private Strings() {
+        // utility class
+    }
+
     public static Pattern[] containsPatterns(Collection<String> contains) {
         Pattern[] patterns = new Pattern[contains.size()];
         Iterator<String> containsIterator = contains.iterator();
@@ -47,6 +52,6 @@ public class Strings {
     }
 
     public static boolean isNullOrEmpty(String value) {
-        return (value ==null || value.isEmpty());
+        return value == null || value.isEmpty();
     }
 }

@@ -38,7 +38,9 @@ public class ServerConfig {
     @JsonProperty("proxy_port")
     private int proxyPort = -1;
 
-    public ServerConfig() {}
+    public ServerConfig() {
+        // POJO initializer
+    }
 
     // Parses the config from URL
     public ServerConfig(URL url) {
@@ -97,15 +99,15 @@ public class ServerConfig {
     /**
      * Get the HTTP proxyHost associated to given server
      * @return http proxyHost if specified, or null if none is specified.
-     * @throws IllegalStateException if proxyHost is set but proxyPort is not or if the server protocol
-     *                               is not HTTP(s)
+     * @throws IllegalStateException if proxyHost is set but proxyPort is not or if the server
+     *                               protocol is not HTTP(s)
      */
     public Proxy getHttpProxy() {
         if (proxyHost == null) {
             return null;
         } else if (proxyPort == -1) {
-            throw new IllegalStateException("proxy_port is not specified for server " + getUrlString()
-                    + " with proxyHost");
+            throw new IllegalStateException("proxy_port is not specified for server "
+                    + getUrlString() + " with proxyHost");
         }
         if (protocol != null
                 && !protocol.equalsIgnoreCase("http")

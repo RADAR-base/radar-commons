@@ -24,7 +24,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -47,9 +46,11 @@ import org.slf4j.LoggerFactory;
 /** Retriever of an Avro Schema */
 public class SchemaRetriever {
     private static final Logger logger = LoggerFactory.getLogger(SchemaRetriever.class);
-    private static final MediaType type = MediaType.parse("application/vnd.schemaregistry.v1+json; charset=utf-8");
+    private static final MediaType CONTENT_TYPE = MediaType.parse(
+            "application/vnd.schemaregistry.v1+json; charset=utf-8");
     private static final Schema NULL_SCHEMA = Schema.create(Type.NULL);
     private static final Map<Class<?>, Schema> PRIMITIVE_SCHEMAS = new HashMap<>();
+
     static {
         PRIMITIVE_SCHEMAS.put(Long.class, Schema.create(Type.LONG));
         PRIMITIVE_SCHEMAS.put(Integer.class, Schema.create(Type.INT));
@@ -85,9 +86,15 @@ public class SchemaRetriever {
     }
 
     /** Retrieve schema metadata */
-    protected ParsedSchemaMetadata retrieveSchemaMetadata(String subject, int version) throws IOException {
-        String versionString = version > 0 ? String.valueOf(version) : "latest";
-        Request request = httpClient.requestBuilder("/subjects/" + subject + "/versions/" + versionString)
+    protected ParsedSchemaMetadata retrieveSchemaMetadata(String subject, int version)
+            throws IOException {
+        String path = "/subjects/" + subject + "/versions/";
+        if (version > 0) {
+            path += version;
+        } else {
+            path += "latest";
+        }
+        Request request = httpClient.requestBuilder(path)
                 .addHeader("Accept", "application/json")
                 .get()
                 .build();
@@ -98,16 +105,15 @@ public class SchemaRetriever {
                         + ": " + response.message() + ") -> " + response.body().string());
             }
             JsonNode node = reader.readTree(response.body().byteStream());
-            if (version < 1) {
-                version = node.get("version").asInt();
-            }
+            int newVersion = version < 1 ? node.get("version").asInt() : version;
             int schemaId = node.get("id").asInt();
             Schema schema = parseSchema(node.get("schema").asText());
-            return new ParsedSchemaMetadata(schemaId, version, schema);
+            return new ParsedSchemaMetadata(schemaId, newVersion, schema);
         }
     }
 
-    public ParsedSchemaMetadata getSchemaMetadata(String topic, boolean ofValue, int version) throws IOException {
+    public ParsedSchemaMetadata getSchemaMetadata(String topic, boolean ofValue, int version)
+            throws IOException {
         String subject = subject(topic, ofValue);
         ParsedSchemaMetadata value = cache.get(subject);
         if (value == null) {
@@ -131,7 +137,8 @@ public class SchemaRetriever {
      *
      * This implementation only adds it to the cache.
      */
-    public void addSchemaMetadata(String topic, boolean ofValue, ParsedSchemaMetadata metadata) throws IOException {
+    public void addSchemaMetadata(String topic, boolean ofValue, ParsedSchemaMetadata metadata)
+            throws IOException {
         String subject = subject(topic, ofValue);
         if (metadata.getId() == null) {
 
@@ -158,7 +165,8 @@ public class SchemaRetriever {
      *
      * @param version version to get or 0 if the latest version can be used.
      */
-    public ParsedSchemaMetadata getOrSetSchemaMetadata(String topic, boolean ofValue, Schema schema, int version) throws IOException {
+    public ParsedSchemaMetadata getOrSetSchemaMetadata(String topic, boolean ofValue, Schema schema,
+            int version) throws IOException {
         ParsedSchemaMetadata metadata;
         try {
             metadata = getSchemaMetadata(topic, ofValue, version);
@@ -183,7 +191,7 @@ public class SchemaRetriever {
 
         @Override
         public MediaType contentType() {
-            return type;
+            return CONTENT_TYPE;
         }
 
         @Override
@@ -201,8 +209,8 @@ public class SchemaRetriever {
     /**
      * Get the schema of a generic object. This supports null, primitive types, String, and
      * {@link org.apache.avro.generic.GenericContainer}.
-     * @param object object of recognized type
-     * @throws IllegalArgumentException if passed object is not a recognized type
+     * @param object object of recognized CONTENT_TYPE
+     * @throws IllegalArgumentException if passed object is not a recognized CONTENT_TYPE
      */
     public static Schema getSchema(Object object) {
         if (object == null) {
@@ -217,6 +225,6 @@ public class SchemaRetriever {
         }
         throw new IllegalArgumentException("Passed object " + object + " of class "
                 + object.getClass() + " can not be schematized. "
-                + "Pass null, a primitive type or a GenericContainer.");
+                + "Pass null, a primitive CONTENT_TYPE or a GenericContainer.");
     }
 }

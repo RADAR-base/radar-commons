@@ -49,8 +49,8 @@ import org.slf4j.LoggerFactory;
 /**
  * RestSender sends records to the Kafka REST Proxy. It does so using an Avro JSON encoding. A new
  * sender must be constructed with {@link #sender(AvroTopic)} per AvroTopic. This implementation is
- * blocking and unbuffered, so flush and close do not do anything. To get a non-blocking sender,
- * wrap this in a {@link ThreadedKafkaSender}, for a buffered sender, wrap it in a
+ * blocking and unbuffered, so flush, clear and close do not do anything. To get a non-blocking
+ * sender, wrap this in a {@link ThreadedKafkaSender}, for a buffered sender, wrap it in a
  * {@link BatchedKafkaSender}.
  *
  * @param <K> base key class
@@ -108,15 +108,15 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         setRestClient(new RestClient(kafkaConfig, httpClient.getTimeout()));
     }
 
-    private void setRestClient(RestClient newRestClient) {
+    private void setRestClient(RestClient newClient) {
         try {
-            schemalessKeyUrl = HttpUrl.get(newRestClient.getRelativeUrl("topics/schemaless-key"));
-            schemalessValueUrl = HttpUrl.get(newRestClient.getRelativeUrl("topics/schemaless-value"));
-            isConnectedRequest = newRestClient.requestBuilder("").head().build();
+            schemalessKeyUrl = HttpUrl.get(newClient.getRelativeUrl("topics/schemaless-key"));
+            schemalessValueUrl = HttpUrl.get(newClient.getRelativeUrl("topics/schemaless-value"));
+            isConnectedRequest = newClient.requestBuilder("").head().build();
         } catch (MalformedURLException ex) {
             throw new IllegalArgumentException("Schemaless topics do not have a valid URL", ex);
         }
-        httpClient = newRestClient;
+        httpClient = newClient;
     }
 
     public final synchronized void setSchemaRetriever(SchemaRetriever retriever) {

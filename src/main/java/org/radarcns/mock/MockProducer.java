@@ -24,15 +24,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A Mock Producer class that can be used to stream data using MockFile and MockDevice for testing purposes.
+ * A Mock Producer class that can be used to stream data. It can use MockFile and MockDevice for
+ * testing purposes, with direct or indirect streaming.
  */
 public class MockProducer {
 
     private static final Logger logger = LoggerFactory.getLogger(MockProducer.class);
 
-    private List<MockDevice<MeasurementKey>> devices;
-    private List<MockFile> files;
-    private List<KafkaSender<MeasurementKey, SpecificRecord>> senders;
+    private final List<MockDevice<MeasurementKey>> devices;
+    private final List<MockFile> files;
+    private final List<KafkaSender<MeasurementKey, SpecificRecord>> senders;
 
     public MockProducer(BasicMockConfig mockConfig) throws IOException {
         int numDevices = 0;
@@ -48,7 +49,6 @@ public class MockProducer {
         String sourceId = "SourceID_";
 
         devices = new ArrayList<>(numDevices);
-        senders = new ArrayList<>(numDevices);
         files = new ArrayList<>(numDevices);
         senders = createSenders(mockConfig, numDevices);
 
@@ -70,7 +70,8 @@ public class MockProducer {
         }
     }
 
-    private List<KafkaSender<MeasurementKey, SpecificRecord>> createSenders(BasicMockConfig mockConfig, int numDevices) {
+    private List<KafkaSender<MeasurementKey, SpecificRecord>> createSenders(
+            BasicMockConfig mockConfig, int numDevices) {
         List<KafkaSender<MeasurementKey, SpecificRecord>> result = new ArrayList<>(numDevices);
         SchemaRetriever retriever = new SchemaRetriever(mockConfig.getSchemaRegistry(), 10);
 
@@ -85,7 +86,7 @@ public class MockProducer {
                 result.add(new DirectSender<MeasurementKey, SpecificRecord>(properties));
             }
         } else {
-            for (int i=0; i < numDevices ; i++) {
+            for (int i = 0; i < numDevices; i++) {
                 RestSender<MeasurementKey, SpecificRecord> firstSender = new RestSender<>(
                         mockConfig.getRestProxy(), retriever,
                         new SpecificRecordEncoder(false), new SpecificRecordEncoder(false),

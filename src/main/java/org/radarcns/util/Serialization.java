@@ -16,7 +16,12 @@
 
 package org.radarcns.util;
 
-public class Serialization {
+public final class Serialization {
+
+    private Serialization() {
+        // utility class
+    }
+
     public static long bytesToLong(byte[] b, int startIndex) {
         long result = 0;
         for (int i = 0; i < 8; i++) {
