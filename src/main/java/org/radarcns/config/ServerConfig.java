@@ -45,7 +45,7 @@ public class ServerConfig {
         host = url.getHost();
         port = url.getPort();
         protocol = url.getProtocol();
-        path = url.getFile();
+        setPath(url.getFile());
     }
 
     // Parses the config from URL
@@ -170,9 +170,11 @@ public class ServerConfig {
         return path;
     }
 
-    public void setPath(String path) {
+    public final void setPath(String path) {
         if (path == null) {
             this.path = "/";
+        } else if (this.path.contains("?")) {
+            throw new IllegalArgumentException("Cannot set server path with query string");
         } else {
             this.path = path.trim();
             if (!this.path.isEmpty() && this.path.charAt(0) != '/') {

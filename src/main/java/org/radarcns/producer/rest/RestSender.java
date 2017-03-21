@@ -46,6 +46,16 @@ import org.radarcns.topic.AvroTopic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * RestSender sends records to the Kafka REST Proxy. It does so using an Avro JSON encoding. A new
+ * sender must be constructed with {@link #sender(AvroTopic)} per AvroTopic. This implementation is
+ * blocking and unbuffered, so flush and close do not do anything. To get a non-blocking sender,
+ * wrap this in a {@link ThreadedKafkaSender}, for a buffered sender, wrap it in a
+ * {@link BatchedKafkaSender}.
+ *
+ * @param <K> base key class
+ * @param <V> base value class
+ */
 public class RestSender<K, V> implements KafkaSender<K, V> {
     private static final Logger logger = LoggerFactory.getLogger(RestSender.class);
     private final AvroEncoder keyEncoder;
@@ -113,6 +123,10 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         this.schemaRetriever = retriever;
     }
 
+    private synchronized RestClient getRestClient() {
+        return httpClient;
+    }
+
     private synchronized SchemaRetriever getSchemaRetriever() {
         return this.schemaRetriever;
     }
@@ -137,7 +151,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
 
         private RestTopicSender(AvroTopic<L, W> topic) throws IOException {
             this.topic = topic;
-            URL rawUrl = httpClient.getRelativeUrl("topics/" + topic.getName());
+            URL rawUrl = getRestClient().getRelativeUrl("topics/" + topic.getName());
             url = HttpUrl.get(rawUrl);
             if (url == null) {
                 throw new MalformedURLException("Cannot parse " + rawUrl);
@@ -199,7 +213,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                     .post(requestBody)
                     .build();
 
-            try (Response response = httpClient.request(request)) {
+            try (Response response = getRestClient().request(request)) {
                 // Evaluate the result
                 if (response.isSuccessful()) {
                     if (logger.isDebugEnabled()) {
@@ -334,7 +348,8 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                 return false;
             }
         } catch (IOException ex) {
-            logger.debug("Failed to make heartbeat request to {}", httpClient, ex);
+            // no stack trace is needed
+            logger.warn("Failed to make heartbeat request to {}: {}", httpClient, ex.toString());
             return false;
         }
     }

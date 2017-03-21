@@ -38,11 +38,7 @@ public class RestClientTest {
     @Before
     public void setUp() {
         server = new MockWebServer();
-        config = new ServerConfig();
-        config.setProtocol("http");
-        config.setHost(server.getHostName());
-        config.setPort(server.getPort());
-        config.setPath("base");
+        config = new ServerConfig(server.url("base").url());
         client = new RestClient(config, 1);
     }
 
