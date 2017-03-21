@@ -19,10 +19,8 @@ deploy:
   provider: releases
   api_key:
     secure: ${GH_TOKEN}
-  file:
-    - build/libs/radar-commons-${TRAVIS_TAG}.jar
-    - build/libs/radar-commons-${TRAVIS_TAG}-javadoc.jar
-    - build/libs/radar-commons-${TRAVIS_TAG}-sources.jar
+  file_glob: true
+  file: build/libs/*.jar
   skip_cleanup: true
   on:
     tags: true
