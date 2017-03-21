@@ -14,7 +14,9 @@ plugins {
 // Configuration                                                             //
 //---------------------------------------------------------------------------//
 
-version = '0.1-alpha.5-SNAPSHOT'
+version = '0.1'
+group = 'org.radarcns'
+ext.vcsUrl = 'https://github.com/RADAR-CNS/RADAR-Commons.git'
 
 targetCompatibility = '1.7'
 sourceCompatibility = '1.7'
@@ -229,7 +231,7 @@ def pomConfig = {
         license {
             name "The Apache Software License, Version 2.0"
             url "http://www.apache.org/licenses/LICENSE-2.0.txt"
-            distribution "pre-release"
+            distribution rootProject.name
         }
     }
     developers {
@@ -262,14 +264,14 @@ publishing {
             from components.java
             artifact sourcesJar
             artifact javadocJar
-            groupId 'org.radarcns'
-            artifactId 'radar-commons'
+            groupId project.group
+            artifactId rootProject.name
             version project.version
             pom.withXml {
                 def root = asNode()
                 root.appendNode('description', 'Common utilities library containing basic schemas, streaming features, testing bridges and utils.')
-                root.appendNode('name', 'radar-commons')
-                root.appendNode('url', 'https://github.com/RADAR-CNS/RADAR-Commons.git')
+                root.appendNode('name', rootProject.name)
+                root.appendNode('url', vcsUrl)
                 root.children().last() + pomConfig
             }
         }
@@ -282,11 +284,11 @@ bintray {
     override = false
     publications = ['RadarCommonsPublication']
     pkg {
-        repo = 'org.radarcns'
-        name = 'radar-commons'
+        repo = project.group
+        name = rootProject.name
         userOrg = 'radar-cns'
         licenses = ['Apache-2.0']
-        vcsUrl = 'https://github.com/RADAR-CNS/RADAR-Commons.git'
+        vcsUrl = vcsUrl
         version {
             name = project.version
             desc = 'RADAR-Commons unitilies: Initial snapshot'
