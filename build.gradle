@@ -109,7 +109,7 @@ dependencies {
 //---------------------------------------------------------------------------//
 task generateAvro(type: com.commercehub.gradle.plugin.avro.GenerateAvroJavaTask) {
     source("schema/common")
-    outputDir = avroSourcesDir
+    outputDir avroSourcesDir
 }
 
 compileAvroSourcesJava.dependsOn generateAvro

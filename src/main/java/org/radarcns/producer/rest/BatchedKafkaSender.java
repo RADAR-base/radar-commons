@@ -69,13 +69,10 @@ public class BatchedKafkaSender<K, V> implements KafkaSender<K, V> {
 
     private class BatchedKafkaTopicSender<L extends K, W extends V> implements
             KafkaTopicSender<L, W> {
+        private final List<Record<L, W>> cache;
+        private final KafkaTopicSender<L, W> topicSender;
 
-        private final AvroTopic<L, W> topic;
-        List<Record<L, W>> cache;
-        KafkaTopicSender<L, W> topicSender;
-
-        public BatchedKafkaTopicSender(AvroTopic<L, W> topic) throws IOException {
-            this.topic = topic;
+        private BatchedKafkaTopicSender(AvroTopic<L, W> topic) throws IOException {
             cache = new ArrayList<>();
             topicSender = wrappedSender.sender(topic);
         }
@@ -120,7 +117,7 @@ public class BatchedKafkaSender<K, V> implements KafkaSender<K, V> {
         }
 
         @Override
-        public synchronized void clear() {
+        public void clear() {
             cache.clear();
             topicSender.clear();
         }
@@ -135,7 +132,7 @@ public class BatchedKafkaSender<K, V> implements KafkaSender<K, V> {
         }
 
         @Override
-        public synchronized void close() throws IOException {
+        public void close() throws IOException {
             try {
                 flush();
             } finally {
