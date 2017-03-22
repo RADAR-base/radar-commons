@@ -4,8 +4,7 @@ jdk:
 sudo: false
 before_cache:
   - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
-  - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
-  - rm -fr $HOME/.gradle/caches/*/scripts/
+  - rm -fr $HOME/.gradle/caches/3.*.*
 cache:
   directories:
     - $HOME/.gradle/caches/
@@ -20,10 +19,8 @@ deploy:
   provider: releases
   api_key:
     secure: ${GH_TOKEN}
-  file:
-    - build/libs/radar-commons-${TRAVIS_TAG}.jar
-    - build/libs/radar-commons-${TRAVIS_TAG}-javadoc.jar
-    - build/libs/radar-commons-${TRAVIS_TAG}-sources.jar
+  file_glob: true
+  file: build/libs/*.jar
   skip_cleanup: true
   on:
     tags: true

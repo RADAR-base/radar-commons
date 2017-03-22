@@ -1,10 +1,11 @@
 plugins {
     // Apply the java plugin to add support for Java
-    id 'java'
+    id 'java-library'
     id 'idea'
     id 'com.commercehub.gradle.plugin.avro-base' version '0.9.0'
     id 'jacoco'
     id 'pmd'
+    id 'checkstyle'
     id "com.jfrog.bintray" version "1.7.3"
     id 'maven-publish'
 }
@@ -13,7 +14,9 @@ plugins {
 // Configuration                                                             //
 //---------------------------------------------------------------------------//
 
-version = 'v0.1-alpha.3'
+version = '0.1'
+group = 'org.radarcns'
+ext.vcsUrl = 'https://github.com/RADAR-CNS/RADAR-Commons.git'
 
 targetCompatibility = '1.7'
 sourceCompatibility = '1.7'
@@ -24,12 +27,13 @@ ext.avroVersion = '1.8.1'
 ext.confluentVersion = '3.1.2'
 ext.log4jVersion = '2.7'
 ext.jacksonVersion='2.8.5'
-ext.okhttpVersion = '3.5.0'
+ext.okhttpVersion = '3.6.0'
 ext.okioVersion = '1.11.0'
 ext.junitVersion = '4.12'
 ext.mockitoVersion = '2.2.29'
 ext.hamcrestVersion = '1.3'
 ext.codacyVersion = '1.0.10'
+ext.avroSourcesDir = file("src/avroSources/java")
 
 //---------------------------------------------------------------------------//
 // Sources and classpath configurations                                      //
@@ -38,7 +42,7 @@ ext.codacyVersion = '1.0.10'
 configurations {
     codacy
     avroSources
-    compile.extendsFrom avroSources
+    api.extendsFrom avroSources
 }
 
 sourceSets {
@@ -51,6 +55,11 @@ sourceSets {
     }
     avroSources {
         compileClasspath = configurations.avroSources
+    }
+    main {
+        java {
+            srcDir avroSourcesDir
+        }
     }
 }
 
@@ -72,24 +81,28 @@ repositories {
 dependencies {
     avroSources group: 'org.apache.avro', name: 'avro', version: avroVersion
 
-    // The production code uses the SLF4J logging API at compile time
-    compile group: 'org.slf4j', name:'slf4j-api', version: slf4jVersion
-
     // to implement producers and consumers
-    compile group: 'org.apache.kafka', name: 'kafka-clients', version: kafkaVersion
-    compile (group: 'io.confluent', name: 'kafka-avro-serializer', version: confluentVersion) {
-        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
-        exclude group: 'log4j'
-        exclude group: 'jline'
+    api group: 'org.apache.kafka', name: 'kafka-clients', version: kafkaVersion
+    api group: 'com.squareup.okhttp3', name: 'okhttp', version: okhttpVersion
+
+    // For POJO classes and ConfigLoader
+    implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
+    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: jacksonVersion
+
+    // The REST data is serialized with okio
+    implementation group: 'com.squareup.okio', name: 'okio', version: okioVersion
+
+    // The production code uses the SLF4J logging API at compile time
+    implementation group: 'org.slf4j', name:'slf4j-api', version: slf4jVersion
+
+    // Direct producer uses KafkaAvroSerializer if initialized
+    testImplementation (group: 'io.confluent', name: 'kafka-avro-serializer', version: confluentVersion) {
         exclude group: 'com.101tec'
     }
-    compile group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
-    compile group: 'com.squareup.okhttp3', name: 'okhttp', version: okhttpVersion
-    compile group: 'com.squareup.okio', name: 'okio', version: okioVersion
-
-    testCompile group: 'junit', name: 'junit', version: junitVersion
-    testCompile group: 'org.mockito', name: 'mockito-core', version: mockitoVersion
-    testCompile group: 'org.hamcrest', name: 'hamcrest-all', version: hamcrestVersion
+    testImplementation group: 'junit', name: 'junit', version: junitVersion
+    testImplementation group: 'org.mockito', name: 'mockito-core', version: mockitoVersion
+    testImplementation group: 'org.hamcrest', name: 'hamcrest-all', version: hamcrestVersion
+    testImplementation group: 'com.squareup.okhttp3', name: 'mockwebserver', version: okhttpVersion
     codacy group: 'com.github.codacy', name: 'codacy-coverage-reporter', version: codacyVersion
 }
 
@@ -98,14 +111,43 @@ dependencies {
 //---------------------------------------------------------------------------//
 task generateAvro(type: com.commercehub.gradle.plugin.avro.GenerateAvroJavaTask) {
     source("schema/common")
-    outputDir = file("src/avroSources/java")
+    outputDir avroSourcesDir
 }
 
 compileAvroSourcesJava.dependsOn generateAvro
 compileJava.dependsOn generateAvro
 
 clean {
-    delete 'src/avroSources/java'
+    delete avroSourcesDir
+}
+
+//---------------------------------------------------------------------------//
+// Style checking                                                            //
+//---------------------------------------------------------------------------//
+
+checkstyle {
+    // codacy version
+    toolVersion '6.16'
+    ignoreFailures false
+
+    // ignore tests
+    sourceSets = [sourceSets.main]
+    // ignore Avro sources
+    checkstyleMain.source = "src/main/java"
+}
+
+pmd {
+    // codacy version
+    toolVersion = '5.5.2'
+    ignoreFailures = false
+
+    // ignore tests
+    sourceSets = [sourceSets.main]
+
+    consoleOutput = true
+
+    ruleSets = []
+    ruleSetFiles = files("config/pmd/ruleset.xml")
 }
 
 //---------------------------------------------------------------------------//
@@ -148,14 +190,10 @@ tasks.matching {it instanceof Test}.all {
     }
 }
 
+
 //---------------------------------------------------------------------------//
-// Build system metadata                                                     //
+// Code coverage and codacy                                                  //
 //---------------------------------------------------------------------------//
-idea {
-    module {
-        downloadSources = true
-    }
-}
 
 jacocoTestReport {
     reports {
@@ -166,7 +204,9 @@ jacocoTestReport {
 }
 
 task downloadDependencies(type: Exec) {
+    configurations.testRuntime.files
     configurations.codacy.files
+    configurations.jacocoAnt.files
     commandLine 'echo', 'Downloaded all dependencies'
 }
 
@@ -176,12 +216,22 @@ task sendCoverageToCodacy(type: JavaExec, dependsOn: jacocoTestReport) {
     args = ['-l', 'Java', '-r', "${buildDir}/reports/jacoco/test/jacocoTestReport.xml"]
 }
 
+//---------------------------------------------------------------------------//
+// Build system metadata                                                     //
+//---------------------------------------------------------------------------//
+idea {
+    module {
+        downloadSources = true
+        generatedSourceDirs += avroSourcesDir
+    }
+}
+
 def pomConfig = {
     licenses {
         license {
             name "The Apache Software License, Version 2.0"
             url "http://www.apache.org/licenses/LICENSE-2.0.txt"
-            distribution "pre-release"
+            distribution rootProject.name
         }
     }
     developers {
@@ -208,28 +258,25 @@ artifacts {
     archives sourcesJar, javadocJar
 }
 
-
 publishing {
     publications {
         RadarCommonsPublication(MavenPublication) {
             from components.java
             artifact sourcesJar
             artifact javadocJar
-            groupId 'org.radarcns'
-            artifactId 'radar-commons'
-            version System.getenv('TRAVIS_TAG')
+            groupId project.group
+            artifactId rootProject.name
+            version project.version
             pom.withXml {
                 def root = asNode()
                 root.appendNode('description', 'Common utilities library containing basic schemas, streaming features, testing bridges and utils.')
-                root.appendNode('name', 'radar-commons')
-                root.appendNode('url', 'https://github.com/RADAR-CNS/RADAR-Commons.git')
+                root.appendNode('name', rootProject.name)
+                root.appendNode('url', vcsUrl)
                 root.children().last() + pomConfig
             }
         }
     }
 }
-
-
 
 bintray {
     user = System.getenv('bintrayUser')? System.getenv('bintrayUser') : project.property('bintrayUser')
@@ -237,21 +284,21 @@ bintray {
     override = false
     publications = ['RadarCommonsPublication']
     pkg {
-        repo = 'org.radarcns'
-        name = 'radar-commons'
+        repo = project.group
+        name = rootProject.name
         userOrg = 'radar-cns'
         licenses = ['Apache-2.0']
-        vcsUrl = 'https://github.com/RADAR-CNS/RADAR-Commons.git'
+        vcsUrl = vcsUrl
         version {
-            name = System.getenv('TRAVIS_TAG')
+            name = project.version
             desc = 'RADAR-Commons unitilies: Initial snapshot'
             vcsTag = System.getenv('TRAVIS_TAG')
+            released = new Date()
         }
     }
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '3.2.1'
+    gradleVersion = '3.4.1'
     distributionUrl distributionUrl.replace("bin", "all")
 }
-

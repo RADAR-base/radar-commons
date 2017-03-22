@@ -18,3 +18,7 @@ log/
 
 # Generated Avro files
 /src/avroSources/java/
+
+# Generated compile files
+/out/
+backend.log
