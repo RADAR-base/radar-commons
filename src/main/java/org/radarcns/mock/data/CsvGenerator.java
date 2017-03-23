@@ -22,26 +22,30 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import org.radarcns.mock.MockDataConfig;
 
 /**
  * It generates a CVS file that can be used to stream data and
  * to compute the expected results.
  */
-public class CsvGenerator {
-
-    private CsvGenerator() {}
+public final class CsvGenerator {
 
     //private static final Logger logger = LoggerFactory.getLogger(CSVGenerator.class);
+
 
     public static final String AXIS_X = "x";
     public static final String AXIS_Y = "y";
     public static final String AXIS_Z = "z";
-    public static final String BATTERY = "batteryLevel";
+    public static final String BATTERY_LEVEL = "batteryLevel";
     public static final String BLOOD_VOLUME_PULSE = "bloodVolumePulse";
     public static final String ELECTRO_DERMAL_ACTIVITY = "electroDermalActivity";
     public static final String INTER_BEAT_INTERVAL = "interBeatInterval";
     public static final String TEMPERATURE = "temperature";
+
+    private CsvGenerator() {
+
+    }
 
     /**
      * It generates a CSV file simulating an accelerometer sensor.
@@ -67,13 +71,12 @@ public class CsvGenerator {
      **/
     public static void accelerometer(String user, String source, Long timeZero, long duration,
             int frequency, File file) throws IOException {
-        CsvSensorDataModel accelerator = new CsvSensorDataModel(new ArrayList<String>() {
-            {
-                add(AXIS_X);
-                add(AXIS_Y);
-                add(AXIS_Z);
-            }
-        }, user, source, timeZero) {
+        List<String> headers = new ArrayList<String>();
+        headers.add(AXIS_X);
+        headers.add(AXIS_Y);
+        headers.add(AXIS_Z);
+
+        CsvSensorDataModel accelerator = new CsvSensorDataModel(headers, user, source, timeZero) {
             @Override
             public String nextValue() {
                 return getRandomFloat(0.0f, 2.0f) + "," + getRandomFloat(0.0f, 2.0f)
@@ -107,7 +110,7 @@ public class CsvGenerator {
      **/
     public static void battery(String user, String source, Long timeZero, long duration,
             int frequency, File file) throws IOException {
-        CsvSensorDataModel battery = new CsvSensorDataModel(singletonList(BATTERY),
+        CsvSensorDataModel battery = new CsvSensorDataModel(singletonList(BATTERY_LEVEL),
                 user, source, timeZero) {
 
             private double batteryDecayFactor = 0.1f * getRandomDouble();
@@ -304,7 +307,7 @@ public class CsvGenerator {
             case "ACCELEROMETER":
                 accelerometer(duration, config.getFrequency().intValue(), file);
                 break;
-            case "BATTERY":
+            case "BATTERY_LEVEL":
                 battery(duration, config.getFrequency().intValue(), file);
                 break;
             case "BLOOD_VOLUME_PULSE":

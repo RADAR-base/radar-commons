@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Tool to simulate time.
  */
-public class Metronome {
+public final class Metronome {
 
     private Metronome() {}
 

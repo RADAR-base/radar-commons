@@ -126,7 +126,7 @@ public abstract class CsvSensorDataModel {
      * @return a string value representing a timestamp
      */
     public static String getTimestamp(long time) {
-        return new Double(time / 1000d).toString();
+        return  Double.toString(time / 1000d);
     }
 
     /**
