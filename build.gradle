@@ -14,7 +14,7 @@ plugins {
 // Configuration                                                             //
 //---------------------------------------------------------------------------//
 
-version = '0.1'
+version = '0.1-SNAPSHOT'
 group = 'org.radarcns'
 ext.vcsUrl = 'https://github.com/RADAR-CNS/RADAR-Commons.git'
 

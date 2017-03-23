@@ -28,6 +28,10 @@ public class MockDataConfig {
     @JsonProperty("file")
     private String dataFile;
 
+    private Double frequency;
+
+    private String sensor;
+
     public String getTopic() {
         return topic;
     }
@@ -67,5 +71,21 @@ public class MockDataConfig {
 
     public void setDataFile(String dataFile) {
         this.dataFile = dataFile;
+    }
+
+    public Double getFrequency() {
+        return frequency;
+    }
+
+    public void setFrequency(Double frequency) {
+        this.frequency = frequency;
+    }
+
+    public String getSensor() {
+        return sensor;
+    }
+
+    public void setSensor(String sensor) {
+        this.sensor = sensor;
     }
 }
