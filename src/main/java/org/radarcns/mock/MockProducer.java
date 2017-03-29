@@ -60,7 +60,7 @@ public class MockProducer {
         } else {
             try {
                 for (int i = 0; i < numDevices; i++) {
-                    File mockFile = new File(mockConfig.getData().get(i).getDataFile());
+                    File mockFile = new File(mockConfig.getData().get(i).getAbsoluteDataFile());
                     files.add(new MockFile(senders.get(i), mockFile, mockConfig.getData().get(i)));
                 }
             } catch (NoSuchMethodException | IllegalAccessException
