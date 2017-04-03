@@ -25,7 +25,7 @@ number_of_devices: 1
 #Sample
 data:
   - file: integration_test.csv
-    topic: andriod_empatica_e4_temperature
+    topic: integration_test
     key_schema: org.radarcns.key.MeasurementKey
     value_schema: org.radarcns.aggregator.DoubleArrayAggregator
     frequency: 32
