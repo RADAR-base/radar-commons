@@ -291,7 +291,7 @@ bintray {
         vcsUrl = vcsUrl
         version {
             name = project.version
-            desc = 'RADAR-Commons unitilies: Initial snapshot'
+            desc = 'RADAR-Commons utilies: Initial snapshot'
             vcsTag = System.getenv('TRAVIS_TAG')
             released = new Date()
         }
