@@ -18,7 +18,7 @@ dependencies {
 }
 ```
 
-# Installation
+# Contributing
 
 First, add the current repository as a submodule to your Git repository
 
