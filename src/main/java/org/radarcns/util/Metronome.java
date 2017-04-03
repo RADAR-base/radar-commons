@@ -1,8 +1,5 @@
 package org.radarcns.util;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /*
@@ -31,7 +28,7 @@ public final class Metronome {
     private final long timeStep;
     private final long samples;
     private final long baseTime;
-    private long i;
+    private long iteration;
 
     /**
      * Construct a Metronome.
@@ -40,7 +37,12 @@ public final class Metronome {
      * @param frequency number of samples that the sensor generates in 1 second, strictly positive
      */
     public Metronome(long samples, int frequency) {
-        checkInput(samples, frequency);
+        if (samples < 0) {
+            throw new IllegalArgumentException("The amount of samples must be positve");
+        }
+        if (frequency <= 0) {
+            throw new IllegalArgumentException("Frequency must be larger than zero");
+        }
 
         long shift = samples / frequency;
 
@@ -48,25 +50,12 @@ public final class Metronome {
         this.baseTime = TimeUnit.MILLISECONDS.toNanos(
                 System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(shift));
         this.timeStep = 1_000_000_000L / frequency;
-        this.i = 0;
-    }
-
-    /**
-     * Checks whether the input parameters are valid input or not.
-     */
-    private static void checkInput(long samples, int frequency) {
-        if (samples < 0) {
-            throw new IllegalArgumentException("The amount of samples must be positve");
-        }
-
-        if (frequency <= 0) {
-            throw new IllegalArgumentException("Frequency must be larger than zero");
-        }
+        this.iteration = 0;
     }
 
     /** Whether the metronome will generate another sample. */
     public boolean hasNext() {
-        return i < samples || samples == 0;
+        return iteration < samples || samples == 0;
     }
 
     /** Generate the next sample. */
@@ -74,6 +63,6 @@ public final class Metronome {
         if (!hasNext()) {
             throw new IllegalStateException("Iterator finished");
         }
-        return TimeUnit.NANOSECONDS.toMillis(baseTime + i++ * timeStep);
+        return TimeUnit.NANOSECONDS.toMillis(baseTime + iteration++ * timeStep);
     }
 }
