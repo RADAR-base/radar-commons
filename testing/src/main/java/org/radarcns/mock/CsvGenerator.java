@@ -1,7 +1,5 @@
-package org.radarcns.mock.data;
-
 /*
- *  Copyright 2016 Kings College London and The Hyve
+ * Copyright 2017 Kings College London and The Hyve
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +14,15 @@ package org.radarcns.mock.data;
  * limitations under the License.
  */
 
+package org.radarcns.mock;
+
 import static java.util.Collections.singletonList;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Writer;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import org.radarcns.mock.MockDataConfig;
+import org.radarcns.util.CsvWriter;
 
 /**
  * It generates a CVS file that can be used to stream data and
@@ -42,9 +38,10 @@ public final class CsvGenerator {
     public static final String ELECTRO_DERMAL_ACTIVITY = "electroDermalActivity";
     public static final String INTER_BEAT_INTERVAL = "interBeatInterval";
     public static final String TEMPERATURE = "temperature";
+    private static final CsvWriter CSV_WRITER = new CsvWriter();
 
     private CsvGenerator() {
-
+        // static
     }
 
     /**
@@ -276,31 +273,9 @@ public final class CsvGenerator {
      * @param file that has to be written
      **/
     public static void writeFile(CsvSensorDataModel generator, long duration, int frequency,
-            File file)
-            throws IOException {
-
-        try (FileWriter fw = new FileWriter(file, false);
-                BufferedWriter writer = new BufferedWriter(fw)) {
-            writeRow(generator.getHeaders(), writer);
-
-            for (Iterator<List<String>> it = generator.iterateValues(duration, frequency);
-                    it.hasNext(); ) {
-                writeRow(it.next(), writer);
-            }
-        }
-    }
-
-    private static void writeRow(List<String> strings, Writer writer) throws IOException {
-        boolean first = true;
-        for (String v : strings) {
-            if (first) {
-                first = false;
-            } else {
-                writer.write(',');
-            }
-            writer.write(v);
-        }
-        writer.write('\n');
+            File file) throws IOException {
+        CSV_WRITER.write(file, generator.getHeaders(),
+                generator.iterateValues(duration, frequency));
     }
 
     /**

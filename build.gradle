@@ -14,9 +14,14 @@ plugins {
 // Configuration                                                             //
 //---------------------------------------------------------------------------//
 
-version = '0.1-SNAPSHOT'
-group = 'org.radarcns'
-ext.vcsUrl = 'https://github.com/RADAR-CNS/RADAR-Commons.git'
+allprojects {
+    ext.commonVersion = '0.2-SNAPSHOT'
+    ext.commonGroup = 'org.radarcns'
+    ext.vcsUrl = 'https://github.com/RADAR-CNS/RADAR-Commons.git'
+}
+
+version = commonVersion
+group = commonGroup
 
 targetCompatibility = '1.7'
 sourceCompatibility = '1.7'
@@ -122,14 +127,74 @@ clean {
 }
 
 //---------------------------------------------------------------------------//
+// Testing                                                                   //
+//---------------------------------------------------------------------------//
+
+allprojects {
+    apply plugin: 'checkstyle'
+    apply plugin: 'pmd'
+//---------------------------------------------------------------------------//
 // Style checking                                                            //
 //---------------------------------------------------------------------------//
 
-checkstyle {
-    // codacy version
-    toolVersion '6.16'
-    ignoreFailures false
+    checkstyle {
+        // codacy version
+        toolVersion '6.16'
+        ignoreFailures false
 
+        configFile = rootProject.file('config/checkstyle/checkstyle.xml')
+    }
+
+    pmd {
+        // codacy version
+        toolVersion = '5.5.2'
+        ignoreFailures = false
+
+        consoleOutput = true
+
+        ruleSets = []
+        ruleSetFiles = files(rootProject.file("config/pmd/ruleset.xml"))
+    }
+
+
+    tasks.matching { it instanceof Test }.all {
+        def stdout = new LinkedList<String>()
+        beforeTest { TestDescriptor td ->
+            stdout.clear()
+        }
+
+        onOutput { TestDescriptor td, TestOutputEvent toe ->
+            stdout.addAll(toe.getMessage().split('(?m)$'))
+            while (stdout.size() > 100) {
+                stdout.remove()
+            }
+        }
+
+        afterTest { TestDescriptor td, TestResult tr ->
+            if (tr.resultType == TestResult.ResultType.FAILURE) {
+                println()
+                print("${td.className}.${td.name} FAILED")
+                if (stdout.empty) {
+                    println(" without any output")
+                } else {
+                    println(" with last 100 lines of output:")
+                    println('=' * 100)
+                    stdout.each { print(it) }
+                    println('=' * 100)
+                }
+            }
+        }
+
+        testLogging {
+            showExceptions = true
+            showCauses = true
+            showStackTraces = true
+            exceptionFormat "full"
+        }
+    }
+}
+
+checkstyle {
     // ignore tests
     sourceSets = [sourceSets.main]
     // ignore Avro sources
@@ -137,59 +202,9 @@ checkstyle {
 }
 
 pmd {
-    // codacy version
-    toolVersion = '5.5.2'
-    ignoreFailures = false
-
     // ignore tests
     sourceSets = [sourceSets.main]
-
-    consoleOutput = true
-
-    ruleSets = []
-    ruleSetFiles = files("config/pmd/ruleset.xml")
 }
-
-//---------------------------------------------------------------------------//
-// Testing                                                                   //
-//---------------------------------------------------------------------------//
-
-tasks.matching {it instanceof Test}.all {
-    def stdout = new LinkedList<String>()
-    beforeTest { TestDescriptor td ->
-        stdout.clear()
-    }
-
-    onOutput { TestDescriptor td, TestOutputEvent toe ->
-        stdout.addAll(toe.getMessage().split('(?m)$'))
-        while (stdout.size() > 100) {
-            stdout.remove()
-        }
-    }
-
-    afterTest { TestDescriptor td, TestResult tr ->
-        if (tr.resultType == TestResult.ResultType.FAILURE) {
-            println()
-            print("${td.className}.${td.name} FAILED")
-            if (stdout.empty) {
-                println(" without any output")
-            } else {
-                println(" with last 100 lines of output:")
-                println('=' * 100)
-                stdout.each { print(it) }
-                println('=' * 100)
-            }
-        }
-    }
-
-    testLogging {
-        showExceptions = true
-        showCauses = true
-        showStackTraces = true
-        exceptionFormat "full"
-    }
-}
-
 
 //---------------------------------------------------------------------------//
 // Code coverage and codacy                                                  //
@@ -226,6 +241,32 @@ idea {
     }
 }
 
+ext.sharedManifest = manifest {
+    attributes("Implementation-Title": rootProject.name,
+            "Implementation-Version": version)
+}
+
+jar {
+    manifest.from sharedManifest
+}
+// custom tasks for creating source/javadoc jars
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.output
+    manifest.from sharedManifest
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+    manifest.from sharedManifest
+}
+
+// add javadoc/source jar tasks as artifacts
+artifacts {
+    archives sourcesJar, javadocJar
+}
+
 def pomConfig = {
     licenses {
         license {
@@ -242,21 +283,6 @@ def pomConfig = {
         }
     }
 }
-// custom tasks for creating source/javadoc jars
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
-    from sourceSets.main.output
-}
-
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
-    from javadoc.destinationDir
-}
-
-// add javadoc/source jar tasks as artifacts
-artifacts {
-    archives sourcesJar, javadocJar
-}
 
 publishing {
     publications {
@@ -269,7 +295,7 @@ publishing {
             version project.version
             pom.withXml {
                 def root = asNode()
-                root.appendNode('description', 'Common utilities library containing basic schemas, streaming features, testing bridges and utils.')
+                root.appendNode('description', 'RADAR Common utilities library containing basic schemas, streaming features and utils.')
                 root.appendNode('name', rootProject.name)
                 root.appendNode('url', vcsUrl)
                 root.children().last() + pomConfig
