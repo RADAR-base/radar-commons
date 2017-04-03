@@ -18,10 +18,13 @@ package org.radarcns.mock.data;
 
 import static java.util.Collections.singletonList;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import org.radarcns.mock.MockDataConfig;
 
@@ -30,9 +33,6 @@ import org.radarcns.mock.MockDataConfig;
  * to compute the expected results.
  */
 public final class CsvGenerator {
-
-    //private static final Logger logger = LoggerFactory.getLogger(CSVGenerator.class);
-
 
     public static final String AXIS_X = "x";
     public static final String AXIS_Y = "y";
@@ -156,7 +156,7 @@ public final class CsvGenerator {
                 source, timeZero) {
             @Override
             public String nextValue() {
-                return getRandomFloat(60.0f, 90.0f).toString();
+                return Float.toString(getRandomFloat(60.0f, 90.0f));
             }
         };
 
@@ -192,7 +192,7 @@ public final class CsvGenerator {
                 user, source, timeZero) {
             @Override
             public String nextValue() {
-                return getRandomFloat(0.01f, 0.05f).toString();
+                return Float.toString(getRandomFloat(0.01f, 0.05f));
             }
         };
 
@@ -228,7 +228,7 @@ public final class CsvGenerator {
                 user, source, timeZero) {
             @Override
             public String nextValue() {
-                return getRandomFloat(55.0f, 120.0f).toString();
+                return Float.toString(getRandomFloat(55.0f, 120.0f));
             }
         };
 
@@ -261,7 +261,7 @@ public final class CsvGenerator {
                 user, source, timeZero) {
             @Override
             public String nextValue() {
-                return getRandomFloat(36.5f, 37.0f).toString();
+                return Float.toString(getRandomFloat(36.5f, 37.0f));
             }
         };
 
@@ -279,16 +279,28 @@ public final class CsvGenerator {
             File file)
             throws IOException {
 
-        try (FileWriter writer = new FileWriter(file, false)) {
-            writer.write(generator.getHeaders());
+        try (FileWriter fw = new FileWriter(file, false);
+                BufferedWriter writer = new BufferedWriter(fw)) {
+            writeRow(generator.getHeaders(), writer);
 
-            for (String sample : generator.getValues(duration, frequency)) {
-                writer.write(sample);
+            for (Iterator<List<String>> it = generator.iterateValues(duration, frequency);
+                    it.hasNext(); ) {
+                writeRow(it.next(), writer);
             }
-
-            writer.flush();
-            writer.close();
         }
+    }
+
+    private static void writeRow(List<String> strings, Writer writer) throws IOException {
+        boolean first = true;
+        for (String v : strings) {
+            if (first) {
+                first = false;
+            } else {
+                writer.write(',');
+            }
+            writer.write(v);
+        }
+        writer.write('\n');
     }
 
     /**

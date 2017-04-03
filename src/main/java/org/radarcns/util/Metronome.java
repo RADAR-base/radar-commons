@@ -1,6 +1,7 @@
 package org.radarcns.util;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -21,60 +22,58 @@ import java.util.concurrent.TimeUnit;
  */
 
 /**
- * Tool to simulate time.
+ * Dynamically computes create for the given amount of samples with the given frequency.
+ * Timestamps start back in time, and the last timestamp will be equal to the time that this
+ * function was called. If samples is set to 0, this function will start at the current time
+ * and move forward, generating an infinite number of samples.
  */
 public final class Metronome {
-
-    private Metronome() {}
-
-    //private static final Logger LOGGER = LoggerFactory.getLogger(Metronome.class);
+    private final long timeStep;
+    private final long samples;
+    private final long baseTime;
+    private long i;
 
     /**
-     * Computes timestamps for the given amount of samples with the given frequency.
-     * @param samples number of timestamp that has to be generated
-     * @param frequency number of samples that the sensor generates in 1 second
-     * @param baseFrequency used in case the sensor is on board a device with other sensors having
-     *      different frequencies. This must be the maximum between all supported frequencies.
-     * @return a list of timestamps
+     * Construct a Metronome.
+     *
+     * @param samples number of timestamp that has to be generated, 0 to generate infinite samples
+     * @param frequency number of samples that the sensor generates in 1 second, strictly positive
      */
-    public static List<Long> timestamps(int samples, int frequency, int baseFrequency) {
-        checkInput(samples, frequency, baseFrequency);
-
-        List<Long> timestamps = new ArrayList<>();
+    public Metronome(long samples, int frequency) {
+        checkInput(samples, frequency);
 
         long shift = samples / frequency;
-        final long baseTime = TimeUnit.MILLISECONDS.toNanos(
+
+        this.samples = samples;
+        this.baseTime = TimeUnit.MILLISECONDS.toNanos(
                 System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(shift));
-        final long timeStep = 1_000_000_000L / baseFrequency;
-
-        int iteration = 0;
-
-        while (timestamps.size() < samples) {
-            if ((iteration % baseFrequency + 1) % (baseFrequency / frequency) == 0) {
-                timestamps.add(timestamps.size(), TimeUnit.NANOSECONDS.toMillis(
-                        baseTime + iteration * timeStep));
-            }
-
-            iteration++;
-        }
-
-        return timestamps;
+        this.timeStep = 1_000_000_000L / frequency;
+        this.i = 0;
     }
 
     /**
      * Checks whether the input parameters are valid input or not.
      */
-    private static void checkInput(int samples, int frequency, int baseFrequency) {
+    private static void checkInput(long samples, int frequency) {
         if (samples < 0) {
             throw new IllegalArgumentException("The amount of samples must be positve");
         }
 
-        if (frequency < 0) {
-            throw new IllegalArgumentException("Frequency must be bigger than zero");
+        if (frequency <= 0) {
+            throw new IllegalArgumentException("Frequency must be larger than zero");
         }
+    }
 
-        if (baseFrequency < frequency) {
-            throw new IllegalArgumentException("BaseFrequency cannot be smaller than frequency");
+    /** Whether the metronome will generate another sample. */
+    public boolean hasNext() {
+        return i < samples || samples == 0;
+    }
+
+    /** Generate the next sample. */
+    public long next() {
+        if (!hasNext()) {
+            throw new IllegalStateException("Iterator finished");
         }
+        return TimeUnit.NANOSECONDS.toMillis(baseTime + i++ * timeStep);
     }
 }

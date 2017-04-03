@@ -16,6 +16,9 @@ package org.radarcns.mock.data;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -53,7 +56,7 @@ public abstract class CsvSensorDataModel {
      * @param timeZero initial instant used to compute all needed instants
      */
     public CsvSensorDataModel(List<String> headers, String user, String source, Long timeZero) {
-        this.headers = new LinkedList<>();
+        this.headers = new ArrayList<>(4 + headers.size());
         this.headers.add("userId");
         this.headers.add("sourceId");
         this.headers.add("time");
@@ -84,13 +87,8 @@ public abstract class CsvSensorDataModel {
     /**
      * @return a comma separated {@code String} containing all header names.
      **/
-    public String getHeaders() {
-        String result = "";
-        for (String header : headers) {
-            result += header + ",";
-        }
-
-        return result.substring(0, result.length() - 1) + '\n';
+    public List<String> getHeaders() {
+        return headers;
     }
 
     /**
@@ -100,19 +98,33 @@ public abstract class CsvSensorDataModel {
      * @param frequency of the simulated sensor. Amount of messages generated in 1 second
      * @return list containing simulated values
      */
-    public List<String> getValues(Long duration, int frequency) {
-        List<String> list = new LinkedList<>();
+    public Iterator<List<String>> iterateValues(final long duration, final int frequency) {
+        return new Iterator<List<String>>() {
+            final Metronome timestamps = new Metronome(duration * frequency, frequency);
 
-        int samples = duration.intValue() * frequency;
-        List<Long> timestamps = Metronome.timestamps(samples, frequency, 64);
+            @Override
+            public boolean hasNext() {
+                return timestamps.hasNext();
+            }
 
-        for (Long time : timestamps) {
-            list.add(getUser() + "," + getSource() + ","
-                    + getTimestamp(getRandomRoundTripTime(time)) + "," + getTimestamp(time)
-                    + "," + nextValue() + "\n");
-        }
+            @Override
+            public List<String> next() {
+                if (!hasNext()) {
+                    throw new IllegalStateException("Iterator done");
+                }
+                long time = timestamps.next();
+                return Arrays.asList(getUser(),
+                        getSource(),
+                        getTimestamp(getRandomRoundTripTime(time)),
+                        getTimestamp(time),
+                        nextValue());
+            }
 
-        return list;
+            @Override
+            public void remove() {
+                throw new UnsupportedOperationException();
+            }
+        };
     }
 
     /**
@@ -132,7 +144,7 @@ public abstract class CsvSensorDataModel {
     /**
      * @return random {@code Double} using {@code ThreadLocalRandom}.
      **/
-    public static Double getRandomDouble() {
+    public static double getRandomDouble() {
         return ThreadLocalRandom.current().nextDouble();
     }
 
@@ -142,7 +154,7 @@ public abstract class CsvSensorDataModel {
      * @param max range upper bound
      * @return random {@code Double} using {@code ThreadLocalRandom}
      **/
-    public static Double getRandomDouble(double min, double max) {
+    public static double getRandomDouble(double min, double max) {
         return ThreadLocalRandom.current().nextDouble(min , max);
     }
 
@@ -152,9 +164,8 @@ public abstract class CsvSensorDataModel {
      * @param max range upper bound
      * @return random {@code Float} using {@code ThreadLocalRandom}
      **/
-    public static Float getRandomFloat(float min, float max) {
-        Double value = ThreadLocalRandom.current().nextDouble(min , max);
-        return value.floatValue();
+    public static float getRandomFloat(float min, float max) {
+        return (float)getRandomDouble(min, max);
     }
 
     /**
@@ -163,9 +174,8 @@ public abstract class CsvSensorDataModel {
      * @return random {@code Double} representig the Round Trip Time for the given timestamp
      *      using {@code ThreadLocalRandom}
      **/
-    public Long getRandomRoundTripTime(Long timeReceived) {
-        return timeReceived - (
-                ThreadLocalRandom.current().nextLong(1 , 10));
+    public long getRandomRoundTripTime(long timeReceived) {
+        return timeReceived - (ThreadLocalRandom.current().nextLong(1 , 10));
     }
 
 }
