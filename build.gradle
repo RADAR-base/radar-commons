@@ -15,29 +15,71 @@ plugins {
 //---------------------------------------------------------------------------//
 
 allprojects {
-    ext.commonVersion = '0.2-SNAPSHOT'
-    ext.commonGroup = 'org.radarcns'
-    ext.vcsUrl = 'https://github.com/RADAR-CNS/RADAR-Commons.git'
-}
+    apply plugin: 'java'
 
-version = commonVersion
-group = commonGroup
+    version = '0.2-SNAPSHOT'
+    group = 'org.radarcns'
+    ext.vcsUrl = 'https://github.com/RADAR-CNS/RADAR-Commons.git'
+
+    ext.slf4jVersion = '1.7.21'
+    ext.kafkaVersion = '0.10.1.1'
+    ext.avroVersion = '1.8.1'
+    ext.confluentVersion = '3.1.2'
+    ext.log4jVersion = '2.7'
+    ext.jacksonVersion='2.8.5'
+    ext.okhttpVersion = '3.6.0'
+    ext.okioVersion = '1.11.0'
+    ext.junitVersion = '4.12'
+    ext.mockitoVersion = '2.2.29'
+    ext.hamcrestVersion = '1.3'
+    ext.codacyVersion = '1.0.10'
+
+    repositories {
+        jcenter()
+        maven { url 'http://packages.confluent.io/maven/' }
+        maven { url 'http://dl.bintray.com/typesafe/maven-releases' }
+    }
+
+    ext.pomConfig = {
+        licenses {
+            license {
+                name "The Apache Software License, Version 2.0"
+                url "http://www.apache.org/licenses/LICENSE-2.0.txt"
+                distribution 'repo'
+            }
+        }
+        developers {
+            developer {
+                id 'nivemaham'
+                name 'Nivethika Mahasivam'
+                email 'nivethika@thehyve.nl'
+                organization 'The Hyve'
+            }
+            developer {
+                id 'blootsvoets'
+                name 'Joris Borgdorff'
+                email 'joris@thehyve.nl'
+                organization 'The Hyve'
+            }
+        }
+        issueManagement {
+            system 'GitHub'
+            url vcsUrl + '/issues'
+        }
+        organization {
+            name 'RADAR-CNS'
+            url 'http://radar-cns.org'
+        }
+        scm {
+            connection 'scm:git:' + vcsUrl
+            url vcsUrl
+        }
+    }
+}
 
 targetCompatibility = '1.7'
 sourceCompatibility = '1.7'
 
-ext.slf4jVersion = '1.7.21'
-ext.kafkaVersion = '0.10.1.1'
-ext.avroVersion = '1.8.1'
-ext.confluentVersion = '3.1.2'
-ext.log4jVersion = '2.7'
-ext.jacksonVersion='2.8.5'
-ext.okhttpVersion = '3.6.0'
-ext.okioVersion = '1.11.0'
-ext.junitVersion = '4.12'
-ext.mockitoVersion = '2.2.29'
-ext.hamcrestVersion = '1.3'
-ext.codacyVersion = '1.0.10'
 ext.avroSourcesDir = file("src/avroSources/java")
 
 //---------------------------------------------------------------------------//
@@ -74,12 +116,7 @@ compileJava {
 
 // In this section you declare where to find the dependencies of your project
 repositories {
-    // Use 'jcenter' for resolving your dependencies.
-    // You can declare any Maven/Ivy/file repository here.
-    jcenter()
-    maven { url 'http://packages.confluent.io/maven/' }
     maven { url 'https://jitpack.io' }
-    maven { url 'http://dl.bintray.com/typesafe/maven-releases' }
 }
 
 // In this section you declare the dependencies for your production and test code
@@ -267,22 +304,6 @@ artifacts {
     archives sourcesJar, javadocJar
 }
 
-def pomConfig = {
-    licenses {
-        license {
-            name "The Apache Software License, Version 2.0"
-            url "http://www.apache.org/licenses/LICENSE-2.0.txt"
-            distribution rootProject.name
-        }
-    }
-    developers {
-        developer {
-            id "radar-cns"
-            name "Nivethika"
-            email "nivethika@thehyve.nl"
-        }
-    }
-}
 
 publishing {
     publications {

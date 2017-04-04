@@ -1,22 +1,11 @@
-apply plugin: 'java'
 apply plugin: 'java-library'
 apply plugin: 'maven-publish'
 apply plugin: 'com.jfrog.bintray'
-apply plugin: 'pmd'
-apply plugin: 'checkstyle'
 
-version = commonVersion
-group = commonGroup
 ext.testingName = 'radar-commons-testing'
 
 targetCompatibility = 1.8
 sourceCompatibility = 1.8
-
-repositories {
-    jcenter()
-    maven { url 'http://packages.confluent.io/maven/' }
-    maven { url 'http://dl.bintray.com/typesafe/maven-releases' }
-}
 
 dependencies {
     api rootProject
@@ -37,23 +26,6 @@ checkstyle {
 pmd {
     // ignore tests
     sourceSets = [sourceSets.main]
-}
-
-def pomConfig = {
-    licenses {
-        license {
-            name "The Apache Software License, Version 2.0"
-            url "http://www.apache.org/licenses/LICENSE-2.0.txt"
-            distribution testingName
-        }
-    }
-    developers {
-        developer {
-            id "radar-cns"
-            name "Nivethika"
-            email "nivethika@thehyve.nl"
-        }
-    }
 }
 
 ext.sharedManifest = manifest {
@@ -88,11 +60,10 @@ publishing {
     publications {
         RadarCommonsTestingPublication(MavenPublication) {
             from components.java
-
-            groupId project.group
             artifactId testingName
             artifact javadocJar
             artifact sourcesJar
+            groupId project.group
             version project.version
             pom.withXml {
                 def root = asNode()
