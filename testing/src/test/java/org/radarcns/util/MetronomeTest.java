@@ -18,9 +18,8 @@ package org.radarcns.util;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,7 +30,7 @@ public class MetronomeTest {
     public ExpectedException exception = ExpectedException.none();
 
     private void check(Metronome it, long expectedMin) {
-        assertTrue(it.hasNext());
+        assertThat(it.hasNext(), is(true));
         long t = it.next();
         assertThat(t, greaterThanOrEqualTo(expectedMin));
         assertThat(t, lessThan(expectedMin + 50L));
@@ -46,7 +45,7 @@ public class MetronomeTest {
         check(it, base - 1000L);
         check(it, base - 500L);
         check(it, base);
-        assertFalse(it.hasNext());
+        assertThat(it.hasNext(), is(false));
         exception.expect(IllegalStateException.class);
         it.next();
     }

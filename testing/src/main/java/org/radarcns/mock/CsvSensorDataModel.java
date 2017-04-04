@@ -1,7 +1,5 @@
-package org.radarcns.mock.data;
-
 /*
- *  Copyright 2016 Kings College London and The Hyve
+ * Copyright 2017 Kings College London and The Hyve
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +13,8 @@ package org.radarcns.mock.data;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.radarcns.mock;
 
 import java.util.ArrayList;
 import java.util.Arrays;

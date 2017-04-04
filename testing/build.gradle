@@ -1,0 +1,97 @@
+apply plugin: 'java-library'
+apply plugin: 'maven-publish'
+apply plugin: 'com.jfrog.bintray'
+
+ext.testingName = 'radar-commons-testing'
+
+targetCompatibility = 1.8
+sourceCompatibility = 1.8
+
+dependencies {
+    api rootProject
+    api group: 'org.apache.avro', name: 'avro', version: avroVersion
+
+    implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
+
+    // Direct producer uses KafkaAvroSerializer if initialized
+    testImplementation group: 'junit', name: 'junit', version: junitVersion
+    testImplementation group: 'org.hamcrest', name: 'hamcrest-all', version: hamcrestVersion
+}
+
+checkstyle {
+    // ignore tests
+    sourceSets = [sourceSets.main]
+}
+
+pmd {
+    // ignore tests
+    sourceSets = [sourceSets.main]
+}
+
+ext.sharedManifest = manifest {
+    attributes("Implementation-Title": testingName,
+            "Implementation-Version": version)
+}
+
+jar {
+    baseName testingName
+    manifest.from sharedManifest
+}
+
+// custom tasks for creating source/javadoc jars
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.output
+    manifest.from sharedManifest
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+    manifest.from sharedManifest
+}
+
+// add javadoc/source jar tasks as artifacts
+artifacts {
+    archives sourcesJar, javadocJar
+}
+
+publishing {
+    publications {
+        RadarCommonsTestingPublication(MavenPublication) {
+            from components.java
+            artifactId testingName
+            artifact javadocJar
+            artifact sourcesJar
+            groupId project.group
+            version project.version
+            pom.withXml {
+                def root = asNode()
+                root.appendNode('description', 'RADAR Common testing library containing testing bridges and utils.')
+                root.appendNode('name', testingName)
+                root.appendNode('url', vcsUrl)
+                root.children().last() + pomConfig
+            }
+        }
+    }
+}
+
+bintray {
+    user = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
+    key = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
+    override = false
+    publications = ['RadarCommonsTestingPublication']
+    pkg {
+        repo = project.group
+        name = testingName
+        userOrg = 'radar-cns'
+        licenses = ['Apache-2.0']
+        vcsUrl = vcsUrl
+        version {
+            name = project.version
+            desc = 'RADAR-Commons testing utilities: Initial snapshot'
+            vcsTag = System.getenv('TRAVIS_TAG')
+            released = new Date()
+        }
+    }
+}

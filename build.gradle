@@ -14,25 +14,72 @@ plugins {
 // Configuration                                                             //
 //---------------------------------------------------------------------------//
 
-version = '0.1-SNAPSHOT'
-group = 'org.radarcns'
-ext.vcsUrl = 'https://github.com/RADAR-CNS/RADAR-Commons.git'
+allprojects {
+    apply plugin: 'java'
+
+    version = '0.2-SNAPSHOT'
+    group = 'org.radarcns'
+    ext.vcsUrl = 'https://github.com/RADAR-CNS/RADAR-Commons.git'
+
+    ext.slf4jVersion = '1.7.21'
+    ext.kafkaVersion = '0.10.1.1'
+    ext.avroVersion = '1.8.1'
+    ext.confluentVersion = '3.1.2'
+    ext.log4jVersion = '2.7'
+    ext.jacksonVersion='2.8.5'
+    ext.okhttpVersion = '3.6.0'
+    ext.okioVersion = '1.11.0'
+    ext.junitVersion = '4.12'
+    ext.mockitoVersion = '2.2.29'
+    ext.hamcrestVersion = '1.3'
+    ext.codacyVersion = '1.0.10'
+
+    repositories {
+        jcenter()
+        maven { url 'http://packages.confluent.io/maven/' }
+        maven { url 'http://dl.bintray.com/typesafe/maven-releases' }
+    }
+
+    ext.pomConfig = {
+        licenses {
+            license {
+                name "The Apache Software License, Version 2.0"
+                url "http://www.apache.org/licenses/LICENSE-2.0.txt"
+                distribution 'repo'
+            }
+        }
+        developers {
+            developer {
+                id 'nivemaham'
+                name 'Nivethika Mahasivam'
+                email 'nivethika@thehyve.nl'
+                organization 'The Hyve'
+            }
+            developer {
+                id 'blootsvoets'
+                name 'Joris Borgdorff'
+                email 'joris@thehyve.nl'
+                organization 'The Hyve'
+            }
+        }
+        issueManagement {
+            system 'GitHub'
+            url vcsUrl + '/issues'
+        }
+        organization {
+            name 'RADAR-CNS'
+            url 'http://radar-cns.org'
+        }
+        scm {
+            connection 'scm:git:' + vcsUrl
+            url vcsUrl
+        }
+    }
+}
 
 targetCompatibility = '1.7'
 sourceCompatibility = '1.7'
 
-ext.slf4jVersion = '1.7.21'
-ext.kafkaVersion = '0.10.1.1'
-ext.avroVersion = '1.8.1'
-ext.confluentVersion = '3.1.2'
-ext.log4jVersion = '2.7'
-ext.jacksonVersion='2.8.5'
-ext.okhttpVersion = '3.6.0'
-ext.okioVersion = '1.11.0'
-ext.junitVersion = '4.12'
-ext.mockitoVersion = '2.2.29'
-ext.hamcrestVersion = '1.3'
-ext.codacyVersion = '1.0.10'
 ext.avroSourcesDir = file("src/avroSources/java")
 
 //---------------------------------------------------------------------------//
@@ -69,12 +116,7 @@ compileJava {
 
 // In this section you declare where to find the dependencies of your project
 repositories {
-    // Use 'jcenter' for resolving your dependencies.
-    // You can declare any Maven/Ivy/file repository here.
-    jcenter()
-    maven { url 'http://packages.confluent.io/maven/' }
     maven { url 'https://jitpack.io' }
-    maven { url 'http://dl.bintray.com/typesafe/maven-releases' }
 }
 
 // In this section you declare the dependencies for your production and test code
@@ -122,14 +164,74 @@ clean {
 }
 
 //---------------------------------------------------------------------------//
+// Testing                                                                   //
+//---------------------------------------------------------------------------//
+
+allprojects {
+    apply plugin: 'checkstyle'
+    apply plugin: 'pmd'
+//---------------------------------------------------------------------------//
 // Style checking                                                            //
 //---------------------------------------------------------------------------//
 
-checkstyle {
-    // codacy version
-    toolVersion '6.16'
-    ignoreFailures false
+    checkstyle {
+        // codacy version
+        toolVersion '6.16'
+        ignoreFailures false
 
+        configFile = rootProject.file('config/checkstyle/checkstyle.xml')
+    }
+
+    pmd {
+        // codacy version
+        toolVersion = '5.5.2'
+        ignoreFailures = false
+
+        consoleOutput = true
+
+        ruleSets = []
+        ruleSetFiles = files(rootProject.file("config/pmd/ruleset.xml"))
+    }
+
+
+    tasks.matching { it instanceof Test }.all {
+        def stdout = new LinkedList<String>()
+        beforeTest { TestDescriptor td ->
+            stdout.clear()
+        }
+
+        onOutput { TestDescriptor td, TestOutputEvent toe ->
+            stdout.addAll(toe.getMessage().split('(?m)$'))
+            while (stdout.size() > 100) {
+                stdout.remove()
+            }
+        }
+
+        afterTest { TestDescriptor td, TestResult tr ->
+            if (tr.resultType == TestResult.ResultType.FAILURE) {
+                println()
+                print("${td.className}.${td.name} FAILED")
+                if (stdout.empty) {
+                    println(" without any output")
+                } else {
+                    println(" with last 100 lines of output:")
+                    println('=' * 100)
+                    stdout.each { print(it) }
+                    println('=' * 100)
+                }
+            }
+        }
+
+        testLogging {
+            showExceptions = true
+            showCauses = true
+            showStackTraces = true
+            exceptionFormat "full"
+        }
+    }
+}
+
+checkstyle {
     // ignore tests
     sourceSets = [sourceSets.main]
     // ignore Avro sources
@@ -137,59 +239,9 @@ checkstyle {
 }
 
 pmd {
-    // codacy version
-    toolVersion = '5.5.2'
-    ignoreFailures = false
-
     // ignore tests
     sourceSets = [sourceSets.main]
-
-    consoleOutput = true
-
-    ruleSets = []
-    ruleSetFiles = files("config/pmd/ruleset.xml")
 }
-
-//---------------------------------------------------------------------------//
-// Testing                                                                   //
-//---------------------------------------------------------------------------//
-
-tasks.matching {it instanceof Test}.all {
-    def stdout = new LinkedList<String>()
-    beforeTest { TestDescriptor td ->
-        stdout.clear()
-    }
-
-    onOutput { TestDescriptor td, TestOutputEvent toe ->
-        stdout.addAll(toe.getMessage().split('(?m)$'))
-        while (stdout.size() > 100) {
-            stdout.remove()
-        }
-    }
-
-    afterTest { TestDescriptor td, TestResult tr ->
-        if (tr.resultType == TestResult.ResultType.FAILURE) {
-            println()
-            print("${td.className}.${td.name} FAILED")
-            if (stdout.empty) {
-                println(" without any output")
-            } else {
-                println(" with last 100 lines of output:")
-                println('=' * 100)
-                stdout.each { print(it) }
-                println('=' * 100)
-            }
-        }
-    }
-
-    testLogging {
-        showExceptions = true
-        showCauses = true
-        showStackTraces = true
-        exceptionFormat "full"
-    }
-}
-
 
 //---------------------------------------------------------------------------//
 // Code coverage and codacy                                                  //
@@ -226,37 +278,32 @@ idea {
     }
 }
 
-def pomConfig = {
-    licenses {
-        license {
-            name "The Apache Software License, Version 2.0"
-            url "http://www.apache.org/licenses/LICENSE-2.0.txt"
-            distribution rootProject.name
-        }
-    }
-    developers {
-        developer {
-            id "radar-cns"
-            name "Nivethika"
-            email "nivethika@thehyve.nl"
-        }
-    }
+ext.sharedManifest = manifest {
+    attributes("Implementation-Title": rootProject.name,
+            "Implementation-Version": version)
+}
+
+jar {
+    manifest.from sharedManifest
 }
 // custom tasks for creating source/javadoc jars
 task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = 'sources'
     from sourceSets.main.output
+    manifest.from sharedManifest
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
     classifier = 'javadoc'
     from javadoc.destinationDir
+    manifest.from sharedManifest
 }
 
 // add javadoc/source jar tasks as artifacts
 artifacts {
     archives sourcesJar, javadocJar
 }
+
 
 publishing {
     publications {
@@ -269,7 +316,7 @@ publishing {
             version project.version
             pom.withXml {
                 def root = asNode()
-                root.appendNode('description', 'Common utilities library containing basic schemas, streaming features, testing bridges and utils.')
+                root.appendNode('description', 'RADAR Common utilities library containing basic schemas, streaming features and utils.')
                 root.appendNode('name', rootProject.name)
                 root.appendNode('url', vcsUrl)
                 root.children().last() + pomConfig
