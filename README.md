@@ -14,32 +14,24 @@ repositories {
 }
 
 dependencies {
-    compile group: 'org.radarcns', name: 'radar-commons', version: '0.1'
+    compile group: 'org.radarcns', name: 'radar-commons', version: '0.2'
 }
 ```
 
-# Contributing
-
-First, add the current repository as a submodule to your Git repository
-
-```shell
-git submodule add https://github.com/RADAR-CNS/RADAR-Commons.git commons
-git submodule update --init --recursive
-```
-
-Then, add it as a dependency in Gradle by adding the following dependency in your `build.gradle`:
+For mocking clients of the RADAR-CNS infrastructure, use that 'radar-commons-testing' repository:
 
 ```gradle
+repositories {
+    maven { url  'http://dl.bintray.com/radar-cns/org.radarcns' }
+}
+
 dependencies {
-    compile project(':commons')
+    testCompile group: 'org.radarcns', name: 'radar-commons-testing', version: '0.2'
 }
 ```
-and adding the line
 
-```gradle
-include ':commons'
-```
-in your `settings.gradle`.
+## Contributing
 
-Note: This repository is still in WIP. Expect frequent changes. 
-For latest code use `dev` branch 
+For latest code use `dev` branch.
+Code should be formatted using the [Google Java Code Style Guide](https://google.github.io/styleguide/javaguide.html).
+If you want to contribute a feature or fix browse our [issues](https://github.com/RADAR-CNS/RADAR-Commons/issues), and please make a pull request.
