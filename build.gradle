@@ -73,7 +73,7 @@ allprojects {
         }
         issueManagement {
             system 'GitHub'
-            url vcsUrl + '/issues'
+            url githubUrl + '/issues'
         }
         organization {
             name 'RADAR-CNS'
