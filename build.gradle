@@ -18,7 +18,7 @@ allprojects {
     // Configuration                                                             //
     //---------------------------------------------------------------------------//
 
-    version = '0.2-SNAPSHOT'
+    version = '0.2'
     group = 'org.radarcns'
     ext.githubRepoName = 'RADAR-CNS/RADAR-Commons'
 
