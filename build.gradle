@@ -1,25 +1,26 @@
 plugins {
-    // Apply the java plugin to add support for Java
-    id 'java-library'
-    id 'idea'
-    id 'com.commercehub.gradle.plugin.avro-base' version '0.9.0'
-    id 'jacoco'
-    id 'pmd'
-    id 'checkstyle'
+    // Get bintray version
     id "com.jfrog.bintray" version "1.7.3"
-    id 'maven-publish'
 }
 
-//---------------------------------------------------------------------------//
-// Configuration                                                             //
-//---------------------------------------------------------------------------//
-
 allprojects {
+    // Apply the plugins
     apply plugin: 'java'
+    apply plugin: 'java-library'
+    apply plugin: 'idea'
+    apply plugin: 'checkstyle'
+    apply plugin: 'pmd'
+    apply plugin: 'com.jfrog.bintray'
+    apply plugin: 'maven-publish'
+    apply plugin: 'jacoco'
+
+    //---------------------------------------------------------------------------//
+    // Configuration                                                             //
+    //---------------------------------------------------------------------------//
 
     version = '0.2-SNAPSHOT'
     group = 'org.radarcns'
-    ext.vcsUrl = 'https://github.com/RADAR-CNS/RADAR-Commons.git'
+    ext.githubRepoName = 'RADAR-CNS/RADAR-Commons'
 
     ext.slf4jVersion = '1.7.21'
     ext.kafkaVersion = '0.10.1.1'
@@ -33,7 +34,15 @@ allprojects {
     ext.mockitoVersion = '2.2.29'
     ext.hamcrestVersion = '1.3'
     ext.codacyVersion = '1.0.10'
+    ext.radarSchemasVersion = '0.1'
 
+    ext.githubUrl = 'https://github.com/' + githubRepoName + '.git'
+    ext.issueUrl = 'https://github.com/' + githubRepoName + '/issues'
+    ext.website = 'http://radar-cns.org'
+
+    //---------------------------------------------------------------------------//
+    // Dependencies                                                              //
+    //---------------------------------------------------------------------------//
     repositories {
         jcenter()
         maven { url 'http://packages.confluent.io/maven/' }
@@ -68,111 +77,23 @@ allprojects {
         }
         organization {
             name 'RADAR-CNS'
-            url 'http://radar-cns.org'
+            url website
         }
         scm {
-            connection 'scm:git:' + vcsUrl
-            url vcsUrl
+            connection 'scm:git:' + githubUrl
+            url githubUrl
         }
     }
-}
 
-targetCompatibility = '1.7'
-sourceCompatibility = '1.7'
-
-ext.avroSourcesDir = file("src/avroSources/java")
-
-//---------------------------------------------------------------------------//
-// Sources and classpath configurations                                      //
-//---------------------------------------------------------------------------//
-
-configurations {
-    codacy
-    avroSources
-    api.extendsFrom avroSources
-}
-
-sourceSets {
-    // Note that just declaring this sourceset creates two configurations.
-    integrationTest {
-        java {
-            compileClasspath += main.output
-            runtimeClasspath += main.output
+    idea {
+        module {
+            downloadSources = true
         }
     }
-    avroSources {
-        compileClasspath = configurations.avroSources
-    }
-    main {
-        java {
-            srcDir avroSourcesDir
-        }
-    }
-}
 
-compileJava {
-    source += sourceSets.avroSources.java
-}
-
-// In this section you declare where to find the dependencies of your project
-repositories {
-    maven { url 'https://jitpack.io' }
-}
-
-// In this section you declare the dependencies for your production and test code
-dependencies {
-    avroSources group: 'org.apache.avro', name: 'avro', version: avroVersion
-
-    // to implement producers and consumers
-    api group: 'org.apache.kafka', name: 'kafka-clients', version: kafkaVersion
-    api group: 'com.squareup.okhttp3', name: 'okhttp', version: okhttpVersion
-
-    // For POJO classes and ConfigLoader
-    implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
-    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: jacksonVersion
-
-    // The REST data is serialized with okio
-    implementation group: 'com.squareup.okio', name: 'okio', version: okioVersion
-
-    // The production code uses the SLF4J logging API at compile time
-    implementation group: 'org.slf4j', name:'slf4j-api', version: slf4jVersion
-
-    // Direct producer uses KafkaAvroSerializer if initialized
-    testImplementation (group: 'io.confluent', name: 'kafka-avro-serializer', version: confluentVersion) {
-        exclude group: 'com.101tec'
-    }
-    testImplementation group: 'junit', name: 'junit', version: junitVersion
-    testImplementation group: 'org.mockito', name: 'mockito-core', version: mockitoVersion
-    testImplementation group: 'org.hamcrest', name: 'hamcrest-all', version: hamcrestVersion
-    testImplementation group: 'com.squareup.okhttp3', name: 'mockwebserver', version: okhttpVersion
-    codacy group: 'com.github.codacy', name: 'codacy-coverage-reporter', version: codacyVersion
-}
-
-//---------------------------------------------------------------------------//
-// AVRO file manipulation                                                    //
-//---------------------------------------------------------------------------//
-task generateAvro(type: com.commercehub.gradle.plugin.avro.GenerateAvroJavaTask) {
-    source("schema/common")
-    outputDir avroSourcesDir
-}
-
-compileAvroSourcesJava.dependsOn generateAvro
-compileJava.dependsOn generateAvro
-
-clean {
-    delete avroSourcesDir
-}
-
-//---------------------------------------------------------------------------//
-// Testing                                                                   //
-//---------------------------------------------------------------------------//
-
-allprojects {
-    apply plugin: 'checkstyle'
-    apply plugin: 'pmd'
-//---------------------------------------------------------------------------//
-// Style checking                                                            //
-//---------------------------------------------------------------------------//
+    //---------------------------------------------------------------------------//
+    // Style checking                                                            //
+    //---------------------------------------------------------------------------//
 
     checkstyle {
         // codacy version
@@ -231,21 +152,67 @@ allprojects {
     }
 }
 
+targetCompatibility = '1.7'
+sourceCompatibility = '1.7'
+
+ext.description = 'RADAR Common utilities library containing streaming features and utils.'
+
+//---------------------------------------------------------------------------//
+// Sources and classpath configurations                                      //
+//---------------------------------------------------------------------------//
+
+configurations {
+    codacy
+}
+
+// In this section you declare where to find the dependencies of your project
+repositories {
+    maven { url 'https://jitpack.io' }
+}
+
+// In this section you declare the dependencies for your production and test code
+dependencies {
+    api group: 'org.apache.avro', name: 'avro', version: avroVersion
+
+    // to implement producers and consumers
+    api group: 'org.apache.kafka', name: 'kafka-clients', version: kafkaVersion
+    api group: 'com.squareup.okhttp3', name: 'okhttp', version: okhttpVersion
+
+
+    // For POJO classes and ConfigLoader
+    implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
+    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: jacksonVersion
+
+    // The REST data is serialized with okio
+    implementation group: 'com.squareup.okio', name: 'okio', version: okioVersion
+
+    // The production code uses the SLF4J logging API at compile time
+    implementation group: 'org.slf4j', name:'slf4j-api', version: slf4jVersion
+
+    // Direct producer uses KafkaAvroSerializer if initialized
+    testImplementation (group: 'io.confluent', name: 'kafka-avro-serializer', version: confluentVersion) {
+        exclude group: 'com.101tec'
+    }
+    testImplementation group: 'org.radarcns', name: 'radar-schemas-commons', version: radarSchemasVersion
+    testImplementation group: 'junit', name: 'junit', version: junitVersion
+    testImplementation group: 'org.mockito', name: 'mockito-core', version: mockitoVersion
+    testImplementation group: 'org.hamcrest', name: 'hamcrest-all', version: hamcrestVersion
+    testImplementation group: 'com.squareup.okhttp3', name: 'mockwebserver', version: okhttpVersion
+    codacy group: 'com.github.codacy', name: 'codacy-coverage-reporter', version: codacyVersion
+}
+
+//---------------------------------------------------------------------------//
+// Testing                                                                   //
+//---------------------------------------------------------------------------//
 checkstyle {
     // ignore tests
     sourceSets = [sourceSets.main]
-    // ignore Avro sources
-    checkstyleMain.source = "src/main/java"
 }
 
 pmd {
     // ignore tests
     sourceSets = [sourceSets.main]
 }
-
-//---------------------------------------------------------------------------//
-// Code coverage and codacy                                                  //
-//---------------------------------------------------------------------------//
 
 jacocoTestReport {
     reports {
@@ -271,12 +238,6 @@ task sendCoverageToCodacy(type: JavaExec, dependsOn: jacocoTestReport) {
 //---------------------------------------------------------------------------//
 // Build system metadata                                                     //
 //---------------------------------------------------------------------------//
-idea {
-    module {
-        downloadSources = true
-        generatedSourceDirs += avroSourcesDir
-    }
-}
 
 ext.sharedManifest = manifest {
     attributes("Implementation-Title": rootProject.name,
@@ -289,7 +250,7 @@ jar {
 // custom tasks for creating source/javadoc jars
 task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = 'sources'
-    from sourceSets.main.output
+    from sourceSets.main.allSource
     manifest.from sharedManifest
 }
 
@@ -304,7 +265,6 @@ artifacts {
     archives sourcesJar, javadocJar
 }
 
-
 publishing {
     publications {
         RadarCommonsPublication(MavenPublication) {
@@ -316,9 +276,9 @@ publishing {
             version project.version
             pom.withXml {
                 def root = asNode()
-                root.appendNode('description', 'RADAR Common utilities library containing basic schemas, streaming features and utils.')
+                root.appendNode('description', description)
                 root.appendNode('name', rootProject.name)
-                root.appendNode('url', vcsUrl)
+                root.appendNode('url', githubUrl)
                 root.children().last() + pomConfig
             }
         }
@@ -334,11 +294,16 @@ bintray {
         repo = project.group
         name = rootProject.name
         userOrg = 'radar-cns'
+        desc = description
         licenses = ['Apache-2.0']
-        vcsUrl = vcsUrl
+        websiteUrl = website
+        issueTrackerUrl = issueUrl
+        vcsUrl = githubUrl
+        githubRepo = githubRepoName
+        githubReleaseNotesFile = 'README.md'
         version {
             name = project.version
-            desc = 'RADAR-Commons utilies: Initial snapshot'
+            desc = description
             vcsTag = System.getenv('TRAVIS_TAG')
             released = new Date()
         }

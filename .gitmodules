@@ -1,3 +1,0 @@
-[submodule "schemas"]
-	path = schema
-	url = https://github.com/RADAR-CNS/RADAR-Schemas.git

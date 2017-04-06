@@ -1,8 +1,5 @@
-apply plugin: 'java-library'
-apply plugin: 'maven-publish'
-apply plugin: 'com.jfrog.bintray'
-
 ext.testingName = 'radar-commons-testing'
+ext.description = 'RADAR Common testing library mocking code and utilities.'
 
 targetCompatibility = 1.8
 sourceCompatibility = 1.8
@@ -10,6 +7,7 @@ sourceCompatibility = 1.8
 dependencies {
     api rootProject
     api group: 'org.apache.avro', name: 'avro', version: avroVersion
+    api group: 'org.radarcns', name: 'radar-schemas-commons', version: radarSchemasVersion
 
     implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
 
@@ -41,7 +39,7 @@ jar {
 // custom tasks for creating source/javadoc jars
 task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = 'sources'
-    from sourceSets.main.output
+    from sourceSets.main.allSource
     manifest.from sharedManifest
 }
 
@@ -60,16 +58,16 @@ publishing {
     publications {
         RadarCommonsTestingPublication(MavenPublication) {
             from components.java
-            artifactId testingName
-            artifact javadocJar
             artifact sourcesJar
+            artifact javadocJar
             groupId project.group
+            artifactId testingName
             version project.version
             pom.withXml {
                 def root = asNode()
-                root.appendNode('description', 'RADAR Common testing library containing testing bridges and utils.')
+                root.appendNode('description', description)
                 root.appendNode('name', testingName)
-                root.appendNode('url', vcsUrl)
+                root.appendNode('url', githubUrl)
                 root.children().last() + pomConfig
             }
         }
@@ -85,11 +83,16 @@ bintray {
         repo = project.group
         name = testingName
         userOrg = 'radar-cns'
+        desc = description
         licenses = ['Apache-2.0']
-        vcsUrl = vcsUrl
+        websiteUrl = website
+        issueTrackerUrl = issueUrl
+        vcsUrl = githubUrl
+        githubRepo = githubRepoName
+        githubReleaseNotesFile = 'README.md'
         version {
             name = project.version
-            desc = 'RADAR-Commons testing utilities: Initial snapshot'
+            desc = description
             vcsTag = System.getenv('TRAVIS_TAG')
             released = new Date()
         }
