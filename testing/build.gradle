@@ -38,12 +38,14 @@ jar {
 
 // custom tasks for creating source/javadoc jars
 task sourcesJar(type: Jar, dependsOn: classes) {
+    baseName testingName
     classifier = 'sources'
     from sourceSets.main.allSource
     manifest.from sharedManifest
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
+    baseName testingName
     classifier = 'javadoc'
     from javadoc.destinationDir
     manifest.from sharedManifest
