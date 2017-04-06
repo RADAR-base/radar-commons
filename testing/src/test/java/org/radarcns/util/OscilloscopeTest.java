@@ -16,9 +16,11 @@
 
 package org.radarcns.util;
 
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.core.Is.is;
 
-import org.hamcrest.Matchers;
 import org.junit.Test;
 
 public class OscilloscopeTest {
@@ -30,24 +32,24 @@ public class OscilloscopeTest {
         int iteration = 1;
         do {
             int beat = oscilloscope.beat();
-            assertEquals(iteration++, beat);
+            assertThat(beat, is(iteration++));
             if (beat == 2) {
                 // time of one beat is about 1/128 seconds = 7.8125 milliseconds
                 long beatDiff = System.currentTimeMillis() - time;
-                assertThat(beatDiff, Matchers.greaterThanOrEqualTo(7L));
-                assertThat(beatDiff, Matchers.lessThan(12L));
+                assertThat(beatDiff, greaterThanOrEqualTo(7L));
+                assertThat(beatDiff, lessThan(12L));
             }
         } while (!oscilloscope.willRestart());
 
         // frequency must match
-        assertEquals(iteration, 129);
+        assertThat(iteration, is(129));
         // restarts every frequency, the willRestart function does not reset
-        assertTrue(oscilloscope.willRestart());
+        assertThat(oscilloscope.willRestart(), is(true));
         // beat starts at 1 again
-        assertEquals(1, oscilloscope.beat());
+        assertThat(oscilloscope.beat(), is(1));
         // total time, from one cycle to the next, is about 1 second
         long cycleDiff = System.currentTimeMillis() - time;
-        assertThat(cycleDiff, Matchers.greaterThanOrEqualTo(998L));
-        assertThat(cycleDiff, Matchers.lessThan(1004L));
+        assertThat(cycleDiff, greaterThanOrEqualTo(996L));
+        assertThat(cycleDiff, lessThan(1020L));
     }
 }

@@ -22,8 +22,11 @@ producer_mode: direct
 
 number_of_devices: 1
 
+#Sample
 data:
   - file: integration_test.csv
     topic: integration_test
     key_schema: org.radarcns.key.MeasurementKey
     value_schema: org.radarcns.aggregator.DoubleArrayAggregator
+    frequency: 32
+    sensor: TEMPERATURE

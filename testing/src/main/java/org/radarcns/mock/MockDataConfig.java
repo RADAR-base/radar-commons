@@ -28,6 +28,14 @@ public class MockDataConfig {
     @JsonProperty("file")
     private String dataFile;
 
+    private Double frequency;
+
+    private String sensor;
+    @JsonProperty("assert_header")
+    private String assertHeader;
+
+    private String absolutePath;
+
     public String getTopic() {
         return topic;
     }
@@ -57,7 +65,9 @@ public class MockDataConfig {
         if (directDataFile.isAbsolute()) {
             return directDataFile;
         } else {
-            return new File(configFile.getParentFile(), dataFile);
+            File absoluteFile = new File(configFile.getParentFile(), dataFile);
+            this.absolutePath = absoluteFile.getAbsolutePath();
+            return absoluteFile;
         }
     }
 
@@ -67,5 +77,33 @@ public class MockDataConfig {
 
     public void setDataFile(String dataFile) {
         this.dataFile = dataFile;
+    }
+
+    public Double getFrequency() {
+        return frequency;
+    }
+
+    public void setFrequency(Double frequency) {
+        this.frequency = frequency;
+    }
+
+    public String getSensor() {
+        return sensor;
+    }
+
+    public void setSensor(String sensor) {
+        this.sensor = sensor;
+    }
+
+    public String getAbsoluteDataFile() {
+        return this.absolutePath;
+    }
+
+    public String getAssertHeader() {
+        return assertHeader;
+    }
+
+    public void setAssertHeader(String assertHeader) {
+        this.assertHeader = assertHeader;
     }
 }

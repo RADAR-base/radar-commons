@@ -14,7 +14,7 @@ log/
 .gradletasknamecache
 
 # Build
-/build/
+build/
 
 # Generated Avro files
 /src/avroSources/java/
