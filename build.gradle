@@ -32,6 +32,7 @@ allprojects {
     ext.okioVersion = '1.11.0'
     ext.junitVersion = '4.12'
     ext.mockitoVersion = '2.2.29'
+    ext.mathVersion = '3.0'
     ext.hamcrestVersion = '1.3'
     ext.codacyVersion = '1.0.10'
     ext.radarSchemasVersion = '0.1'
@@ -177,6 +178,9 @@ dependencies {
     // to implement producers and consumers
     api group: 'org.apache.kafka', name: 'kafka-clients', version: kafkaVersion
     api group: 'com.squareup.okhttp3', name: 'okhttp', version: okhttpVersion
+
+    // for Stream aggregators statistic calculations
+    api group: 'org.apache.commons', name: 'commons-math3', version: mathVersion
 
 
     // For POJO classes and ConfigLoader

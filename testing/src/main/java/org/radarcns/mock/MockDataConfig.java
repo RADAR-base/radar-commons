@@ -36,6 +36,16 @@ public class MockDataConfig {
 
     private String absolutePath;
 
+    private Long magnitude;
+
+    public Long getMagnitude() {
+        return magnitude;
+    }
+
+    public void setMagnitude(Long magnitude) {
+        this.magnitude = magnitude;
+    }
+
     public String getTopic() {
         return topic;
     }
