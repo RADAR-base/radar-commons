@@ -1,9 +1,5 @@
-package org.radarcns.util;
-
-import java.util.concurrent.TimeUnit;
-
 /*
- *  Copyright 2016 Kings College London and The Hyve
+ * Copyright 2017 Kings College London and The Hyve
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +13,10 @@ import java.util.concurrent.TimeUnit;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.radarcns.util;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Dynamically computes create for the given amount of samples with the given frequency.
