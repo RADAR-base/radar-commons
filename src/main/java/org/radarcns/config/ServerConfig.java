@@ -64,7 +64,10 @@ public class ServerConfig {
         if (protocol != null) {
             builder.append(protocol).append("://");
         }
-        builder.append(host).append(':').append(port);
+        builder.append(host);
+        if (port != -1) {
+            builder.append(':').append(port);
+        }
         if (path != null) {
             builder.append(path);
         }
