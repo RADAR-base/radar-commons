@@ -2,6 +2,11 @@ package org.radarcns.config;
 
 import static org.junit.Assert.*;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import java.io.IOException;
 import java.net.URL;
 import org.junit.Test;
 
@@ -21,5 +26,22 @@ public class ServerConfigTest {
         assertEquals(80, url.getDefaultPort());
         assertEquals("http://something.else/that/", url.toExternalForm());
         assertEquals("http://something.else/that/", config.toString());
+    }
+
+    @Test
+    public void jacksonUrl() throws IOException {
+        ObjectReader reader = new ObjectMapper(new YAMLFactory()).readerFor(ServerConfig.class);
+        assertEquals("http://52.210.59.174/schema/",
+                ((ServerConfig)reader.readValue(
+                        "protocol: http\n"
+                                + "host: 52.210.59.174\n"
+                                + "path: /schema/"))
+                        .getUrlString());
+        assertEquals("http://52.210.59.174/schema/",
+                ((ServerConfig)reader.readValue(
+                        "protocol: http\n"
+                        + "host: 52.210.59.174\n"
+                        + "path: /schema"))
+                        .getUrlString());
     }
 }
