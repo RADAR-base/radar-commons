@@ -194,7 +194,6 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
 
             HttpUrl sendToUrl = url;
 
-            requestData.reset();
             try {
                 ParsedSchemaMetadata metadata = getSchemaRetriever()
                         .getOrSetSchemaMetadata(sendTopic, false, topic.getKeySchema(), -1);
@@ -249,6 +248,8 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                 logger.error("FAILED to transmit message:\n{}...",
                         requestBody.content().substring(0, 255) );
                 throw ex;
+            } finally {
+                requestData.reset();
             }
         }
 
