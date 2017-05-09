@@ -180,8 +180,7 @@ dependencies {
     api group: 'com.squareup.okhttp3', name: 'okhttp', version: okhttpVersion
 
     // for Stream aggregators statistic calculations
-    api group: 'org.apache.commons', name: 'commons-math3', version: mathVersion
-
+    implementation group: 'org.apache.commons', name: 'commons-math3', version: mathVersion
 
     // For POJO classes and ConfigLoader
     implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
