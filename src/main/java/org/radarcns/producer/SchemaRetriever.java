@@ -22,6 +22,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashMap;
@@ -44,7 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Retriever of an Avro Schema */
-public class SchemaRetriever {
+public class SchemaRetriever implements Closeable {
     private static final Logger logger = LoggerFactory.getLogger(SchemaRetriever.class);
     private static final MediaType CONTENT_TYPE = MediaType.parse(
             "application/vnd.schemaregistry.v1+json; charset=utf-8");
@@ -76,8 +77,13 @@ public class SchemaRetriever {
 
     public synchronized void setConnectionTimeout(long connectionTimeout) {
         if (httpClient.getTimeout() != connectionTimeout) {
+            httpClient.close();
             httpClient = new RestClient(httpClient.getConfig(), connectionTimeout);
         }
+    }
+
+    private synchronized RestClient getRestClient() {
+        return httpClient;
     }
 
     /** The subject in the Avro Schema Registry, given a Kafka topic. */
@@ -94,12 +100,13 @@ public class SchemaRetriever {
         } else {
             path += "latest";
         }
-        Request request = httpClient.requestBuilder(path)
+        RestClient restClient = getRestClient();
+        Request request = restClient.requestBuilder(path)
                 .addHeader("Accept", "application/json")
                 .get()
                 .build();
 
-        try (Response response = httpClient.request(request)) {
+        try (Response response = restClient.request(request)) {
             if (!response.isSuccessful()) {
                 throw new IOException("Cannot retrieve metadata (HTTP " + response.code()
                         + ": " + response.message() + ") -> " + response.body().string());
@@ -141,13 +148,14 @@ public class SchemaRetriever {
             throws IOException {
         String subject = subject(topic, ofValue);
         if (metadata.getId() == null) {
+            RestClient restClient = getRestClient();
 
-            Request request = httpClient.requestBuilder("/subjects/" + subject + "/versions")
+            Request request = restClient.requestBuilder("/subjects/" + subject + "/versions")
                     .addHeader("Accept", "application/json")
                     .post(new SchemaRequestBody(metadata.getSchema()))
                     .build();
 
-            try (Response response = httpClient.request(request)) {
+            try (Response response = restClient.request(request)) {
                 if (!response.isSuccessful()) {
                     throw new IOException("Cannot post schema (HTTP " + response.code()
                             + ": " + response.message() + ") -> " + response.body().string());
@@ -180,6 +188,11 @@ public class SchemaRetriever {
         metadata = new ParsedSchemaMetadata(null, null, schema);
         addSchemaMetadata(topic, ofValue, metadata);
         return metadata;
+    }
+
+    @Override
+    public void close() {
+        getRestClient().close();
     }
 
     private class SchemaRequestBody extends RequestBody {

@@ -16,21 +16,46 @@
 
 package org.radarcns.producer.rest;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import okhttp3.ConnectionPool;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.radarcns.config.ServerConfig;
 
 /** REST client using OkHttp3. */
-public class RestClient {
+public class RestClient implements Closeable {
     private final long timeout;
     private final ServerConfig config;
     private final OkHttpClient httpClient;
+
+    private static final Object POOL_SYNC_OBJECT = new Object();
+    private static ConnectionPool connectionPool = null;
+    private static int connectionPoolReferences;
+
+    private static ConnectionPool getGlobalConnectionPool() {
+        synchronized (POOL_SYNC_OBJECT) {
+            if (connectionPool == null) {
+                connectionPool = new ConnectionPool();
+            }
+            connectionPoolReferences++;
+            return connectionPool;
+        }
+    }
+
+    private static void releaseGlobalConnectionPool() {
+        synchronized (POOL_SYNC_OBJECT) {
+            connectionPoolReferences--;
+            if (connectionPoolReferences == 0) {
+                connectionPool = null;
+            }
+        }
+    }
 
     /**
      * REST client.
@@ -47,6 +72,7 @@ public class RestClient {
                 .connectTimeout(connectionTimeout, TimeUnit.SECONDS)
                 .writeTimeout(connectionTimeout, TimeUnit.SECONDS)
                 .readTimeout(connectionTimeout, TimeUnit.SECONDS)
+                .connectionPool(getGlobalConnectionPool())
                 .proxy(config.getHttpProxy())
                 .build();
     }
@@ -124,5 +150,10 @@ public class RestClient {
     @Override
     public String toString() {
         return "RestClient{timeout=" + timeout + ", config=" + config + '}';
+    }
+
+    @Override
+    public void close() {
+        releaseGlobalConnectionPool();
     }
 }

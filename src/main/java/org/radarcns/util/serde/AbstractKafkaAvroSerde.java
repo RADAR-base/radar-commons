@@ -58,6 +58,8 @@ public class AbstractKafkaAvroSerde {
     }
 
     public void close() {
-        // noop
+        if (schemaRetriever != null) {
+            schemaRetriever.close();
+        }
     }
 }

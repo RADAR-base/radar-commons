@@ -96,6 +96,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
 
     public synchronized void setConnectionTimeout(long connectionTimeout) {
         if (connectionTimeout != httpClient.getTimeout()) {
+            httpClient.close();
             httpClient = new RestClient(httpClient.getConfig(), connectionTimeout);
         }
     }
@@ -105,6 +106,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         if (kafkaConfig.equals(httpClient.getConfig())) {
             return;
         }
+        httpClient.close();
         setRestClient(new RestClient(kafkaConfig, httpClient.getTimeout()));
     }
 
@@ -356,6 +358,6 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
 
     @Override
     public void close() {
-        // noop
+        httpClient.close();
     }
 }

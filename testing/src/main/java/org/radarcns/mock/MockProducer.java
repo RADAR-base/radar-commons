@@ -89,26 +89,27 @@ public class MockProducer {
     private List<KafkaSender<MeasurementKey, SpecificRecord>> createSenders(
             BasicMockConfig mockConfig, int numDevices) {
         List<KafkaSender<MeasurementKey, SpecificRecord>> result = new ArrayList<>(numDevices);
-        SchemaRetriever retriever = new SchemaRetriever(mockConfig.getSchemaRegistry(), 10);
+        try (SchemaRetriever retriever = new SchemaRetriever(mockConfig.getSchemaRegistry(), 10)) {
 
-        if (mockConfig.isDirectProducer()) {
-            for (int i = 0; i < numDevices; i++) {
-                Properties properties = new Properties();
-                properties.put(KEY_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
-                properties.put(VALUE_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
-                properties.put(SCHEMA_REGISTRY_CONFIG, retriever);
-                properties.put(BOOTSTRAP_SERVERS_CONFIG, mockConfig.getBrokerPaths());
+            if (mockConfig.isDirectProducer()) {
+                for (int i = 0; i < numDevices; i++) {
+                    Properties properties = new Properties();
+                    properties.put(KEY_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
+                    properties.put(VALUE_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
+                    properties.put(SCHEMA_REGISTRY_CONFIG, retriever);
+                    properties.put(BOOTSTRAP_SERVERS_CONFIG, mockConfig.getBrokerPaths());
 
-                result.add(new DirectSender<MeasurementKey, SpecificRecord>(properties));
-            }
-        } else {
-            for (int i = 0; i < numDevices; i++) {
-                RestSender<MeasurementKey, SpecificRecord> firstSender = new RestSender<>(
-                        mockConfig.getRestProxy(), retriever,
-                        new SpecificRecordEncoder(false), new SpecificRecordEncoder(false),
-                        10);
+                    result.add(new DirectSender<MeasurementKey, SpecificRecord>(properties));
+                }
+            } else {
+                for (int i = 0; i < numDevices; i++) {
+                    RestSender<MeasurementKey, SpecificRecord> firstSender = new RestSender<>(
+                            mockConfig.getRestProxy(), retriever,
+                            new SpecificRecordEncoder(false), new SpecificRecordEncoder(false),
+                            10);
 
-                result.add(new BatchedKafkaSender<>(firstSender, 10_000, 1000));
+                    result.add(new BatchedKafkaSender<>(firstSender, 10_000, 1000));
+                }
             }
         }
         return result;
