@@ -41,6 +41,8 @@ public class BasicMockConfig {
 
     private List<MockDataConfig> data;
 
+    private boolean compression;
+
     public List<ServerConfig> getBroker() {
         return broker;
     }
@@ -96,5 +98,13 @@ public class BasicMockConfig {
     public String getBrokerPaths() {
         Objects.requireNonNull(broker, "Kafka 'broker' is not configured");
         return ServerConfig.getPaths(broker);
+    }
+
+    public boolean hasCompression() {
+        return compression;
+    }
+
+    public void setCompression(boolean compression) {
+        this.compression = compression;
     }
 }

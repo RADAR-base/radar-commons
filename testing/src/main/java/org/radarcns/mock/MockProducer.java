@@ -106,7 +106,7 @@ public class MockProducer {
                     RestSender<MeasurementKey, SpecificRecord> firstSender = new RestSender<>(
                             mockConfig.getRestProxy(), retriever,
                             new SpecificRecordEncoder(false), new SpecificRecordEncoder(false),
-                            10);
+                            10, mockConfig.hasCompression());
 
                     result.add(new BatchedKafkaSender<>(firstSender, 10_000, 1000));
                 }
