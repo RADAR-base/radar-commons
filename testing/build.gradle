@@ -4,13 +4,10 @@ ext.description = 'RADAR Common testing library mocking code and utilities.'
 targetCompatibility = 1.7
 sourceCompatibility = 1.7
 
-ext.openCsvVersion = '3.9'
-
 dependencies {
     api rootProject
     api group: 'org.apache.avro', name: 'avro', version: avroVersion
     api group: 'org.radarcns', name: 'radar-schemas-commons', version: radarSchemasVersion
-    api group: 'com.opencsv', name: 'opencsv', version: openCsvVersion
 
     implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
 

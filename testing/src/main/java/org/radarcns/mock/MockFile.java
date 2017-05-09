@@ -88,8 +88,8 @@ public class MockFile {
 
         try (KafkaTopicSender topicSender = sender.sender(topic);
                 FileReader fileReader = new FileReader(csvFile);
-                BufferedReader bufferedReader = new BufferedReader(fileReader)) {
-            CsvParser csvReader = new CsvParser(bufferedReader);
+                BufferedReader bufferedReader = new BufferedReader(fileReader);
+                CsvParser csvReader = new CsvParser(bufferedReader)) {
 
             List<String> header = csvReader.parseLine();
             Map<String, Integer> headerMap = new HashMap<>();

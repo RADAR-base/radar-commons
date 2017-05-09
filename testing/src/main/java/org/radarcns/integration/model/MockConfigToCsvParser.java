@@ -19,7 +19,7 @@ package org.radarcns.integration.model;
 import static org.radarcns.integration.model.MockCsvParserUtility.getStartTimeWindow;
 import static org.radarcns.integration.model.MockCsvParserUtility.getTimestamp;
 
-import com.opencsv.CSVReader;
+import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -31,9 +31,10 @@ import org.apache.avro.Schema;
 import org.apache.avro.specific.SpecificData;
 import org.radarcns.integration.model.ExpectedValue.ExpectedType;
 import org.radarcns.mock.MockDataConfig;
+import org.radarcns.util.CsvParser;
 
 /**
- * Starting from a CVS file, this parser generates a map containing all available fields.
+ * Starting from a CSV file, this parser generates a map containing all available fields.
  * The {@link Variable#VALUE} field can contain either a Double or an array of Doubles.
  */
 public class MockConfigToCsvParser {
@@ -95,7 +96,8 @@ public class MockConfigToCsvParser {
         }
     }
 
-    private final CSVReader csvReader;
+    private final CsvParser csvReader;
+
     private final Map<String, Integer> headerMap;
 
     private final ExpectedType expecedType;
@@ -126,7 +128,8 @@ public class MockConfigToCsvParser {
                 .invoke(null);
         SpecificData.newInstance(valueClass, valueSchema);
 
-        csvReader = new CSVReader(new FileReader(config.getAbsoluteDataFile()));
+        FileReader fr = new FileReader(config.getAbsoluteDataFile());
+        csvReader = new CsvParser(new BufferedReader(fr));
 
         headerMap = new HashMap<>();
         getHeader();
@@ -139,15 +142,15 @@ public class MockConfigToCsvParser {
      * raw of CSV file.
      **/
     public Map<Variable, Object> next() throws IOException {
-        HashMap<Variable, Object> map = null;
+        List<String> rawValues = csvReader.parseLine();
+        if (rawValues == null) {
+            return null;
+        }
 
-        String[] rawValues = csvReader.readNext();
-        if (rawValues != null) {
-            map = new HashMap<>();
+        HashMap<Variable, Object> map = new HashMap<>();
 
-            for (Variable var : Variable.toList()) {
-                map.put(var, computeValue(rawValues, var, config));
-            }
+        for (Variable var : Variable.toList()) {
+            map.put(var, computeValue(rawValues, var, config));
         }
 
         return map;
@@ -184,21 +187,21 @@ public class MockConfigToCsvParser {
      * @param var variable that has to be extracted from the raw data.
      * @return an {@code Object} representing the required variable.
      **/
-    private Object computeValue(String[] rawValues, Variable var, MockDataConfig config) {
+    private Object computeValue(List<String> rawValues, Variable var, MockDataConfig config) {
         switch (var) {
             case USER:
                 existOrThrow(var.getValue());
-                return rawValues[headerMap.get(var.getValue())];
+                return rawValues.get(headerMap.get(var.getValue()));
             case SOURCE:
                 existOrThrow(var.getValue());
-                return rawValues[headerMap.get(var.getValue())];
+                return rawValues.get(headerMap.get(var.getValue()));
             case TIMESTAMP:
                 existOrThrow(var.getValue());
-                return getTimestamp(rawValues[headerMap.get(var.getValue())]);
+                return getTimestamp(rawValues.get(headerMap.get(var.getValue())));
             case VALUE:
                 return extractValue(rawValues, config);
             case TIME_WINDOW:
-                return getStartTimeWindow(rawValues[headerMap.get(Variable.TIMESTAMP.getValue())]);
+                return getStartTimeWindow(rawValues.get(headerMap.get(Variable.TIMESTAMP.getValue())));
             case EXPECTED_TYPE:
                 return expecedType;
             default:
@@ -215,12 +218,11 @@ public class MockConfigToCsvParser {
     //TODO use the MockConfigToCsvParser#parseValue function to verify if
     // the associted Schema is representing the
     // required field has a Double or a List<Double>
-    private Object extractValue(String[] rawValues, MockDataConfig config) {
+    private Object extractValue(List<String> rawValues, MockDataConfig config) {
         if (expecedType.equals(ExpectedType.DOUBLE)) {
-
             existOrThrow(config.getAssertHeader());
 
-            return Double.parseDouble(rawValues[headerMap.get(config.getAssertHeader())]);
+            return Double.parseDouble(rawValues.get(headerMap.get(config.getAssertHeader())));
         } else if (expecedType.equals(ExpectedType.ARRAY)) {
 
             String[] testCase = config.getAssertHeader().split(", ");
@@ -228,7 +230,7 @@ public class MockConfigToCsvParser {
 
             for (int i = 0; i < testCase.length; i++) {
                 existOrThrow(testCase[i]);
-                value[i] = Double.parseDouble(rawValues[headerMap.get(testCase[i])]);
+                value[i] = Double.parseDouble(rawValues.get(headerMap.get(testCase[i])));
             }
 
             return value;
@@ -242,10 +244,10 @@ public class MockConfigToCsvParser {
      * in the raw data array.
      **/
     public void getHeader() throws IOException {
-        String[] header = csvReader.readNext();
+        List<String> header = csvReader.parseLine();
 
-        for (int i = 0; i < header.length; i++) {
-            headerMap.put(header[i], i);
+        for (int i = 0; i < header.size(); i++) {
+            headerMap.put(header.get(i), i);
         }
     }
 
