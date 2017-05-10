@@ -73,12 +73,27 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
     private RestClient httpClient;
 
     /**
+     * Construct a non-compressing RestSender.
+     * @param kafkaConfig non-null server to send data to
+     * @param schemaRetriever non-null Retriever of avro schemas
+     * @param keyEncoder non-null Avro encoder for keys
+     * @param valueEncoder non-null Avro encoder for values
+     * @param connectionTimeout socket connection timeout in seconds
+     */
+    public RestSender(ServerConfig kafkaConfig, SchemaRetriever schemaRetriever,
+            AvroEncoder keyEncoder, AvroEncoder valueEncoder,
+            long connectionTimeout) {
+        this(kafkaConfig, schemaRetriever, keyEncoder, valueEncoder, connectionTimeout, false);
+    }
+
+    /**
      * Construct a RestSender.
      * @param kafkaConfig non-null server to send data to
      * @param schemaRetriever non-null Retriever of avro schemas
      * @param keyEncoder non-null Avro encoder for keys
      * @param valueEncoder non-null Avro encoder for values
      * @param connectionTimeout socket connection timeout in seconds
+     * @param useCompression use compression to send data
      */
     public RestSender(ServerConfig kafkaConfig, SchemaRetriever schemaRetriever,
             AvroEncoder keyEncoder, AvroEncoder valueEncoder,
