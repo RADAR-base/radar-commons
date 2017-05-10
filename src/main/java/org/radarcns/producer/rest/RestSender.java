@@ -16,24 +16,17 @@
 
 package org.radarcns.producer.rest;
 
-import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.zip.GZIPOutputStream;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.Request;
-import okhttp3.RequestBody;
 import okhttp3.Response;
-import okio.BufferedSink;
 import org.apache.avro.Schema;
 import org.radarcns.config.ServerConfig;
 import org.radarcns.data.AvroEncoder;
@@ -173,7 +166,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         private long lastOffsetSent = -1L;
         private final AvroTopic<L, W> topic;
         private final HttpUrl url;
-        private final TopicRequestData requestData;
+        private final TopicRequestData<L, W> requestData;
 
         private RestTopicSender(AvroTopic<L, W> topic) throws IOException {
             this.topic = topic;
@@ -182,7 +175,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
             if (url == null) {
                 throw new MalformedURLException("Cannot parse " + rawUrl);
             }
-            requestData = new TopicRequestData();
+            requestData = new TopicRequestData<>(topic, keyEncoder, valueEncoder, jsonFactory);
         }
 
         @Override
@@ -203,34 +196,8 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
             if (records.isEmpty()) {
                 return;
             }
-            // Get schema IDs
-            Schema valueSchema = topic.getValueSchema();
-            String sendTopic = topic.getName();
 
-            HttpUrl sendToUrl = url;
-
-            try {
-                ParsedSchemaMetadata metadata = getSchemaRetriever()
-                        .getOrSetSchemaMetadata(sendTopic, false, topic.getKeySchema(), -1);
-                requestData.keySchemaId = metadata.getId();
-            } catch (IOException ex) {
-                sendToUrl = getSchemalessKeyUrl();
-            }
-            if (requestData.keySchemaId == null) {
-                requestData.keySchemaString = topic.getKeySchema().toString();
-            }
-
-            try {
-                ParsedSchemaMetadata metadata = getSchemaRetriever().getOrSetSchemaMetadata(
-                        sendTopic, true, valueSchema, -1);
-                requestData.valueSchemaId = metadata.getId();
-            } catch (IOException ex) {
-                sendToUrl = getSchemalessValueUrl();
-            }
-            if (requestData.valueSchemaId == null) {
-                requestData.valueSchemaString = topic.getValueSchema().toString();
-            }
-            requestData.records = records;
+            HttpUrl sendToUrl = updateRequestData(records);
 
             TopicRequestBody requestBody;
             Request.Builder requestBuilder = new Request.Builder()
@@ -249,7 +216,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                 if (response.isSuccessful()) {
                     if (logger.isDebugEnabled()) {
                         logger.debug("Added message to topic {} -> {}",
-                                sendTopic, response.body().string());
+                                topic, response.body().string());
                     }
                     lastOffsetSent = records.get(records.size() - 1).offset;
                 } else {
@@ -266,6 +233,39 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
             } finally {
                 requestData.reset();
             }
+        }
+
+        private HttpUrl updateRequestData(List<Record<L, W>> records) {
+            // Get schema IDs
+            Schema valueSchema = topic.getValueSchema();
+            String sendTopic = topic.getName();
+
+            HttpUrl sendToUrl = url;
+
+            try {
+                ParsedSchemaMetadata metadata = getSchemaRetriever()
+                        .getOrSetSchemaMetadata(sendTopic, false, topic.getKeySchema(), -1);
+                requestData.setKeySchemaId(metadata.getId());
+            } catch (IOException ex) {
+                sendToUrl = getSchemalessKeyUrl();
+            }
+            if (requestData.getKeySchemaId() == null) {
+                requestData.setKeySchemaString(topic.getKeySchema().toString());
+            }
+
+            try {
+                ParsedSchemaMetadata metadata = getSchemaRetriever().getOrSetSchemaMetadata(
+                        sendTopic, true, valueSchema, -1);
+                requestData.setValueSchemaId(metadata.getId());
+            } catch (IOException ex) {
+                sendToUrl = getSchemalessValueUrl();
+            }
+            if (requestData.getValueSchemaId() == null) {
+                requestData.setValueSchemaString(topic.getValueSchema().toString());
+            }
+            requestData.setRecords(records);
+
+            return sendToUrl;
         }
 
         @Override
@@ -289,104 +289,8 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
             // noop
         }
 
-        private class TopicRequestData {
-            private final AvroEncoder.AvroWriter<L> keyWriter;
-            private final AvroEncoder.AvroWriter<W> valueWriter;
-
-            private Integer keySchemaId;
-            private Integer valueSchemaId;
-            private String keySchemaString;
-            private String valueSchemaString;
-
-            private List<Record<L, W>> records;
-
-            private TopicRequestData() throws IOException {
-                keyWriter = keyEncoder.writer(topic.getKeySchema(), topic.getKeyClass());
-                valueWriter = valueEncoder.writer(topic.getValueSchema(), topic.getValueClass());
-            }
-
-            private void writeToJson(JsonGenerator writer) throws IOException {
-                writer.writeStartObject();
-                if (keySchemaId != null) {
-                    writer.writeNumberField("key_schema_id", keySchemaId);
-                } else {
-                    writer.writeStringField("key_schema", keySchemaString);
-                }
-
-                if (valueSchemaId != null) {
-                    writer.writeNumberField("value_schema_id", valueSchemaId);
-                } else {
-                    writer.writeStringField("value_schema", valueSchemaString);
-                }
-
-                writer.writeArrayFieldStart("records");
-
-                for (Record<L, W> record : records) {
-                    writer.writeStartObject();
-                    writer.writeFieldName("key");
-                    writer.writeRawValue(new String(keyWriter.encode(record.key)));
-                    writer.writeFieldName("value");
-                    writer.writeRawValue(new String(valueWriter.encode(record.value)));
-                    writer.writeEndObject();
-                }
-                writer.writeEndArray();
-                writer.writeEndObject();
-            }
-
-            private void reset() {
-                keySchemaId = null;
-                keySchemaString = null;
-                valueSchemaId = null;
-                valueSchemaString = null;
-                records = null;
-            }
-        }
-
-        private class TopicRequestBody extends RequestBody {
-            protected final TopicRequestData data;
-
-            private TopicRequestBody(TopicRequestData requestData) throws IOException {
-                data = requestData;
-            }
-
-            @Override
-            public MediaType contentType() {
-                return KAFKA_REST_AVRO_ENCODING;
-            }
-
-            @Override
-            public void writeTo(BufferedSink sink) throws IOException {
-                try (OutputStream out = sink.outputStream();
-                     JsonGenerator writer = jsonFactory.createGenerator(out, JsonEncoding.UTF8)) {
-                    data.writeToJson(writer);
-                }
-            }
-
-            private String content() throws IOException {
-                try (ByteArrayOutputStream out = new ByteArrayOutputStream();
-                        JsonGenerator writer = jsonFactory.createGenerator(out, JsonEncoding.UTF8)) {
-                    data.writeToJson(writer);
-                    writer.flush();
-                    return out.toString();
-                }
-            }
-        }
-
-        private class GzipTopicRequestBody extends TopicRequestBody {
-            private GzipTopicRequestBody(TopicRequestData requestData) throws IOException {
-                super(requestData);
-            }
-
-            @Override
-            public void writeTo(BufferedSink sink) throws IOException {
-                try (OutputStream out = sink.outputStream();
-                        GZIPOutputStream gzipOut = new GZIPOutputStream(out);
-                        JsonGenerator writer = jsonFactory.createGenerator(gzipOut, JsonEncoding.UTF8)) {
-                    data.writeToJson(writer);
-                }
-            }
-        }
     }
+
 
     @Override
     public <L extends K, W extends V> KafkaTopicSender<L, W> sender(AvroTopic<L, W> topic)
@@ -419,4 +323,5 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
     public void close() {
         httpClient.close();
     }
+
 }

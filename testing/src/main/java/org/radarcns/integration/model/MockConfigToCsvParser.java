@@ -201,7 +201,8 @@ public class MockConfigToCsvParser {
             case VALUE:
                 return extractValue(rawValues, config);
             case TIME_WINDOW:
-                return getStartTimeWindow(rawValues.get(headerMap.get(Variable.TIMESTAMP.getValue())));
+                return getStartTimeWindow(rawValues.get(headerMap.get(
+                        Variable.TIMESTAMP.getValue())));
             case EXPECTED_TYPE:
                 return expecedType;
             default:
