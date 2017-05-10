@@ -11,6 +11,9 @@ dependencies {
 
     implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
 
+    // for Stream aggregators statistic calculations
+    implementation group: 'org.apache.commons', name: 'commons-math3', version: mathVersion
+
     // Direct producer uses KafkaAvroSerializer if initialized
     testImplementation group: 'junit', name: 'junit', version: junitVersion
     testImplementation group: 'org.hamcrest', name: 'hamcrest-all', version: hamcrestVersion

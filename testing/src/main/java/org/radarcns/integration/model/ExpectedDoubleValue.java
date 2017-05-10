@@ -16,7 +16,7 @@
 
 package org.radarcns.integration.model;
 
-import org.radarcns.stream.aggregator.DoubleValueCollector;
+import org.radarcns.integration.aggregator.DoubleValueCollector;
 
 /**
  * {@code ExpectedValue} represented as {@code Double}.

@@ -20,8 +20,8 @@ package org.radarcns.integration.model;
 import java.lang.reflect.ParameterizedType;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
-import org.radarcns.stream.aggregator.DoubleArrayCollector;
-import org.radarcns.stream.aggregator.DoubleValueCollector;
+import org.radarcns.integration.aggregator.DoubleArrayCollector;
+import org.radarcns.integration.aggregator.DoubleValueCollector;
 
 
 /**
@@ -44,7 +44,7 @@ public class ExpectedValue<V> {
      * Enumerator containing all possible collector implementations. Useful to understand if
      * the current isntance is managing single doubles or arrays of doubles.
      *
-     * {@link org.radarcns.stream.aggregator.DoubleArrayCollector}
+     * {@link DoubleArrayCollector}
      * {@link DoubleValueCollector}
      **/
     public enum ExpectedType {

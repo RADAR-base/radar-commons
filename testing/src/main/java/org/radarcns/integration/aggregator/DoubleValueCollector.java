@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package org.radarcns.stream.aggregator;
+package org.radarcns.integration.aggregator;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
@@ -25,11 +27,12 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 public class DoubleValueCollector {
     private double min = Double.MAX_VALUE;
     private double max = Double.MIN_VALUE;
-    private double sum = 0;
-    private double count = 0;
-    private double avg = 0;
-    private final Double[] quartile = new Double[3];
-    private double iqr = 0;
+    private double sum = 0.0;
+    private double count = 0.0;
+    private double avg = 0.0;
+    private final double[] quartile = new double[3];
+    private double iqr = 0.0;
+
 
     private final List<Double> history = new ArrayList<>();
 
@@ -78,7 +81,6 @@ public class DoubleValueCollector {
      */
     private void updateQuartile(double value) {
         history.add(value);
-
         double[] data = new double[history.size()];
         for (int i = 0; i < history.size(); i++) {
             data[i] = history.get(i);
@@ -126,8 +128,8 @@ public class DoubleValueCollector {
         return avg;
     }
 
-    public List<Double> getQuartile() {
-        return  Arrays.asList(quartile);
+    public double[] getQuartile() {
+        return quartile;
     }
 
     public double getIqr() {
