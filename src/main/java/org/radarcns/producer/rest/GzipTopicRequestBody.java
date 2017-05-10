@@ -14,26 +14,27 @@
  * limitations under the License.
  */
 
-package org.radarcns.data;
+package org.radarcns.producer.rest;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.zip.GZIPOutputStream;
+import okio.BufferedSink;
 
 /**
- * A single data record.
- *
- * The time it gets created is stored as {@link #milliTimeAdded}.
- *
- * @param <K> key type
- * @param <V> value type
+ * TopicRequestData in a Gzipped RequestBody.
  */
-public class Record<K, V> {
-    public final long offset;
-    public final K key;
-    public final V value;
-    public final long milliTimeAdded;
+class GzipTopicRequestBody extends TopicRequestBody {
 
-    public Record(long offset, K key, V value) {
-        this.offset = offset;
-        this.key = key;
-        this.value = value;
-        this.milliTimeAdded = System.currentTimeMillis();
+    GzipTopicRequestBody(TopicRequestData requestData) throws IOException {
+        super(requestData);
+    }
+
+    @Override
+    public void writeTo(BufferedSink sink) throws IOException {
+        try (OutputStream out = sink.outputStream();
+                GZIPOutputStream gzipOut = new GZIPOutputStream(out)) {
+            data.writeToStream(gzipOut);
+        }
     }
 }

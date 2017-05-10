@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Kings College London and The Hyve
+ * Copyright 2017 The Hyve and King's College London
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
+import java.util.zip.GZIPInputStream;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -59,7 +63,7 @@ public class RestSenderTest {
         SpecificRecordEncoder encoder = new SpecificRecordEncoder(false);
 
         ServerConfig config = new ServerConfig(webServer.url("/").url());
-        this.sender = new RestSender<>(config, retriever, encoder, encoder, 10);
+        this.sender = new RestSender<>(config, retriever, encoder, encoder, 10, false);
     }
 
     @Test
@@ -192,5 +196,58 @@ public class RestSenderTest {
         webServer.enqueue(new MockResponse());
         webServer.close();
         assertFalse(sender.isConnected());
+    }
+
+    @Test
+    public void withCompression() throws IOException, InterruptedException {
+        sender.setCompression(true);
+        webServer.enqueue(new MockResponse()
+                .setHeader("Content-Type", "application/json; charset=utf-8")
+                .setBody("{\"offset\": 100}"));
+        Schema keySchema = MeasurementKey.getClassSchema();
+        Schema valueSchema = PhoneLight.getClassSchema();
+        AvroTopic<MeasurementKey, PhoneLight> topic = new AvroTopic<>("test",
+                keySchema, valueSchema, MeasurementKey.class, PhoneLight.class);
+        KafkaTopicSender<MeasurementKey, PhoneLight> topicSender = sender.sender(topic);
+
+        MeasurementKey key = new MeasurementKey("a", "b");
+        PhoneLight value = new PhoneLight(0.1, 0.2, 0.3f);
+        ParsedSchemaMetadata keySchemaMetadata = new ParsedSchemaMetadata(10, 2, keySchema);
+        ParsedSchemaMetadata valueSchemaMetadata = new ParsedSchemaMetadata(10, 2, valueSchema);
+
+        when(retriever
+                .getOrSetSchemaMetadata("test", false, keySchema, -1))
+                .thenReturn(keySchemaMetadata);
+        when(retriever
+                .getOrSetSchemaMetadata("test", true, valueSchema, -1))
+                .thenReturn(valueSchemaMetadata);
+
+        topicSender.send(1, key, value);
+
+        RecordedRequest request = webServer.takeRequest();
+        assertEquals("gzip", request.getHeader("Content-Encoding"));
+
+        ObjectReader reader = new ObjectMapper().readerFor(JsonNode.class);
+
+        try (InputStream in = request.getBody().inputStream();
+                GZIPInputStream gzipIn = new GZIPInputStream(in)) {
+            JsonNode body = reader.readValue(gzipIn);
+            assertEquals(10, body.get("key_schema_id").asInt());
+            assertEquals(10, body.get("value_schema_id").asInt());
+            JsonNode records = body.get("records");
+            assertEquals(JsonNodeType.ARRAY, records.getNodeType());
+            assertEquals(1, records.size());
+            for (JsonNode child : records) {
+                JsonNode jsonKey = child.get("key");
+                assertEquals(JsonNodeType.OBJECT, jsonKey.getNodeType());
+                assertEquals("a", jsonKey.get("userId").asText());
+                assertEquals("b", jsonKey.get("sourceId").asText());
+                JsonNode jsonValue = child.get("value");
+                assertEquals(JsonNodeType.OBJECT, jsonValue.getNodeType());
+                assertEquals(0.1, jsonValue.get("time").asDouble(), 0);
+                assertEquals(0.2, jsonValue.get("timeReceived").asDouble(), 0);
+                assertEquals(0.3f, (float)jsonValue.get("light").asDouble(), 0);
+            }
+        }
     }
 }

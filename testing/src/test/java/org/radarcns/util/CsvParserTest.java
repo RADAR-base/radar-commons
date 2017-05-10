@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Kings College London and The Hyve
+ * Copyright 2017 The Hyve and King's College London
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,18 +30,20 @@ public class CsvParserTest {
 
     @Test
     public void parseLine() throws Exception {
-        StringReader input = new StringReader("a,b,c\n0,1,\"1,1\"");
-        CsvParser parser = new CsvParser(input);
-        assertThat(parser.parseLine(), contains("a", "b", "c"));
-        assertThat(parser.parseLine(), contains("0", "1", "1,1"));
+        try (StringReader input = new StringReader("a,b,c\n0,1,\"1,1\"");
+                CsvParser parser = new CsvParser(input)) {
+            assertThat(parser.parseLine(), contains("a", "b", "c"));
+            assertThat(parser.parseLine(), contains("0", "1", "1,1"));
+        }
     }
 
     @Test
     public void parseLineException() throws Exception {
-        StringReader input = new StringReader("a,b,c\n0,1,1,1");
-        CsvParser parser = new CsvParser(input);
-        assertThat(parser.parseLine(), contains("a", "b", "c"));
-        exception.expect(IllegalArgumentException.class);
-        parser.parseLine();
+        try (StringReader input = new StringReader("a,b,c\n0,1,1,1");
+                CsvParser parser = new CsvParser(input)) {
+            assertThat(parser.parseLine(), contains("a", "b", "c"));
+            exception.expect(IllegalArgumentException.class);
+            parser.parseLine();
+        }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Kings College London and The Hyve
+ * Copyright 2017 The Hyve and King's College London
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,8 +88,8 @@ public class MockFile {
 
         try (KafkaTopicSender topicSender = sender.sender(topic);
                 FileReader fileReader = new FileReader(csvFile);
-                BufferedReader bufferedReader = new BufferedReader(fileReader)) {
-            CsvParser csvReader = new CsvParser(bufferedReader);
+                BufferedReader bufferedReader = new BufferedReader(fileReader);
+                CsvParser csvReader = new CsvParser(bufferedReader)) {
 
             List<String> header = csvReader.parseLine();
             Map<String, Integer> headerMap = new HashMap<>();

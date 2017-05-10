@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Kings College London and The Hyve
+ * Copyright 2017 The Hyve and King's College London
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.radarcns.util;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
@@ -24,7 +25,7 @@ import java.util.List;
 /**
  * Parses a CSV file.
  */
-public class CsvParser {
+public class CsvParser implements Closeable {
     private static final char DEFAULT_SEPARATOR = ',';
     private static final char DEFAULT_QUOTE = '"';
 
@@ -118,6 +119,11 @@ public class CsvParser {
             builder.append((char) ch);
         }
         return true;
+    }
+
+    @Override
+    public void close() throws IOException {
+        reader.close();
     }
 
     private static class ParsingState {

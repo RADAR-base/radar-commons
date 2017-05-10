@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Kings College London and The Hyve
+ * Copyright 2017 The Hyve and King's College London
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,8 @@ public class BasicMockConfig {
     private ServerConfig schemaRegistry;
 
     private List<MockDataConfig> data;
+
+    private boolean compression;
 
     public List<ServerConfig> getBroker() {
         return broker;
@@ -96,5 +98,13 @@ public class BasicMockConfig {
     public String getBrokerPaths() {
         Objects.requireNonNull(broker, "Kafka 'broker' is not configured");
         return ServerConfig.getPaths(broker);
+    }
+
+    public boolean hasCompression() {
+        return compression;
+    }
+
+    public void setCompression(boolean compression) {
+        this.compression = compression;
     }
 }

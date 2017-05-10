@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Kings College London and The Hyve
+ * Copyright 2017 The Hyve and King's College London
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,16 @@ public class MockDataConfig {
     private String assertHeader;
 
     private String absolutePath;
+
+    private Long magnitude;
+
+    public Long getMagnitude() {
+        return magnitude;
+    }
+
+    public void setMagnitude(Long magnitude) {
+        this.magnitude = magnitude;
+    }
 
     public String getTopic() {
         return topic;

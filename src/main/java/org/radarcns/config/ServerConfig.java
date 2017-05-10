@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Kings College London and The Hyve
+ * Copyright 2017 The Hyve and King's College London
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ public class ServerConfig {
     private String host;
     private int port = -1;
     private String protocol;
-    private String path = "";
+    private String path = null;
     @JsonProperty("proxy_host")
     private String proxyHost;
     @JsonProperty("proxy_port")
@@ -64,7 +64,10 @@ public class ServerConfig {
         if (protocol != null) {
             builder.append(protocol).append("://");
         }
-        builder.append(host).append(':').append(port);
+        builder.append(host);
+        if (port != -1) {
+            builder.append(':').append(port);
+        }
         if (path != null) {
             builder.append(path);
         }
@@ -175,7 +178,7 @@ public class ServerConfig {
     public final void setPath(String path) {
         if (path == null) {
             this.path = "/";
-        } else if (this.path.contains("?")) {
+        } else if (path.contains("?")) {
             throw new IllegalArgumentException("Cannot set server path with query string");
         } else {
             this.path = path.trim();

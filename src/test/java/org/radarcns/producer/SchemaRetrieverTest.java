@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Kings College London and The Hyve
+ * Copyright 2017 The Hyve and King's College London
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,12 +26,12 @@ import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Field;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.radarcns.config.ServerConfig;
-import org.radarcns.producer.SchemaRetriever;
 import org.radarcns.producer.rest.ParsedSchemaMetadata;
 
 public class SchemaRetrieverTest {
@@ -51,6 +51,12 @@ public class SchemaRetrieverTest {
         config.setPort(server.getPort());
         config.setPath("base");
         retriever = new SchemaRetriever(config, 1L);
+    }
+
+    @After
+    public void tearDown() throws IOException {
+        retriever.close();
+        server.close();
     }
 
     @Test
