@@ -24,6 +24,8 @@ import static org.radarcns.util.serde.AbstractKafkaAvroSerde.SCHEMA_REGISTRY_CON
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -61,12 +63,22 @@ public class MockProducer {
             logger.error(
                     "Error simulating mock device setup. Please provide data or number_of_devices");
         }
-        String userId = "UserID_";
-        String sourceId = "SourceID_";
+
+        try {
+            senders = createSenders(mockConfig, numDevices);
+        } catch (KeyManagementException exec) {
+            logger.error("Sender cannot be created.", exec);
+            throw new ExceptionInInitializerError(exec);
+        } catch (NoSuchAlgorithmException exec) {
+            logger.error("Sender cannot be created.", exec);
+            throw new ExceptionInInitializerError(exec);
+        }
 
         devices = new ArrayList<>(numDevices);
         files = new ArrayList<>(numDevices);
-        senders = createSenders(mockConfig, numDevices);
+
+        String userId = "UserID_";
+        String sourceId = "SourceID_";
 
         if (mockConfig.getData() == null) {
             for (int i = 0; i < numDevices; i++) {
@@ -87,7 +99,8 @@ public class MockProducer {
     }
 
     private List<KafkaSender<MeasurementKey, SpecificRecord>> createSenders(
-            BasicMockConfig mockConfig, int numDevices) {
+            BasicMockConfig mockConfig, int numDevices)
+            throws KeyManagementException, NoSuchAlgorithmException {
         List<KafkaSender<MeasurementKey, SpecificRecord>> result = new ArrayList<>(numDevices);
         try (SchemaRetriever retriever = new SchemaRetriever(mockConfig.getSchemaRegistry(), 10)) {
 
@@ -106,7 +119,7 @@ public class MockProducer {
                     RestSender<MeasurementKey, SpecificRecord> firstSender = new RestSender<>(
                             mockConfig.getRestProxy(), retriever,
                             new SpecificRecordEncoder(false), new SpecificRecordEncoder(false),
-                            10, mockConfig.hasCompression());
+                            10, mockConfig.hasCompression(), mockConfig.isUnsafeProducer());
 
                     result.add(new BatchedKafkaSender<>(firstSender, 10_000, 1000));
                 }

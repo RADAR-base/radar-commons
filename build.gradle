@@ -52,6 +52,7 @@ allprojects {
     ext.hamcrestVersion = '1.3'
     ext.codacyVersion = '1.0.10'
     ext.radarSchemasVersion = '0.1'
+    ext.radarStreamVersion = '0.1-alpha.3-SNAPSHOT'
 
     ext.githubUrl = 'https://github.com/' + githubRepoName + '.git'
     ext.issueUrl = 'https://github.com/' + githubRepoName + '/issues'
@@ -86,6 +87,12 @@ allprojects {
                 name 'Joris Borgdorff'
                 email 'joris@thehyve.nl'
                 organization 'The Hyve'
+            }
+            developer {
+                id 'fnobilia'
+                name 'Francesco Nobilia'
+                email 'francesco.nobilia@kcl.ac.uk'
+                organization 'King\'s College London'
             }
         }
         issueManagement {
@@ -214,6 +221,7 @@ dependencies {
     testImplementation group: 'org.mockito', name: 'mockito-core', version: mockitoVersion
     testImplementation group: 'org.hamcrest', name: 'hamcrest-all', version: hamcrestVersion
     testImplementation group: 'com.squareup.okhttp3', name: 'mockwebserver', version: okhttpVersion
+
     codacy group: 'com.github.codacy', name: 'codacy-coverage-reporter', version: codacyVersion
 }
 

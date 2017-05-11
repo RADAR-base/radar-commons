@@ -20,10 +20,20 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import okhttp3.ConnectionPool;
 import okhttp3.OkHttpClient;
+import okhttp3.OkHttpClient.Builder;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.radarcns.config.ServerConfig;
@@ -68,13 +78,98 @@ public class RestClient implements Closeable {
         this.config = config;
         this.timeout = connectionTimeout;
 
-        httpClient = new OkHttpClient.Builder()
-                .connectTimeout(connectionTimeout, TimeUnit.SECONDS)
-                .writeTimeout(connectionTimeout, TimeUnit.SECONDS)
-                .readTimeout(connectionTimeout, TimeUnit.SECONDS)
-                .connectionPool(getGlobalConnectionPool())
-                .proxy(config.getHttpProxy())
-                .build();
+        httpClient = buildHttpClient(new OkHttpClient.Builder());
+    }
+
+    /**
+     * REST client able to accept connection with server using self-signed certificate.
+     *
+     * @param config server configuration
+     * @param connectionTimeout connection timeout in seconds
+     * @param selfSignedCertificate accept connection with server using self-signed certificate
+     *
+     * @throws NoSuchAlgorithmException if the required cryptographic algorithm is not available
+     * @throws KeyManagementException if key management fails
+     */
+    public RestClient(ServerConfig config, long connectionTimeout, boolean selfSignedCertificate)
+            throws KeyManagementException, NoSuchAlgorithmException {
+        Objects.requireNonNull(config);
+        this.config = config;
+        this.timeout = connectionTimeout;
+
+        Builder builder;
+
+        if (selfSignedCertificate) {
+            builder = getUnsafeBuilder();
+        } else {
+            builder = new OkHttpClient.Builder();
+        }
+
+        httpClient = buildHttpClient(builder);
+    }
+
+    /**
+     * Generate a {@code OkHttpClient.Builder} to establish connection with server using
+     *      self-signed certificate.
+     *
+     * @return builder to create an {@code OkHttpClient}
+     * @throws NoSuchAlgorithmException if the required cryptographic algorithm is not available
+     * @throws KeyManagementException if key management fails
+     */
+    public static OkHttpClient.Builder getUnsafeBuilder()
+        throws NoSuchAlgorithmException, KeyManagementException {
+        final TrustManager[] trustAllCerts = new TrustManager[] {
+            new X509TrustManager() {
+                @Override
+                public void checkClientTrusted(java.security.cert.X509Certificate[] chain,
+                        String authType) throws CertificateException {
+                    //Nothing to do
+                }
+
+                @Override
+                public void checkServerTrusted(java.security.cert.X509Certificate[] chain,
+                        String authType) throws CertificateException {
+                    //Nothing to do
+                }
+
+                @Override
+                public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                    return new java.security.cert.X509Certificate[]{};
+                }
+            }
+        };
+
+        final SSLContext sslContext = SSLContext.getInstance("SSL");
+        sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+
+        final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+
+        OkHttpClient.Builder builder = new OkHttpClient.Builder();
+        builder.sslSocketFactory(sslSocketFactory, (X509TrustManager)trustAllCerts[0]);
+        builder.hostnameVerifier(new HostnameVerifier() {
+            @Override
+            public boolean verify(String hostname, SSLSession session) {
+                return true;
+            }
+        });
+
+        return builder;
+    }
+
+    /**
+     * Build a OkHttpClient setting timeouts, connection pool and proxy.
+     *
+     * @param builder builder useful to provide extra configuration
+     * @return OkHttpClient client
+     */
+    private OkHttpClient buildHttpClient(Builder builder) {
+        return builder
+            .connectTimeout(timeout, TimeUnit.SECONDS)
+            .writeTimeout(timeout, TimeUnit.SECONDS)
+            .readTimeout(timeout, TimeUnit.SECONDS)
+            .connectionPool(getGlobalConnectionPool())
+            .proxy(config.getHttpProxy())
+            .build();
     }
 
     /**

@@ -95,6 +95,10 @@ public class BasicMockConfig {
         return this.producerMode.trim().equalsIgnoreCase("direct");
     }
 
+    public boolean isUnsafeProducer() {
+        return this.producerMode.trim().equalsIgnoreCase("unsafe");
+    }
+
     public String getBrokerPaths() {
         Objects.requireNonNull(broker, "Kafka 'broker' is not configured");
         return ServerConfig.getPaths(broker);
