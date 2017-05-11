@@ -27,8 +27,8 @@ import okio.BufferedSink;
  */
 class GzipTopicRequestBody extends TopicRequestBody {
 
-    GzipTopicRequestBody(TopicRequestData requestData, MediaType contentType) throws IOException {
-        super(requestData, contentType);
+    GzipTopicRequestBody(TopicRequestData requestData, MediaType mediaType) throws IOException {
+        super(requestData, mediaType);
     }
 
     @Override

@@ -28,16 +28,16 @@ import okio.BufferedSink;
  */
 class TopicRequestBody extends RequestBody {
     protected final TopicRequestData data;
-    private final MediaType contentType;
+    private final MediaType mediaType;
 
-    TopicRequestBody(TopicRequestData requestData, MediaType contentType) throws IOException {
+    TopicRequestBody(TopicRequestData requestData, MediaType mediaType) throws IOException {
         this.data = requestData;
-        this.contentType = contentType;
+        this.mediaType = mediaType;
     }
 
     @Override
     public MediaType contentType() {
-        return contentType;
+        return mediaType;
     }
 
     @Override
