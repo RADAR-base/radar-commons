@@ -19,6 +19,7 @@ package org.radarcns.producer.rest;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.zip.GZIPOutputStream;
+import okhttp3.MediaType;
 import okio.BufferedSink;
 
 /**
@@ -26,8 +27,8 @@ import okio.BufferedSink;
  */
 class GzipTopicRequestBody extends TopicRequestBody {
 
-    GzipTopicRequestBody(TopicRequestData requestData) throws IOException {
-        super(requestData);
+    GzipTopicRequestBody(TopicRequestData requestData, MediaType contentType) throws IOException {
+        super(requestData, contentType);
     }
 
     @Override

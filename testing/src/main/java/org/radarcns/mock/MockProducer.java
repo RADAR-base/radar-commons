@@ -66,12 +66,9 @@ public class MockProducer {
 
         try {
             senders = createSenders(mockConfig, numDevices);
-        } catch (KeyManagementException exec) {
-            logger.error("Sender cannot be created.", exec);
-            throw new ExceptionInInitializerError(exec);
-        } catch (NoSuchAlgorithmException exec) {
-            logger.error("Sender cannot be created.", exec);
-            throw new ExceptionInInitializerError(exec);
+        } catch (KeyManagementException | NoSuchAlgorithmException ex) {
+            logger.error("Sender cannot be created.", ex);
+            throw new IOException(ex);
         }
 
         devices = new ArrayList<>(numDevices);

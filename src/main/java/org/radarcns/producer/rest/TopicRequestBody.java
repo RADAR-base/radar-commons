@@ -27,16 +27,17 @@ import okio.BufferedSink;
  * TopicRequestData in a RequestBody.
  */
 class TopicRequestBody extends RequestBody {
-
     protected final TopicRequestData data;
+    private final MediaType contentType;
 
-    TopicRequestBody(TopicRequestData requestData) throws IOException {
-        data = requestData;
+    TopicRequestBody(TopicRequestData requestData, MediaType contentType) throws IOException {
+        this.data = requestData;
+        this.contentType = contentType;
     }
 
     @Override
     public MediaType contentType() {
-        return RestSender.KAFKA_REST_AVRO_ENCODING;
+        return contentType;
     }
 
     @Override

@@ -57,8 +57,12 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
     private final JsonFactory jsonFactory;
     public static final String KAFKA_REST_ACCEPT_ENCODING =
             "application/vnd.kafka.v2+json, application/vnd.kafka+json, application/json";
+    public static final String KAFKA_REST_ACCEPT_LEGACY_ENCODING =
+            "application/vnd.kafka.v1+json, application/vnd.kafka+json, application/json";
     public static final MediaType KAFKA_REST_AVRO_ENCODING =
             MediaType.parse("application/vnd.kafka.avro.v2+json; charset=utf-8");
+    public static final MediaType KAFKA_REST_AVRO_LEGACY_ENCODING =
+            MediaType.parse("application/vnd.kafka.avro.v1+json; charset=utf-8");
     private boolean useCompression;
 
     private HttpUrl schemalessKeyUrl;
@@ -66,6 +70,8 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
     private Request isConnectedRequest;
     private SchemaRetriever schemaRetriever;
     private RestClient httpClient;
+    private String acceptType;
+    private MediaType contentType;
 
     /**
      * Construct a non-compressing RestSender.
@@ -102,6 +108,8 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         this.valueEncoder = valueEncoder;
         this.jsonFactory = new JsonFactory();
         this.useCompression = useCompression;
+        this.acceptType = KAFKA_REST_ACCEPT_ENCODING;
+        this.contentType = KAFKA_REST_AVRO_ENCODING;
         setRestClient(new RestClient(kafkaConfig, connectionTimeout));
     }
 
@@ -131,6 +139,8 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         this.valueEncoder = valueEncoder;
         this.jsonFactory = new JsonFactory();
         this.useCompression = useCompression;
+        this.acceptType = KAFKA_REST_ACCEPT_ENCODING;
+        this.contentType = KAFKA_REST_AVRO_ENCODING;
         setRestClient(new RestClient(kafkaConfig, connectionTimeout, selfSignedCertificate));
     }
 
@@ -230,18 +240,28 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
 
             HttpUrl sendToUrl = updateRequestData(records);
 
+            MediaType currentContentType;
+            String currentAcceptType;
+
+            synchronized (RestSender.this) {
+                currentContentType = contentType;
+                currentAcceptType = acceptType;
+            }
+
             TopicRequestBody requestBody;
             Request.Builder requestBuilder = new Request.Builder()
                     .url(sendToUrl)
-                    .addHeader("Accept", KAFKA_REST_ACCEPT_ENCODING);
+                    .addHeader("Accept", currentAcceptType);
+
             if (hasCompression()) {
-                requestBody = new GzipTopicRequestBody(requestData);
+                requestBody = new GzipTopicRequestBody(requestData, currentContentType);
                 requestBuilder.addHeader("Content-Encoding", "gzip");
             } else {
-                requestBody = new TopicRequestBody(requestData);
+                requestBody = new TopicRequestBody(requestData, currentContentType);
             }
             Request request = requestBuilder.post(requestBody).build();
 
+            boolean doResend = false;
             try (Response response = getRestClient().request(request)) {
                 // Evaluate the result
                 if (response.isSuccessful()) {
@@ -250,6 +270,15 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                                 topic, response.body().string());
                     }
                     lastOffsetSent = records.get(records.size() - 1).offset;
+                } else if (response.code() == 415
+                        && currentAcceptType.equals(KAFKA_REST_ACCEPT_ENCODING)) {
+                    logger.warn("Latest Avro encoding is not supported. Switching to legacy "
+                            + "encoding.");
+                    synchronized (RestSender.this) {
+                        contentType = KAFKA_REST_AVRO_LEGACY_ENCODING;
+                        acceptType = KAFKA_REST_ACCEPT_LEGACY_ENCODING;
+                    }
+                    doResend = true;
                 } else {
                     String content = response.body().string();
                     logger.error("FAILED to transmit message: {} -> {}...",
@@ -263,6 +292,10 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                 throw ex;
             } finally {
                 requestData.reset();
+            }
+
+            if (doResend) {
+                send(records);
             }
         }
 
