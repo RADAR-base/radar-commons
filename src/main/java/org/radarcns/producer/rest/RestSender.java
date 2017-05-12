@@ -311,6 +311,8 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                         .getOrSetSchemaMetadata(sendTopic, false, topic.getKeySchema(), -1);
                 requestData.setKeySchemaId(metadata.getId());
             } catch (IOException ex) {
+                logger.error("Failed to get schema for key {} of topic {}",
+                        topic.getKeyClass().getName(), topic, ex);
                 sendToUrl = getSchemalessKeyUrl();
             }
             if (requestData.getKeySchemaId() == null) {
@@ -322,6 +324,8 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                         sendTopic, true, valueSchema, -1);
                 requestData.setValueSchemaId(metadata.getId());
             } catch (IOException ex) {
+                logger.error("Failed to get schema for value {} of topic {}",
+                        topic.getValueClass().getName(), topic, ex);
                 sendToUrl = getSchemalessValueUrl();
             }
             if (requestData.getValueSchemaId() == null) {
