@@ -99,7 +99,8 @@ public class MockProducer {
             BasicMockConfig mockConfig, int numDevices)
             throws KeyManagementException, NoSuchAlgorithmException {
         List<KafkaSender<MeasurementKey, SpecificRecord>> result = new ArrayList<>(numDevices);
-        try (SchemaRetriever retriever = new SchemaRetriever(mockConfig.getSchemaRegistry(), 10)) {
+        try (SchemaRetriever retriever = new SchemaRetriever(
+                mockConfig.getSchemaRegistry(), 10, mockConfig.isUnsafeProducer())) {
 
             if (mockConfig.isDirectProducer()) {
                 for (int i = 0; i < numDevices; i++) {

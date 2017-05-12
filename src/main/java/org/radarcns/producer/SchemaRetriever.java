@@ -25,6 +25,8 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -66,19 +68,45 @@ public class SchemaRetriever implements Closeable {
     private final ObjectReader reader;
     private final JsonFactory jsonFactory;
     private RestClient httpClient;
+    private final boolean unsafe;
 
     public SchemaRetriever(ServerConfig config, long connectionTimeout) {
+        this(config, new RestClient(config, connectionTimeout), false);
+    }
+
+    /**
+     * A SchemaRetriever.
+     * @param config server configuration
+     * @param connectionTimeout timeout for connections
+     * @param unsafe if true, allow any SSL certificate, otherwise take normal security precautions.
+     * @throws NoSuchAlgorithmException if the SSL algorithm cannot be found
+     * @throws KeyManagementException if trust cannot be assigned to all certificates
+     */
+    public SchemaRetriever(ServerConfig config, long connectionTimeout, boolean unsafe)
+            throws NoSuchAlgorithmException, KeyManagementException {
+        this(config, new RestClient(config, connectionTimeout, unsafe), unsafe);
+    }
+
+    private SchemaRetriever(ServerConfig config, RestClient restClient,
+            boolean unsafe) {
         Objects.requireNonNull(config);
         cache = new ConcurrentHashMap<>();
         jsonFactory = new JsonFactory();
         reader = new ObjectMapper(jsonFactory).readerFor(JsonNode.class);
-        httpClient = new RestClient(config, connectionTimeout);
+        httpClient = restClient;
+        this.unsafe = unsafe;
     }
 
     public synchronized void setConnectionTimeout(long connectionTimeout) {
         if (httpClient.getTimeout() != connectionTimeout) {
-            httpClient.close();
-            httpClient = new RestClient(httpClient.getConfig(), connectionTimeout);
+            try {
+                RestClient newHttpClient = new RestClient(httpClient.getConfig(), connectionTimeout,
+                        unsafe);
+                httpClient.close();
+                httpClient = newHttpClient;
+            } catch (KeyManagementException | NoSuchAlgorithmException ex) {
+                logger.warn("Failed to reinitialize HTTP client with new timeout", ex);
+            }
         }
     }
 
