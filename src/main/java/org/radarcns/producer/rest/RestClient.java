@@ -92,7 +92,8 @@ public class RestClient implements Closeable {
             try {
                 builder = getUnsafeBuilder();
             } catch (NoSuchAlgorithmException | KeyManagementException e) {
-                throw new RuntimeException("Failed to create unsafe SSL certificate connection", e);
+                throw new IllegalStateException(
+                        "Failed to create unsafe SSL certificate connection", e);
             }
         } else {
             builder = new OkHttpClient.Builder();

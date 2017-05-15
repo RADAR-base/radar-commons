@@ -115,7 +115,8 @@ public class MockProducer {
                     result.add(new DirectSender<MeasurementKey, SpecificRecord>(properties));
                 }
             } else {
-                System.setProperty("org.radarcns.producer.rest.use_global_connection_pool", "false");
+                System.setProperty("org.radarcns.producer.rest.use_global_connection_pool",
+                        "false");
                 for (int i = 0; i < numDevices; i++) {
                     RestSender<MeasurementKey, SpecificRecord> firstSender = new RestSender<>(
                             mockConfig.getRestProxy(), retriever,
@@ -171,42 +172,10 @@ public class MockProducer {
             System.exit(1);
         }
 
-
         try {
-            final AtomicBoolean isShutdown = new AtomicBoolean(false);
-            final MockProducer producer = new MockProducer(config);
+            MockProducer producer = new MockProducer(config);
             producer.start();
-            Runtime.getRuntime().addShutdownHook(new Thread() {
-                public void run() {
-                    try {
-                        if (!isShutdown.get()) {
-                            producer.shutdown();
-                        }
-                    } catch (IOException ex) {
-                        logger.warn("Failed to shutdown producer", ex);
-                    } catch (InterruptedException ex) {
-                        logger.warn("Shutdown interrupted", ex);
-                    }
-                }
-            });
-            if (config.getDuration() <= 0L) {
-                try {
-                    logger.info("Producing data until interrupted");
-                    Thread.sleep(Long.MAX_VALUE);
-                } catch (InterruptedException ex) {
-                    // this is intended
-                }
-            } else {
-                try {
-                    logger.info("Producing data for {} seconds", config.getDuration() / 1000d);
-                    Thread.sleep(config.getDuration());
-                } catch (InterruptedException ex) {
-                    logger.warn("Data producing interrupted");
-                }
-                producer.shutdown();
-                isShutdown.set(true);
-                logger.info("Producing data done.");
-            }
+            waitForProducer(producer, config.getDuration());
         } catch (IllegalArgumentException ex) {
             logger.error("{}", ex.getMessage());
             System.exit(1);
@@ -215,6 +184,44 @@ public class MockProducer {
             System.exit(1);
         } catch (InterruptedException e) {
             // during shutdown, not that important. Will shutdown again.
+        }
+    }
+
+    private static void waitForProducer(final MockProducer producer, long duration)
+            throws IOException, InterruptedException {
+        final AtomicBoolean isShutdown = new AtomicBoolean(false);
+
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                try {
+                    if (!isShutdown.get()) {
+                        producer.shutdown();
+                    }
+                } catch (IOException ex) {
+                    logger.warn("Failed to shutdown producer", ex);
+                } catch (InterruptedException ex) {
+                    logger.warn("Shutdown interrupted", ex);
+                }
+            }
+        });
+
+        if (duration <= 0L) {
+            try {
+                logger.info("Producing data until interrupted");
+                Thread.sleep(Long.MAX_VALUE);
+            } catch (InterruptedException ex) {
+                // this is intended
+            }
+        } else {
+            try {
+                logger.info("Producing data for {} seconds", duration / 1000d);
+                Thread.sleep(duration);
+            } catch (InterruptedException ex) {
+                logger.warn("Data producing interrupted");
+            }
+            producer.shutdown();
+            isShutdown.set(true);
+            logger.info("Producing data done.");
         }
     }
 }

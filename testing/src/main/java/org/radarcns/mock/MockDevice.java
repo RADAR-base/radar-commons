@@ -27,7 +27,6 @@ import org.radarcns.empatica.EmpaticaE4BatteryLevel;
 import org.radarcns.empatica.EmpaticaE4BloodVolumePulse;
 import org.radarcns.empatica.EmpaticaE4ElectroDermalActivity;
 import org.radarcns.empatica.EmpaticaE4InterBeatInterval;
-import org.radarcns.empatica.EmpaticaE4Tag;
 import org.radarcns.empatica.EmpaticaE4Temperature;
 import org.radarcns.producer.KafkaSender;
 import org.radarcns.producer.KafkaTopicSender;
@@ -107,7 +106,6 @@ public class MockDevice<K> extends Thread {
             int bvpFrequency = 64;
             int edaFrequency = 4;
             int ibiFrequency = 1;
-            int tagsFrequency = 1;
             int temperatureFrequency = 4;
             int timeStep = 0;
 
