@@ -17,6 +17,7 @@
 package org.radarcns.config;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.Proxy;
@@ -37,6 +38,7 @@ public class ServerConfig {
     private String proxyHost;
     @JsonProperty("proxy_port")
     private int proxyPort = -1;
+    private boolean unsafe = false;
 
     public ServerConfig() {
         // POJO initializer
@@ -175,6 +177,7 @@ public class ServerConfig {
         return path;
     }
 
+    @JsonSetter("path")
     public final void setPath(String path) {
         if (path == null) {
             this.path = "/";
@@ -207,6 +210,7 @@ public class ServerConfig {
         ServerConfig otherConfig = (ServerConfig) other;
         return Objects.equals(host, otherConfig.host)
                 && port == otherConfig.port
+                && unsafe == otherConfig.unsafe
                 && Objects.equals(protocol, otherConfig.protocol)
                 && Objects.equals(proxyHost, otherConfig.proxyHost)
                 && proxyPort == otherConfig.proxyPort;
@@ -220,5 +224,13 @@ public class ServerConfig {
         result = 31 * result + (proxyHost != null ? proxyHost.hashCode() : 0);
         result = 31 * result + proxyPort;
         return result;
+    }
+
+    public boolean isUnsafe() {
+        return unsafe;
+    }
+
+    public void setUnsafe(boolean unsafe) {
+        this.unsafe = unsafe;
     }
 }
