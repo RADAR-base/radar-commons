@@ -29,7 +29,9 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.avro.specific.SpecificRecord;
+import org.radarcns.config.YamlConfigLoader;
 import org.radarcns.data.SpecificRecordEncoder;
 import org.radarcns.key.MeasurementKey;
 import org.radarcns.producer.KafkaSender;
@@ -151,6 +153,68 @@ public class MockProducer {
         logger.info("Closing channels");
         for (KafkaSender<MeasurementKey, SpecificRecord> sender : senders) {
             sender.close();
+        }
+    }
+
+    public static void main(String[] args) {
+        if (args.length != 1) {
+            logger.error("This command needs a mock file argument");
+            System.exit(1);
+        }
+
+        File mockFile = new File(args[0]);
+        BasicMockConfig config = null;
+        try {
+            config = new YamlConfigLoader().load(mockFile, BasicMockConfig.class);
+        } catch (IOException ex) {
+            logger.error("Failed to load given mock file {}: {}", mockFile, ex.getMessage());
+            System.exit(1);
+        }
+
+
+        try {
+            final AtomicBoolean isShutdown = new AtomicBoolean(false);
+            final MockProducer producer = new MockProducer(config);
+            producer.start();
+            Runtime.getRuntime().addShutdownHook(new Thread() {
+                public void run() {
+                    try {
+                        if (!isShutdown.get()) {
+                            producer.shutdown();
+                        }
+                    } catch (IOException ex) {
+                        logger.warn("Failed to shutdown producer", ex);
+                    } catch (InterruptedException ex) {
+                        logger.warn("Shutdown interrupted", ex);
+                    }
+                }
+            });
+            if (config.getDuration() <= 0L) {
+                try {
+                    logger.info("Producing data until interrupted");
+                    Thread.sleep(Long.MAX_VALUE);
+                } catch (InterruptedException ex) {
+                    // this is intended
+                }
+            } else {
+                try {
+                    logger.info("Producing data for {} seconds", config.getDuration() / 1000d);
+                    Thread.sleep(config.getDuration());
+                } catch (InterruptedException ex) {
+                    logger.warn("Data producing interrupted");
+                }
+                producer.shutdown();
+                isShutdown.set(true);
+                logger.info("Producing data done.");
+            }
+        } catch (IllegalArgumentException ex) {
+            logger.error("{}", ex.getMessage());
+            System.exit(1);
+        } catch (IOException ex) {
+            logger.error("Failed to start mock producer", ex);
+            System.exit(1);
+        } catch (InterruptedException e) {
+            // during shutdown, not that important. Will shutdown again.
         }
     }
 }

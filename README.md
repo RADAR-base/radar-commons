@@ -30,6 +30,12 @@ dependencies {
 }
 ```
 
+To test your backend with a MockProducer, copy `testing/mock.yml.template` to `testing/mock.yml` and edit its parameters. Then run
+```
+./gradlew :testing:run
+```
+to send data to your backend.
+
 ## Contributing
 
 For latest code use `dev` branch.

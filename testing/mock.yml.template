@@ -1,0 +1,13 @@
+number_of_devices: 50
+rest_proxy:
+  host: localhost
+  protocol: https
+  path: /kafka
+  unsafe: true
+schema_registry:
+  host: localhost
+  protocol: https
+  path: /schema
+  unsafe: true
+# 10 seconds
+duration_millis: 10000
