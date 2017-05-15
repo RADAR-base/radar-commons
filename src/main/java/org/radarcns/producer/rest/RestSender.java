@@ -20,8 +20,6 @@ import com.fasterxml.jackson.core.JsonFactory;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -83,7 +81,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
      */
     public RestSender(ServerConfig kafkaConfig, SchemaRetriever schemaRetriever,
             AvroEncoder keyEncoder, AvroEncoder valueEncoder,
-            long connectionTimeout) {
+            long connectionTimeout) throws IOException {
         this(kafkaConfig, schemaRetriever, keyEncoder, valueEncoder, connectionTimeout, false);
     }
 
@@ -111,37 +109,6 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         this.acceptType = KAFKA_REST_ACCEPT_ENCODING;
         this.contentType = KAFKA_REST_AVRO_ENCODING;
         setRestClient(new RestClient(kafkaConfig, connectionTimeout));
-    }
-
-    /**
-     * Construct a RestSender.
-     * @param kafkaConfig non-null server to send data to
-     * @param schemaRetriever non-null Retriever of avro schemas
-     * @param keyEncoder non-null Avro encoder for keys
-     * @param valueEncoder non-null Avro encoder for values
-     * @param connectionTimeout socket connection timeout in seconds
-     * @param useCompression use compression to send data
-     * @param selfSignedCertificate accept connection with server using self-signed certificate
-     *
-     * @throws NoSuchAlgorithmException if the required cryptographic algorithm is not available
-     * @throws KeyManagementException if key management fails
-     */
-    public RestSender(ServerConfig kafkaConfig, SchemaRetriever schemaRetriever,
-            AvroEncoder keyEncoder, AvroEncoder valueEncoder,
-            long connectionTimeout, boolean useCompression, boolean selfSignedCertificate)
-            throws NoSuchAlgorithmException, KeyManagementException {
-        Objects.requireNonNull(kafkaConfig);
-        Objects.requireNonNull(schemaRetriever);
-        Objects.requireNonNull(keyEncoder);
-        Objects.requireNonNull(valueEncoder);
-        this.schemaRetriever = schemaRetriever;
-        this.keyEncoder = keyEncoder;
-        this.valueEncoder = valueEncoder;
-        this.jsonFactory = new JsonFactory();
-        this.useCompression = useCompression;
-        this.acceptType = KAFKA_REST_ACCEPT_ENCODING;
-        this.contentType = KAFKA_REST_AVRO_ENCODING;
-        setRestClient(new RestClient(kafkaConfig, connectionTimeout, selfSignedCertificate));
     }
 
     public synchronized void setConnectionTimeout(long connectionTimeout) {
@@ -281,14 +248,19 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                     doResend = true;
                 } else {
                     String content = response.body().string();
+                    String requestContent = requestBody.content();
+                    requestContent = requestContent.substring(0,
+                            Math.min(requestContent.length(), 255));
                     logger.error("FAILED to transmit message: {} -> {}...",
-                            content, requestBody.content().substring(0, 255));
+                            content, requestContent);
                     throw new IOException("Failed to submit (HTTP status code " + response.code()
                             + "): " + content);
                 }
             } catch (IOException ex) {
-                logger.error("FAILED to transmit message:\n{}...",
-                        requestBody.content().substring(0, 255) );
+                String requestContent = requestBody.content();
+                requestContent = requestContent.substring(0,
+                        Math.min(requestContent.length(), 255));
+                logger.error("FAILED to transmit message:\n{}...", requestContent);
                 throw ex;
             } finally {
                 requestData.reset();

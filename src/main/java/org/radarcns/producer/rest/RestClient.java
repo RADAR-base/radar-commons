@@ -43,6 +43,7 @@ public class RestClient implements Closeable {
     private final long timeout;
     private final ServerConfig config;
     private final OkHttpClient httpClient;
+    private final boolean usesGlobalPool;
 
     private static final Object POOL_SYNC_OBJECT = new Object();
     private static ConnectionPool connectionPool = null;
@@ -77,34 +78,25 @@ public class RestClient implements Closeable {
         Objects.requireNonNull(config);
         this.config = config;
         this.timeout = connectionTimeout;
+        boolean useConnectionPool;
+        try {
+            useConnectionPool = Boolean.parseBoolean(System.getProperty(
+                    "org.radarcns.producer.rest.use_global_connection_pool", "true"));
+        } catch (NumberFormatException ex) {
+            useConnectionPool = true;
+        }
+        usesGlobalPool = useConnectionPool;
 
-        httpClient = buildHttpClient(new OkHttpClient.Builder());
-    }
-
-    /**
-     * REST client able to accept connection with server using self-signed certificate.
-     *
-     * @param config server configuration
-     * @param connectionTimeout connection timeout in seconds
-     * @param selfSignedCertificate accept connection with server using self-signed certificate
-     *
-     * @throws NoSuchAlgorithmException if the required cryptographic algorithm is not available
-     * @throws KeyManagementException if key management fails
-     */
-    public RestClient(ServerConfig config, long connectionTimeout, boolean selfSignedCertificate)
-            throws KeyManagementException, NoSuchAlgorithmException {
-        Objects.requireNonNull(config);
-        this.config = config;
-        this.timeout = connectionTimeout;
-
-        Builder builder;
-
-        if (selfSignedCertificate) {
-            builder = getUnsafeBuilder();
+        OkHttpClient.Builder builder;
+        if (config.isUnsafe()) {
+            try {
+                builder = getUnsafeBuilder();
+            } catch (NoSuchAlgorithmException | KeyManagementException e) {
+                throw new RuntimeException("Failed to create unsafe SSL certificate connection", e);
+            }
         } else {
             builder = new OkHttpClient.Builder();
         }
-
         httpClient = buildHttpClient(builder);
     }
 
@@ -163,13 +155,17 @@ public class RestClient implements Closeable {
      * @return OkHttpClient client
      */
     private OkHttpClient buildHttpClient(Builder builder) {
-        return builder
+        builder
             .connectTimeout(timeout, TimeUnit.SECONDS)
             .writeTimeout(timeout, TimeUnit.SECONDS)
             .readTimeout(timeout, TimeUnit.SECONDS)
-            .connectionPool(getGlobalConnectionPool())
-            .proxy(config.getHttpProxy())
-            .build();
+            .proxy(config.getHttpProxy());
+
+        if (usesGlobalPool) {
+            builder.connectionPool(getGlobalConnectionPool());
+        }
+
+        return builder.build();
     }
 
     /**
@@ -249,6 +245,8 @@ public class RestClient implements Closeable {
 
     @Override
     public void close() {
-        releaseGlobalConnectionPool();
+        if (usesGlobalPool) {
+            releaseGlobalConnectionPool();
+        }
     }
 }

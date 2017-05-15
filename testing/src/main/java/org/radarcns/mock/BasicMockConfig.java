@@ -26,10 +26,10 @@ import org.radarcns.config.ServerConfig;
  */
 public class BasicMockConfig {
     @JsonProperty("producer_mode")
-    private String producerMode;
+    private String producerMode = "rest";
 
     @JsonProperty("number_of_devices")
-    private Integer numberOfDevices;
+    private Integer numberOfDevices = 1;
 
     private List<ServerConfig> broker;
 
@@ -39,9 +39,12 @@ public class BasicMockConfig {
     @JsonProperty("schema_registry")
     private ServerConfig schemaRegistry;
 
-    private List<MockDataConfig> data;
+    private List<MockDataConfig> data = null;
 
-    private boolean compression;
+    private boolean compression = false;
+
+    @JsonProperty("duration_millis")
+    private long duration = 0L;
 
     public List<ServerConfig> getBroker() {
         return broker;
@@ -110,5 +113,13 @@ public class BasicMockConfig {
 
     public void setCompression(boolean compression) {
         this.compression = compression;
+    }
+
+    public long getDuration() {
+        return duration;
+    }
+
+    public void setDuration(long duration) {
+        this.duration = duration;
     }
 }

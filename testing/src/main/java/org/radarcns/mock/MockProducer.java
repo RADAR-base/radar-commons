@@ -60,7 +60,7 @@ public class MockProducer {
         } else if (mockConfig.getNumberOfDevices() != 0) {
             numDevices = mockConfig.getNumberOfDevices();
         } else {
-            logger.error(
+            throw new IllegalArgumentException(
                     "Error simulating mock device setup. Please provide data or number_of_devices");
         }
 
@@ -100,7 +100,7 @@ public class MockProducer {
             throws KeyManagementException, NoSuchAlgorithmException {
         List<KafkaSender<MeasurementKey, SpecificRecord>> result = new ArrayList<>(numDevices);
         try (SchemaRetriever retriever = new SchemaRetriever(
-                mockConfig.getSchemaRegistry(), 10, mockConfig.isUnsafeProducer())) {
+                mockConfig.getSchemaRegistry(), 10)) {
 
             if (mockConfig.isDirectProducer()) {
                 for (int i = 0; i < numDevices; i++) {
@@ -113,11 +113,12 @@ public class MockProducer {
                     result.add(new DirectSender<MeasurementKey, SpecificRecord>(properties));
                 }
             } else {
+                System.setProperty("org.radarcns.producer.rest.use_global_connection_pool", "false");
                 for (int i = 0; i < numDevices; i++) {
                     RestSender<MeasurementKey, SpecificRecord> firstSender = new RestSender<>(
                             mockConfig.getRestProxy(), retriever,
                             new SpecificRecordEncoder(false), new SpecificRecordEncoder(false),
-                            10, mockConfig.hasCompression(), mockConfig.isUnsafeProducer());
+                            10, mockConfig.hasCompression());
 
                     result.add(new BatchedKafkaSender<>(firstSender, 10_000, 1000));
                 }
@@ -126,7 +127,7 @@ public class MockProducer {
         return result;
     }
 
-    public void start() throws IOException, InterruptedException {
+    public void start() throws IOException {
         for (MockDevice device : devices) {
             device.start();
         }
