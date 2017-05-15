@@ -45,7 +45,6 @@ public class MockDevice<K> extends Thread {
     private final AvroTopic<K, EmpaticaE4BloodVolumePulse> bvp;
     private final AvroTopic<K, EmpaticaE4ElectroDermalActivity> eda;
     private final AvroTopic<K, EmpaticaE4InterBeatInterval> ibi;
-    private final AvroTopic<K, EmpaticaE4Tag> tags;
     private final AvroTopic<K, EmpaticaE4Temperature> temperature;
     private final int baseFrequency;
     private final KafkaSender<K, SpecificRecord> sender;
@@ -59,25 +58,22 @@ public class MockDevice<K> extends Thread {
     public MockDevice(KafkaSender<K, SpecificRecord> sender, K key,
             Schema keySchema, Class<K> keyClass) {
         this.key = key;
-        acceleration = new AvroTopic<>("backend_mock_empatica_e4_acceleration",
+        acceleration = new AvroTopic<>("android_empatica_e4_acceleration",
                 keySchema, EmpaticaE4Acceleration.getClassSchema(),
                 keyClass, EmpaticaE4Acceleration.class);
-        battery = new AvroTopic<>("backend_mock_empatica_e4_battery_level",
+        battery = new AvroTopic<>("android_empatica_e4_battery_level",
                 keySchema, EmpaticaE4BatteryLevel.getClassSchema(),
                 keyClass, EmpaticaE4BatteryLevel.class);
-        bvp = new AvroTopic<>("backend_mock_empatica_e4_blood_volume_pulse",
+        bvp = new AvroTopic<>("android_empatica_e4_blood_volume_pulse",
                 keySchema, EmpaticaE4BloodVolumePulse.getClassSchema(),
                 keyClass, EmpaticaE4BloodVolumePulse.class);
-        eda = new AvroTopic<>("backend_mock_empatica_e4_electrodermal_activity",
+        eda = new AvroTopic<>("android_empatica_e4_electrodermal_activity",
                 keySchema, EmpaticaE4ElectroDermalActivity.getClassSchema(),
                 keyClass, EmpaticaE4ElectroDermalActivity.class);
-        ibi = new AvroTopic<>("backend_mock_empatica_e4_inter_beat_interval",
+        ibi = new AvroTopic<>("android_empatica_e4_inter_beat_interval",
                 keySchema, EmpaticaE4InterBeatInterval.getClassSchema(),
                 keyClass, EmpaticaE4InterBeatInterval.class);
-        tags = new AvroTopic<>("backend_mock_empatica_e4_tag",
-                keySchema, EmpaticaE4Tag.getClassSchema(),
-                keyClass, EmpaticaE4Tag.class);
-        temperature = new AvroTopic<>("backend_mock_empatica_e4_temperature",
+        temperature = new AvroTopic<>("android_empatica_e4_temperature",
                 keySchema, EmpaticaE4Temperature.getClassSchema(),
                 keyClass, EmpaticaE4Temperature.class);
         baseFrequency = 64;
@@ -104,8 +100,6 @@ public class MockDevice<K> extends Thread {
                         = sender.sender(eda);
                 KafkaTopicSender<K, EmpaticaE4InterBeatInterval> ibiSender
                         = sender.sender(ibi);
-                KafkaTopicSender<K, EmpaticaE4Tag> tagSender
-                        = sender.sender(tags);
                 KafkaTopicSender<K, EmpaticaE4Temperature> temperatureSender
                         = sender.sender(temperature)) {
             int accelerationFrequency = 32;
@@ -136,8 +130,6 @@ public class MockDevice<K> extends Thread {
                         new EmpaticaE4ElectroDermalActivity(time, timeReceived, 0.026897f));
                 sendIfNeeded(beat, ibiFrequency, ibiSender,
                         new EmpaticaE4InterBeatInterval(time, timeReceived, 0.921917f));
-                sendIfNeeded(beat, tagsFrequency, tagSender,
-                        new EmpaticaE4Tag(time, timeReceived));
                 sendIfNeeded(beat, temperatureFrequency, temperatureSender,
                         new EmpaticaE4Temperature(time, timeReceived, 37.0f));
 
