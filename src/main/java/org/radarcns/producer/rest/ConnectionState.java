@@ -25,6 +25,9 @@ import java.util.concurrent.TimeUnit;
  * thread-safe. The state transition diagram is CONNECTED <-> DISCONNECTED on {@link #didConnect()}
  * and {@link #didDisconnect()}; CONNECTED <-> UNKNOWN on {@link #getState()} after a timeout occurs
  * and {@link #didConnect()}; and UNKNOWN -> DISCONNECTED on {@link #didDisconnect()}.
+ *
+ * A connection state could be shared with multiple HTTP clients if they are talking to the same
+ * server.
  */
 public final class ConnectionState {
 
@@ -38,14 +41,14 @@ public final class ConnectionState {
     private State state;
 
     /**
-     * Connection state with given timeout.
+     * Connection state with given timeout. The state will start as connected.
      * @param timeout timeout
      * @param unit unit of the timeout
      * @throws IllegalArgumentException if the timeout is not strictly positive.
      */
     public ConnectionState(long timeout, TimeUnit unit) {
-        lastConnection = -1L;
-        state = State.UNKNOWN;
+        lastConnection = System.currentTimeMillis();
+        state = State.CONNECTED;
         setTimeout(timeout, unit);
     }
 
@@ -66,7 +69,6 @@ public final class ConnectionState {
     /** For a sender to indicate that a connection attempt failed. */
     public synchronized void didDisconnect() {
         state = State.DISCONNECTED;
-        lastConnection = -1L;
     }
 
     /**
@@ -79,19 +81,6 @@ public final class ConnectionState {
         if (timeout <= 0) {
             throw new IllegalArgumentException("Timeout must be strictly positive");
         }
-        this.timeout = unit.convert(timeout, TimeUnit.MILLISECONDS);
-    }
-
-    /**
-     * Get the time since the last successful connection. Returns -1 if the state is disconnected.
-     *
-     * @param unit unit in which the time should be returned.
-     * @return time difference or -1 if disconnected.
-     */
-    public long getTimeSinceConnection(TimeUnit unit) {
-        if (lastConnection == -1L) {
-            return -1L;
-        }
-        return TimeUnit.MILLISECONDS.convert(System.currentTimeMillis() - lastConnection, unit);
+        this.timeout = TimeUnit.MILLISECONDS.convert(timeout, unit);
     }
 }
