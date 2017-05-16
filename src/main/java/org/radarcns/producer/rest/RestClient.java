@@ -45,13 +45,12 @@ public class RestClient implements Closeable {
     private final ManagedConnectionPool connectionPool;
 
     /**
-     * REST client. This client will use the OkHttp3 default connection pool.
+     * REST client. This client will use the OkHttp3 default connection pool and 30 second timeout.
      *
      * @param config server configuration
-     * @param connectionTimeout connection timeout in seconds
      */
-    public RestClient(ServerConfig config, long connectionTimeout) {
-        this(config, connectionTimeout, null);
+    public RestClient(ServerConfig config) {
+        this(config, 10, null);
     }
 
     /**
@@ -155,18 +154,6 @@ public class RestClient implements Closeable {
         return builder.build();
     }
 
-    /**
-     * Make a blocking request.
-     * @param request request, possibly built with {@link #requestBuilder(String)}
-     * @return response to the request
-     * @throws IOException if the request failes
-     * @throws NullPointerException if the request is null
-     */
-    public Response request(Request request) throws IOException {
-        Objects.requireNonNull(request);
-        return httpClient.newCall(request).execute();
-    }
-
     /** Configured connection timeout in seconds. */
     public long getTimeout() {
         return timeout;
@@ -180,6 +167,29 @@ public class RestClient implements Closeable {
     /** Connection pool being used. */
     public ManagedConnectionPool getConnectionPool() {
         return connectionPool;
+    }
+
+    /**
+     * Make a blocking request.
+     * @param request request, possibly built with {@link #requestBuilder(String)}
+     * @return response to the request
+     * @throws IOException if the request failes
+     * @throws NullPointerException if the request is null
+     */
+    public Response request(Request request) throws IOException {
+        Objects.requireNonNull(request);
+        return httpClient.newCall(request).execute();
+    }
+
+    /**
+     * Make a request to given relative path. This does not set any request properties except the
+     * URL.
+     * @param relativePath relative path to request
+     * @return response to the request
+     * @throws IOException if the path is invalid or the request failed.
+     */
+    public Response request(String relativePath) throws IOException {
+        return request(requestBuilder(relativePath).build());
     }
 
     /**

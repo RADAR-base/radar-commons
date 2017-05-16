@@ -106,7 +106,6 @@ public class SchemaRetriever implements Closeable {
         RestClient restClient = getRestClient();
         Request request = restClient.requestBuilder(path)
                 .addHeader("Accept", "application/json")
-                .get()
                 .build();
 
         try (Response response = restClient.request(request)) {
