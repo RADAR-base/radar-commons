@@ -29,6 +29,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.config.YamlConfigLoader;
@@ -38,6 +39,8 @@ import org.radarcns.producer.KafkaSender;
 import org.radarcns.producer.SchemaRetriever;
 import org.radarcns.producer.direct.DirectSender;
 import org.radarcns.producer.rest.BatchedKafkaSender;
+import org.radarcns.producer.rest.ConnectionState;
+import org.radarcns.producer.rest.ManagedConnectionPool;
 import org.radarcns.producer.rest.RestSender;
 import org.radarcns.util.serde.KafkaAvroSerializer;
 import org.slf4j.Logger;
@@ -86,6 +89,7 @@ public class MockProducer {
             }
         } else {
             try {
+
                 for (int i = 0; i < numDevices; i++) {
                     File mockFile = new File(mockConfig.getData().get(i).getAbsoluteDataFile());
                     files.add(new MockFile(senders.get(i), mockFile, mockConfig.getData().get(i)));
@@ -115,13 +119,21 @@ public class MockProducer {
                     result.add(new DirectSender<MeasurementKey, SpecificRecord>(properties));
                 }
             } else {
-                System.setProperty("org.radarcns.producer.rest.use_global_connection_pool",
-                        "false");
+                ConnectionState sharedState = new ConnectionState(10, TimeUnit.SECONDS);
+                RestSender.Builder<MeasurementKey, SpecificRecord> restBuilder =
+                        new RestSender.Builder<MeasurementKey, SpecificRecord>()
+                                .server(mockConfig.getRestProxy())
+                                .schemaRetriever(retriever)
+                                .useCompression(mockConfig.hasCompression())
+                                .encoders(new SpecificRecordEncoder(false),
+                                        new SpecificRecordEncoder(false))
+                                .connectionState(sharedState)
+                                .connectionTimeout(10, TimeUnit.SECONDS);
+
                 for (int i = 0; i < numDevices; i++) {
-                    RestSender<MeasurementKey, SpecificRecord> firstSender = new RestSender<>(
-                            mockConfig.getRestProxy(), retriever,
-                            new SpecificRecordEncoder(false), new SpecificRecordEncoder(false),
-                            10, mockConfig.hasCompression());
+                    RestSender<MeasurementKey, SpecificRecord> firstSender = restBuilder
+                            .connectionPool(new ManagedConnectionPool())
+                            .build();
 
                     result.add(new BatchedKafkaSender<>(firstSender, 10_000, 1000));
                 }

@@ -76,35 +76,17 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
     private final ConnectionState state;
 
     /**
-     * Construct a non-compressing RestSender.
-     * @param kafkaConfig non-null server to send data to
-     * @param schemaRetriever non-null Retriever of avro schemas
-     * @param keyEncoder non-null Avro encoder for keys
-     * @param valueEncoder non-null Avro encoder for values
-     * @param connectionTimeout socket connection timeout in seconds
-     */
-    public RestSender(ServerConfig kafkaConfig, SchemaRetriever schemaRetriever,
-            AvroEncoder keyEncoder, AvroEncoder valueEncoder,
-            long connectionTimeout) throws IOException {
-        this(kafkaConfig, schemaRetriever, keyEncoder, valueEncoder, connectionTimeout, false);
-    }
-
-    /**
      * Construct a RestSender.
-     * @param kafkaConfig non-null server to send data to
+     * @param httpClient client to send requests with
      * @param schemaRetriever non-null Retriever of avro schemas
      * @param keyEncoder non-null Avro encoder for keys
      * @param valueEncoder non-null Avro encoder for values
-     * @param connectionTimeout socket connection timeout in seconds
      * @param useCompression use compression to send data
+     * @param sharedState shared connection state
      */
-    public RestSender(ServerConfig kafkaConfig, SchemaRetriever schemaRetriever,
-            AvroEncoder keyEncoder, AvroEncoder valueEncoder,
-            long connectionTimeout, boolean useCompression) {
-        Objects.requireNonNull(kafkaConfig);
-        Objects.requireNonNull(schemaRetriever);
-        Objects.requireNonNull(keyEncoder);
-        Objects.requireNonNull(valueEncoder);
+    private RestSender(RestClient httpClient, SchemaRetriever schemaRetriever,
+            AvroEncoder keyEncoder, AvroEncoder valueEncoder, boolean useCompression,
+            ConnectionState sharedState) {
         this.schemaRetriever = schemaRetriever;
         this.keyEncoder = keyEncoder;
         this.valueEncoder = valueEncoder;
@@ -112,14 +94,16 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         this.useCompression = useCompression;
         this.acceptType = KAFKA_REST_ACCEPT_ENCODING;
         this.contentType = KAFKA_REST_AVRO_ENCODING;
-        this.state = new ConnectionState(connectionTimeout, TimeUnit.SECONDS);
-        setRestClient(new RestClient(kafkaConfig, connectionTimeout));
+        this.state = sharedState;
+        setRestClient(httpClient);
     }
 
     public synchronized void setConnectionTimeout(long connectionTimeout) {
         if (connectionTimeout != httpClient.getTimeout()) {
+            RestClient newRestClient = new RestClient(httpClient.getConfig(),
+                    connectionTimeout, httpClient.getConnectionPool());
             httpClient.close();
-            httpClient = new RestClient(httpClient.getConfig(), connectionTimeout);
+            httpClient = newRestClient;
             state.setTimeout(connectionTimeout, TimeUnit.SECONDS);
         }
     }
@@ -129,8 +113,10 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         if (kafkaConfig.equals(httpClient.getConfig())) {
             return;
         }
+        RestClient newRestClient = new RestClient(kafkaConfig, httpClient.getTimeout(),
+                httpClient.getConnectionPool());
         httpClient.close();
-        setRestClient(new RestClient(kafkaConfig, httpClient.getTimeout()));
+        setRestClient(newRestClient);
     }
 
     private void setRestClient(RestClient newClient) {
@@ -389,4 +375,69 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         httpClient.close();
     }
 
+    public static class Builder<K, V> {
+        private ServerConfig kafkaConfig;
+        private SchemaRetriever retriever;
+        private AvroEncoder keyEncoder;
+        private AvroEncoder valueEncoder;
+        private boolean compression = false;
+        private long connectionTimeout = 10;
+        private ConnectionState state;
+        private ManagedConnectionPool pool;
+
+        public Builder<K, V> server(ServerConfig kafkaConfig) {
+            this.kafkaConfig = kafkaConfig;
+            return this;
+        }
+
+        public Builder<K, V> schemaRetriever(SchemaRetriever schemaRetriever) {
+            this.retriever = schemaRetriever;
+            return this;
+        }
+
+        public Builder<K, V> encoders(AvroEncoder keyEncoder, AvroEncoder valueEncoder) {
+            this.keyEncoder = keyEncoder;
+            this.valueEncoder = valueEncoder;
+            return this;
+        }
+
+        public Builder<K, V> useCompression(boolean compression) {
+            this.compression = compression;
+            return this;
+        }
+
+        public Builder<K, V> connectionState(ConnectionState state) {
+            this.state = state;
+            return this;
+        }
+
+        public Builder<K, V> connectionTimeout(long timeout, TimeUnit unit) {
+            this.connectionTimeout = TimeUnit.SECONDS.convert(timeout, unit);
+            return this;
+        }
+
+        public Builder<K, V> connectionPool(ManagedConnectionPool pool) {
+            this.pool = pool;
+        }
+
+        public RestSender<K, V> build() {
+            Objects.requireNonNull(kafkaConfig);
+            Objects.requireNonNull(retriever);
+            Objects.requireNonNull(keyEncoder);
+            Objects.requireNonNull(valueEncoder);
+            if (connectionTimeout <= 0) {
+                throw new IllegalStateException("Connection timeout must be strictly positive");
+            }
+            ConnectionState useState = state;
+            if (useState == null) {
+                useState = new ConnectionState(connectionTimeout, TimeUnit.SECONDS);
+            }
+            ManagedConnectionPool usePool = pool;
+            if (usePool == null) {
+                usePool = ManagedConnectionPool.GLOBAL_POOL;
+            }
+            return new RestSender<>(new RestClient(kafkaConfig, connectionTimeout, usePool),
+                    retriever, keyEncoder, valueEncoder, compression, useState);
+        }
+    }
 }

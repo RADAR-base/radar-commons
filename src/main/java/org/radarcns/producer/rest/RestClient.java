@@ -43,49 +43,23 @@ public class RestClient implements Closeable {
     private final long timeout;
     private final ServerConfig config;
     private final OkHttpClient httpClient;
-    private final boolean usesGlobalPool;
-
-    private static final Object POOL_SYNC_OBJECT = new Object();
-    private static ConnectionPool connectionPool = null;
-    private static int connectionPoolReferences;
-
-    private static ConnectionPool getGlobalConnectionPool() {
-        synchronized (POOL_SYNC_OBJECT) {
-            if (connectionPool == null) {
-                connectionPool = new ConnectionPool();
-            }
-            connectionPoolReferences++;
-            return connectionPool;
-        }
-    }
-
-    private static void releaseGlobalConnectionPool() {
-        synchronized (POOL_SYNC_OBJECT) {
-            connectionPoolReferences--;
-            if (connectionPoolReferences == 0) {
-                connectionPool = null;
-            }
-        }
-    }
+    private final ManagedConnectionPool connectionPool;
 
     /**
-     * REST client.
+     * REST client. This client will reuse a global connection pool unless
      *
      * @param config server configuration
      * @param connectionTimeout connection timeout in seconds
+     * @param connectionPool connection pool to use. If null, default OkHttp3 connection pool will
+     *                       be used. Otherwise, given pool will be closed when this client is
+     *                       closed.
      */
-    public RestClient(ServerConfig config, long connectionTimeout) {
+    public RestClient(ServerConfig config, long connectionTimeout,
+            ManagedConnectionPool connectionPool) {
         Objects.requireNonNull(config);
         this.config = config;
         this.timeout = connectionTimeout;
-        boolean useConnectionPool;
-        try {
-            useConnectionPool = Boolean.parseBoolean(System.getProperty(
-                    "org.radarcns.producer.rest.use_global_connection_pool", "true"));
-        } catch (NumberFormatException ex) {
-            useConnectionPool = true;
-        }
-        usesGlobalPool = useConnectionPool;
+        this.connectionPool = connectionPool;
 
         OkHttpClient.Builder builder;
         if (config.isUnsafe()) {
@@ -98,7 +72,7 @@ public class RestClient implements Closeable {
         } else {
             builder = new OkHttpClient.Builder();
         }
-        httpClient = buildHttpClient(builder);
+        httpClient = buildHttpClient(builder, connectionPool);
     }
 
     /**
@@ -153,17 +127,20 @@ public class RestClient implements Closeable {
      * Build a OkHttpClient setting timeouts, connection pool and proxy.
      *
      * @param builder builder useful to provide extra configuration
+     * @param connectionPool connection pool to use. If null, default OkHttp3 connection pool will
+     *                       be used.
      * @return OkHttpClient client
      */
-    private OkHttpClient buildHttpClient(Builder builder) {
+    private OkHttpClient buildHttpClient(Builder builder,
+            ManagedConnectionPool connectionPool) {
         builder
             .connectTimeout(timeout, TimeUnit.SECONDS)
             .writeTimeout(timeout, TimeUnit.SECONDS)
             .readTimeout(timeout, TimeUnit.SECONDS)
             .proxy(config.getHttpProxy());
 
-        if (usesGlobalPool) {
-            builder.connectionPool(getGlobalConnectionPool());
+        if (connectionPool != null) {
+            builder.connectionPool(connectionPool.acquire());
         }
 
         return builder.build();
@@ -189,6 +166,11 @@ public class RestClient implements Closeable {
     /** Configured server. */
     public ServerConfig getConfig() {
         return config;
+    }
+
+    /** Connection pool being used. */
+    public ManagedConnectionPool getConnectionPool() {
+        return connectionPool;
     }
 
     /**
@@ -246,8 +228,6 @@ public class RestClient implements Closeable {
 
     @Override
     public void close() {
-        if (usesGlobalPool) {
-            releaseGlobalConnectionPool();
-        }
+        connectionPool.release();
     }
 }
