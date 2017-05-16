@@ -19,7 +19,10 @@ package org.radarcns.producer.rest;
 import okhttp3.ConnectionPool;
 
 /**
- * Manages a connection pool.
+ * Manages a connection pool. Using this class properly ensures that all resources are released
+ * after a global ConnectionPool is no longer used. Each call to {@link #acquire()} must be matched
+ * with exactly one call to {@link #release()} once the acquired ConnectionPool is no longer used.
+ * This class is thread-safe.
  */
 public class ManagedConnectionPool {
     public static final ManagedConnectionPool GLOBAL_POOL = new ManagedConnectionPool();
@@ -30,6 +33,11 @@ public class ManagedConnectionPool {
         references = 0;
     }
 
+    /**
+     * Acquire access to a connection pool. A call to this must be matched with exactly one call
+     * to {@link #release()}.
+     * @return the single connection pool managed by this object
+     */
     public synchronized ConnectionPool acquire() {
         if (references == 0) {
             connectionPool = new ConnectionPool();
@@ -38,6 +46,10 @@ public class ManagedConnectionPool {
         return connectionPool;
     }
 
+    /**
+     * Release access to a connection pool once it is no longer used.
+     * @throws IllegalStateException if release is called more often than acquire.
+     */
     public synchronized void release() {
         if (references == 0) {
             throw new IllegalStateException(
