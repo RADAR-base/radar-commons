@@ -39,6 +39,7 @@ import org.apache.avro.Schema;
 import org.apache.avro.Schema.Type;
 import org.apache.avro.generic.GenericContainer;
 import org.radarcns.config.ServerConfig;
+import org.radarcns.producer.rest.ManagedConnectionPool;
 import org.radarcns.producer.rest.ParsedSchemaMetadata;
 import org.radarcns.producer.rest.RestClient;
 import org.slf4j.Logger;
@@ -72,12 +73,13 @@ public class SchemaRetriever implements Closeable {
         cache = new ConcurrentHashMap<>();
         jsonFactory = new JsonFactory();
         reader = new ObjectMapper(jsonFactory).readerFor(JsonNode.class);
-        httpClient = new RestClient(config, connectionTimeout);
+        httpClient = new RestClient(config, connectionTimeout, ManagedConnectionPool.GLOBAL_POOL);
     }
 
     public synchronized void setConnectionTimeout(long connectionTimeout) {
         if (httpClient.getTimeout() != connectionTimeout) {
-            RestClient newHttpClient = new RestClient(httpClient.getConfig(), connectionTimeout);
+            RestClient newHttpClient = new RestClient(httpClient.getConfig(), connectionTimeout,
+                    ManagedConnectionPool.GLOBAL_POOL);
             httpClient.close();
             httpClient = newHttpClient;
         }

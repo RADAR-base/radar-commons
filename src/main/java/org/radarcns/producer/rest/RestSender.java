@@ -50,6 +50,7 @@ import org.slf4j.LoggerFactory;
  * @param <K> base key class
  * @param <V> base value class
  */
+@SuppressWarnings("PMD.GodClass")
 public class RestSender<K, V> implements KafkaSender<K, V> {
     private static final Logger logger = LoggerFactory.getLogger(RestSender.class);
     public static final String KAFKA_REST_ACCEPT_ENCODING =
@@ -327,7 +328,6 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
 
     }
 
-
     @Override
     public <L extends K, W extends V> KafkaTopicSender<L, W> sender(AvroTopic<L, W> topic)
             throws IOException {
@@ -381,7 +381,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         private AvroEncoder keyEncoder;
         private AvroEncoder valueEncoder;
         private boolean compression = false;
-        private long connectionTimeout = 10;
+        private long timeout = 10;
         private ConnectionState state;
         private ManagedConnectionPool pool;
 
@@ -412,12 +412,13 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         }
 
         public Builder<K, V> connectionTimeout(long timeout, TimeUnit unit) {
-            this.connectionTimeout = TimeUnit.SECONDS.convert(timeout, unit);
+            this.timeout = TimeUnit.SECONDS.convert(timeout, unit);
             return this;
         }
 
         public Builder<K, V> connectionPool(ManagedConnectionPool pool) {
             this.pool = pool;
+            return this;
         }
 
         public RestSender<K, V> build() {
@@ -425,18 +426,18 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
             Objects.requireNonNull(retriever);
             Objects.requireNonNull(keyEncoder);
             Objects.requireNonNull(valueEncoder);
-            if (connectionTimeout <= 0) {
+            if (timeout <= 0) {
                 throw new IllegalStateException("Connection timeout must be strictly positive");
             }
             ConnectionState useState = state;
             if (useState == null) {
-                useState = new ConnectionState(connectionTimeout, TimeUnit.SECONDS);
+                useState = new ConnectionState(timeout, TimeUnit.SECONDS);
             }
             ManagedConnectionPool usePool = pool;
             if (usePool == null) {
                 usePool = ManagedConnectionPool.GLOBAL_POOL;
             }
-            return new RestSender<>(new RestClient(kafkaConfig, connectionTimeout, usePool),
+            return new RestSender<>(new RestClient(kafkaConfig, timeout, usePool),
                     retriever, keyEncoder, valueEncoder, compression, useState);
         }
     }

@@ -39,7 +39,7 @@ public class RestClientTest {
     public void setUp() {
         server = new MockWebServer();
         config = new ServerConfig(server.url("base").url());
-        client = new RestClient(config, 1);
+        client = new RestClient(config, 1, new ManagedConnectionPool());
     }
 
     @Test

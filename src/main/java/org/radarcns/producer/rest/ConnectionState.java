@@ -47,8 +47,8 @@ public final class ConnectionState {
      * @throws IllegalArgumentException if the timeout is not strictly positive.
      */
     public ConnectionState(long timeout, TimeUnit unit) {
-        lastConnection = System.currentTimeMillis();
-        state = State.CONNECTED;
+        lastConnection = -1L;
+        state = State.UNKNOWN;
         setTimeout(timeout, unit);
     }
 
