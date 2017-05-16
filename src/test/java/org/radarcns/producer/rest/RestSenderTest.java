@@ -181,8 +181,7 @@ public class RestSenderTest {
         webServer.enqueue(new MockResponse().setResponseCode(500));
         assertFalse(sender.resetConnection());
         webServer.enqueue(new MockResponse());
-        assertTrue(sender.isConnected());
-        webServer.enqueue(new MockResponse());
+        assertFalse(sender.isConnected());
         assertTrue(sender.resetConnection());
     }
 

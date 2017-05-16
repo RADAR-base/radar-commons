@@ -23,6 +23,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.Request;
@@ -34,6 +35,7 @@ import org.radarcns.data.Record;
 import org.radarcns.producer.KafkaSender;
 import org.radarcns.producer.KafkaTopicSender;
 import org.radarcns.producer.SchemaRetriever;
+import org.radarcns.producer.rest.ConnectionState.State;
 import org.radarcns.topic.AvroTopic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,9 +52,6 @@ import org.slf4j.LoggerFactory;
  */
 public class RestSender<K, V> implements KafkaSender<K, V> {
     private static final Logger logger = LoggerFactory.getLogger(RestSender.class);
-    private final AvroEncoder keyEncoder;
-    private final AvroEncoder valueEncoder;
-    private final JsonFactory jsonFactory;
     public static final String KAFKA_REST_ACCEPT_ENCODING =
             "application/vnd.kafka.v2+json, application/vnd.kafka+json, application/json";
     public static final String KAFKA_REST_ACCEPT_LEGACY_ENCODING =
@@ -61,7 +60,10 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
             MediaType.parse("application/vnd.kafka.avro.v2+json; charset=utf-8");
     public static final MediaType KAFKA_REST_AVRO_LEGACY_ENCODING =
             MediaType.parse("application/vnd.kafka.avro.v1+json; charset=utf-8");
-    private boolean useCompression;
+
+    private final AvroEncoder keyEncoder;
+    private final AvroEncoder valueEncoder;
+    private final JsonFactory jsonFactory;
 
     private HttpUrl schemalessKeyUrl;
     private HttpUrl schemalessValueUrl;
@@ -70,6 +72,8 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
     private RestClient httpClient;
     private String acceptType;
     private MediaType contentType;
+    private boolean useCompression;
+    private final ConnectionState state;
 
     /**
      * Construct a non-compressing RestSender.
@@ -108,6 +112,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         this.useCompression = useCompression;
         this.acceptType = KAFKA_REST_ACCEPT_ENCODING;
         this.contentType = KAFKA_REST_AVRO_ENCODING;
+        this.state = new ConnectionState(connectionTimeout, TimeUnit.SECONDS);
         setRestClient(new RestClient(kafkaConfig, connectionTimeout));
     }
 
@@ -115,6 +120,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         if (connectionTimeout != httpClient.getTimeout()) {
             httpClient.close();
             httpClient = new RestClient(httpClient.getConfig(), connectionTimeout);
+            state.setTimeout(connectionTimeout, TimeUnit.SECONDS);
         }
     }
 
@@ -232,6 +238,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
             try (Response response = getRestClient().request(request)) {
                 // Evaluate the result
                 if (response.isSuccessful()) {
+                    state.didConnect();
                     if (logger.isDebugEnabled()) {
                         logger.debug("Added message to topic {} -> {}",
                                 topic, response.body().string());
@@ -239,6 +246,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                     lastOffsetSent = records.get(records.size() - 1).offset;
                 } else if (response.code() == 415
                         && currentAcceptType.equals(KAFKA_REST_ACCEPT_ENCODING)) {
+                    state.didConnect();
                     logger.warn("Latest Avro encoding is not supported. Switching to legacy "
                             + "encoding.");
                     synchronized (RestSender.this) {
@@ -247,6 +255,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                     }
                     doResend = true;
                 } else {
+                    state.didDisconnect();
                     String content = response.body().string();
                     String requestContent = requestBody.content();
                     requestContent = requestContent.substring(0,
@@ -257,6 +266,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                             + "): " + content);
                 }
             } catch (IOException ex) {
+                state.didDisconnect();
                 String requestContent = requestBody.content();
                 requestContent = requestContent.substring(0,
                         Math.min(requestContent.length(), 255));
@@ -340,22 +350,37 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
 
     @Override
     public boolean resetConnection() {
-        return isConnected();
-    }
-
-    public boolean isConnected() {
+        if (state.getState() == State.CONNECTED) {
+            return true;
+        }
         try (Response response = httpClient.request(getIsConnectedRequest())) {
             if (response.isSuccessful()) {
+                state.didConnect();
                 return true;
             } else {
+                state.didDisconnect();
                 logger.warn("Failed to make heartbeat request to {} (HTTP status code {}): {}",
                         httpClient, response.code(), response.body().string());
                 return false;
             }
         } catch (IOException ex) {
             // no stack trace is needed
+            state.didDisconnect();
             logger.warn("Failed to make heartbeat request to {}: {}", httpClient, ex.toString());
             return false;
+        }
+    }
+
+    public boolean isConnected() {
+        switch (state.getState()) {
+            case CONNECTED:
+                return true;
+            case DISCONNECTED:
+                return false;
+            case UNKNOWN:
+                return resetConnection();
+            default:
+                throw new IllegalStateException("Illegal connection state");
         }
     }
 
