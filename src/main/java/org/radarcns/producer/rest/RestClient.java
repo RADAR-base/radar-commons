@@ -45,6 +45,16 @@ public class RestClient implements Closeable {
     private final ManagedConnectionPool connectionPool;
 
     /**
+     * REST client. This client will use the OkHttp3 default connection pool.
+     *
+     * @param config server configuration
+     * @param connectionTimeout connection timeout in seconds
+     */
+    public RestClient(ServerConfig config, long connectionTimeout) {
+        this(config, connectionTimeout, null);
+    }
+
+    /**
      * REST client. This client will reuse a global connection pool unless
      *
      * @param config server configuration
@@ -227,6 +237,8 @@ public class RestClient implements Closeable {
 
     @Override
     public void close() {
-        connectionPool.release();
+        if (connectionPool != null) {
+            connectionPool.release();
+        }
     }
 }
