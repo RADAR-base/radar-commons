@@ -22,9 +22,10 @@ import java.util.concurrent.TimeUnit;
  * Current connection status of a KafkaSender. After a timeout occurs this will turn to
  * disconnected. When the connection is dropped, the associated KafkaSender should set this to
  * disconnected, when it successfully connects, it should set it to connected. This class is
- * thread-safe. The state transition diagram is CONNECTED <-> DISCONNECTED on {@link #didConnect()}
- * and {@link #didDisconnect()}; CONNECTED <-> UNKNOWN on {@link #getState()} after a timeout occurs
- * and {@link #didConnect()}; and UNKNOWN -> DISCONNECTED on {@link #didDisconnect()}.
+ * thread-safe. The state transition diagram is CONNECTED to and from DISCONNECTED with
+ * {@link #didConnect()} and {@link #didDisconnect()}; CONNECTED to and from UNKNOWN with
+ * {@link #getState()} after a timeout occurs and {@link #didConnect()}; and UNKNOWN to DISCONNECTED
+ * with {@link #didDisconnect()}.
  *
  * A connection state could be shared with multiple HTTP clients if they are talking to the same
  * server.
