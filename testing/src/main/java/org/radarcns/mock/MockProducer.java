@@ -201,6 +201,12 @@ public class MockProducer {
         for (KafkaSender<MeasurementKey, SpecificRecord> sender : senders) {
             sender.close();
         }
+
+        for (MockDevice device : devices) {
+            if (device.getException() != null) {
+                throw device.getException();
+            }
+        }
     }
 
     public static void main(String[] args) {
