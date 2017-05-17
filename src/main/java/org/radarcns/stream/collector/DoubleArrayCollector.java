@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package org.radarcns.integration.aggregator;
+package org.radarcns.stream.collector;
 
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Java class to aggregate data using Kafka Streams. Double Array is the base unit
@@ -37,7 +38,7 @@ public class DoubleArrayCollector {
         if (collectors.length != value.length) {
             throw new IllegalArgumentException(
                     "The length of current input differs from the length of the value used to "
-                    + "instantiate this aggregator");
+                            + "instantiate this collector");
         }
         for (int i = 0; i < collectors.length; i++) {
             collectors[i].add(value[i]);
@@ -46,12 +47,12 @@ public class DoubleArrayCollector {
         return this;
     }
 
-    public DoubleValueCollector[] getCollectors() {
-        return collectors;
-    }
-
     @Override
     public String toString() {
         return Arrays.toString(collectors);
+    }
+
+    public List<DoubleValueCollector> getCollectors() {
+        return Arrays.asList(collectors);
     }
 }

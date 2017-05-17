@@ -16,7 +16,7 @@
 
 package org.radarcns.integration.model;
 
-import org.radarcns.integration.aggregator.DoubleValueCollector;
+import org.radarcns.stream.collector.DoubleValueCollector;
 import org.radarcns.key.MeasurementKey;
 
 /**

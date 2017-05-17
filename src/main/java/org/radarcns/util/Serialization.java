@@ -86,4 +86,12 @@ public final class Serialization {
             return Boolean.FALSE;
         }
     }
+
+    /**
+     * Convert a float to a double using its apparent value. This avoids casting to the double
+     * value closest to the mathematical value of a float.
+     */
+    public static double floatToDouble(float value) {
+        return Double.parseDouble(Float.toString(value));
+    }
 }
