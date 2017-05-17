@@ -169,7 +169,7 @@ public class MockProducer {
                     .connectionPool(new ManagedConnectionPool())
                     .build();
 
-            result.add(new BatchedKafkaSender<>(firstSender, 10_000, 1000));
+            result.add(new BatchedKafkaSender<>(firstSender, 1_000, 1000));
         }
         return result;
     }

@@ -26,6 +26,7 @@ import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.data.Record;
 import org.radarcns.producer.KafkaSender;
 import org.radarcns.producer.KafkaTopicSender;
+import org.radarcns.util.MathUtil;
 import org.radarcns.util.Oscilloscope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,13 +43,13 @@ public class MockDevice<K extends SpecificRecord> extends Thread {
 
     public MockDevice(KafkaSender<K, SpecificRecord> sender, K key,
             List<RecordGenerator<K>> generators) {
-        this.key = key;
-        BigInteger gcd = BigInteger.ONE;
-        for (RecordGenerator generator : generators) {
-            gcd = gcd.gcd(BigInteger.valueOf(generator.getConfig().getFrequency()));
-        }
         this.generators = generators;
-        baseFrequency = gcd.intValue();
+        this.key = key;
+        long lcm = 1;
+        for (RecordGenerator generator : generators) {
+            lcm = MathUtil.lcm(lcm, generator.getConfig().getFrequency());
+        }
+        baseFrequency = (int)lcm;
         this.sender = sender;
         this.stopping = new AtomicBoolean(false);
         exception = null;
