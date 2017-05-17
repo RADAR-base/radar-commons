@@ -26,7 +26,6 @@ import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.data.Record;
 import org.radarcns.producer.KafkaSender;
 import org.radarcns.producer.KafkaTopicSender;
-import org.radarcns.util.MathUtil;
 import org.radarcns.util.Oscilloscope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,11 +44,7 @@ public class MockDevice<K extends SpecificRecord> extends Thread {
             List<RecordGenerator<K>> generators) {
         this.generators = generators;
         this.key = key;
-        long lcm = 1;
-        for (RecordGenerator generator : generators) {
-            lcm = MathUtil.lcm(lcm, generator.getConfig().getFrequency());
-        }
-        baseFrequency = (int)lcm;
+        baseFrequency = computeBaseFrequency(generators);
         this.sender = sender;
         this.stopping = new AtomicBoolean(false);
         exception = null;
@@ -96,5 +91,14 @@ public class MockDevice<K extends SpecificRecord> extends Thread {
 
     public synchronized IOException getException() {
         return exception;
+    }
+
+    private int computeBaseFrequency(List<RecordGenerator<K>> generators) {
+        BigInteger lcm = BigInteger.ONE;
+        for (RecordGenerator<K> generator : generators) {
+            BigInteger freq = BigInteger.valueOf(generator.getConfig().getFrequency());
+            lcm = lcm.multiply(freq.divide(lcm.gcd(freq)));  // a * (b / gcd(a, b));
+        }
+        return lcm.intValue();
     }
 }
