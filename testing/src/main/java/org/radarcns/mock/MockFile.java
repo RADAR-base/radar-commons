@@ -34,6 +34,10 @@ import org.radarcns.data.Record;
 import org.radarcns.topic.AvroTopic;
 import org.radarcns.util.CsvParser;
 
+/**
+ * Parse mock data from a CSV file
+ * @param <K> key type.
+ */
 public class MockFile<K extends SpecificRecord> implements Closeable {
     private static final char ARRAY_SEPARATOR = ';';
     private static final char ARRAY_START = '[';
@@ -47,6 +51,11 @@ public class MockFile<K extends SpecificRecord> implements Closeable {
     private List<String> currentLine;
     private long offset;
 
+    /**
+     * Base constructor.
+     * @param baseFile parent directory of the data file.
+     * @param config configuration of the stream.
+     */
     public MockFile(File baseFile, MockDataConfig config)
             throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
             IllegalAccessException, IOException {
@@ -69,6 +78,9 @@ public class MockFile<K extends SpecificRecord> implements Closeable {
         return topic;
     }
 
+    /**
+     * Read the next record in the file.
+     */
     public Record<K, SpecificRecord> next() throws IOException {
         if (!hasNext()) {
             throw new IllegalStateException("No next record available");
@@ -84,6 +96,9 @@ public class MockFile<K extends SpecificRecord> implements Closeable {
         return new Record<>(offset++, key, value);
     }
 
+    /**
+     * Whether there is a next record in the file.
+     */
     public boolean hasNext() {
         return currentLine != null;
     }

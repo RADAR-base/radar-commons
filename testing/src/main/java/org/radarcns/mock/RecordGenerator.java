@@ -34,7 +34,9 @@ import org.radarcns.topic.AvroTopic;
 import org.radarcns.util.Metronome;
 
 /**
- * Generates records according to the specification in a {@link MockDataConfig}. It only allows
+ * Generates records according to the specification in a {@link MockDataConfig}.
+ *
+ * @param <K> type of key to generate
  */
 public class RecordGenerator<K extends SpecificRecord> {
     private static final Set<Type> ACCEPTABLE_VALUE_TYPES = new HashSet<>(Arrays.asList(Type.DOUBLE,
@@ -123,6 +125,13 @@ public class RecordGenerator<K extends SpecificRecord> {
         return field;
     }
 
+    /**
+     * Simulates data of a sensor with the given frequency for a time interval specified by
+     *      duration. The data is converted to lists of strings.
+     * @param duration in seconds for the simulation
+     * @param key key to generate data with
+     * @return list containing simulated values
+     */
     public Iterator<List<String>> iterateRawValues(K key, long duration) {
         final Iterator<Record<K, SpecificRecord>> baseIterator = iterateValues(key,
                 duration);
@@ -133,6 +142,7 @@ public class RecordGenerator<K extends SpecificRecord> {
      * Simulates data of a sensor with the given frequency for a time interval specified by
      *      duration.
      * @param duration in seconds for the simulation
+     * @param key key to generate data with
      * @return list containing simulated values
      */
     public Iterator<Record<K, SpecificRecord>> iterateValues(final K key, final long duration) {

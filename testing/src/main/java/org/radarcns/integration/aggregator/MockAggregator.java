@@ -37,7 +37,7 @@ import org.radarcns.mock.MockDataConfig;
  */
 public final class MockAggregator {
     /**
-     * Default constructor
+     * Default constructor.
      */
     private MockAggregator() {}
 

@@ -30,6 +30,11 @@ import org.radarcns.util.Oscilloscope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Mock device that sends data for given topics at a given rate. This can be used to simulate
+ * any number of real devices.
+ * @param <K> record key type
+ */
 public class MockDevice<K extends SpecificRecord> extends Thread {
     private static final Logger logger = LoggerFactory.getLogger(MockDevice.class);
     private final int baseFrequency;
@@ -40,6 +45,12 @@ public class MockDevice<K extends SpecificRecord> extends Thread {
 
     private IOException exception;
 
+    /**
+     * Basic constructor.
+     * @param sender sender to send data with
+     * @param key key to send all messages with
+     * @param generators data generators that produce the data we send
+     */
     public MockDevice(KafkaSender<K, SpecificRecord> sender, K key,
             List<RecordGenerator<K>> generators) {
         this.generators = generators;
@@ -50,6 +61,7 @@ public class MockDevice<K extends SpecificRecord> extends Thread {
         exception = null;
     }
 
+    @Override
     public void run() {
         List<KafkaTopicSender<K, SpecificRecord>> topicSenders =
                 new ArrayList<>(generators.size());
@@ -85,10 +97,14 @@ public class MockDevice<K extends SpecificRecord> extends Thread {
         }
     }
 
+    /**
+     * Shut down the device eventually.
+     */
     public void shutdown() {
         stopping.set(true);
     }
 
+    /** Get the exception that occurred in the thread. Returns null if no exception occurred. */
     public synchronized IOException getException() {
         return exception;
     }

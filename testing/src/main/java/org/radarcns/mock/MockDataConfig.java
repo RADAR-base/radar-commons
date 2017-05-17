@@ -75,6 +75,10 @@ public class MockDataConfig {
         this.valueSchema = valueSchema;
     }
 
+    /**
+     * Parse an AvroTopic from the values in this class. If keySchema is not set, MeasurementKey
+     * will be used as a key schema.
+     */
     @SuppressWarnings("unchecked")
     public AvroTopic<? extends SpecificRecord, ? extends SpecificRecord> parseAvroTopic()
             throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
@@ -104,6 +108,10 @@ public class MockDataConfig {
         return new AvroTopic<>(topic, keyAvroSchema, valueAvroSchema, keyClass, valueClass);
     }
 
+    /**
+     * Get the data file associated with this definition, relative to given configuration file.
+     * If the data file is specified as an absolute path, then this will return that path.
+     */
     public File getDataFile(File configFile) {
         File directDataFile = new File(dataFile);
         if (directDataFile.isAbsolute()) {

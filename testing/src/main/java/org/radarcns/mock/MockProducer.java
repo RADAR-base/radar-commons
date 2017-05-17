@@ -66,6 +66,11 @@ public class MockProducer {
     private final List<MockFileSender> files;
     private final List<KafkaSender<MeasurementKey, SpecificRecord>> senders;
 
+    /**
+     * Basic constructor.
+     * @param mockConfig configuration to mock.
+     * @throws IOException if data could not be sent
+     */
     public MockProducer(BasicMockConfig mockConfig) throws IOException {
         int numDevices;
         if (mockConfig.getData() != null) {
@@ -209,6 +214,9 @@ public class MockProducer {
         }
     }
 
+    /**
+     * Runs the MockProducer with given YAML mock config file.
+     */
     public static void main(String[] args) {
         if (args.length != 1) {
             logger.error("This command needs a mock file argument");
