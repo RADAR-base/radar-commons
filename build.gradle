@@ -34,7 +34,7 @@ allprojects {
     // Configuration                                                             //
     //---------------------------------------------------------------------------//
 
-    version = '0.2.1'
+    version = '0.3'
     group = 'org.radarcns'
     ext.githubRepoName = 'RADAR-CNS/RADAR-Commons'
 
@@ -86,6 +86,12 @@ allprojects {
                 name 'Joris Borgdorff'
                 email 'joris@thehyve.nl'
                 organization 'The Hyve'
+            }
+            developer {
+                id 'fnobilia'
+                name 'Francesco Nobilia'
+                email 'francesco.nobilia@kcl.ac.uk'
+                organization 'King\'s College London'
             }
         }
         issueManagement {
@@ -214,6 +220,7 @@ dependencies {
     testImplementation group: 'org.mockito', name: 'mockito-core', version: mockitoVersion
     testImplementation group: 'org.hamcrest', name: 'hamcrest-all', version: hamcrestVersion
     testImplementation group: 'com.squareup.okhttp3', name: 'mockwebserver', version: okhttpVersion
+
     codacy group: 'com.github.codacy', name: 'codacy-coverage-reporter', version: codacyVersion
 }
 

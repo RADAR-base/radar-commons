@@ -18,6 +18,14 @@ package org.radarcns.mock;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Collections;
+import java.util.List;
+import org.apache.avro.Schema;
+import org.apache.avro.specific.SpecificData;
+import org.apache.avro.specific.SpecificRecord;
+import org.radarcns.key.MeasurementKey;
+import org.radarcns.topic.AvroTopic;
 
 public class MockDataConfig {
     private String topic;
@@ -28,23 +36,20 @@ public class MockDataConfig {
     @JsonProperty("file")
     private String dataFile;
 
-    private Double frequency;
+    private int frequency = 1;
 
     private String sensor;
-    @JsonProperty("assert_header")
-    private String assertHeader;
+
+    @JsonProperty("value_fields")
+    private List<String> valueFields;
 
     private String absolutePath;
 
-    private Long magnitude;
+    @JsonProperty("maximum_difference")
+    private double maximumDifference = 1e-10d;
 
-    public Long getMagnitude() {
-        return magnitude;
-    }
-
-    public void setMagnitude(Long magnitude) {
-        this.magnitude = magnitude;
-    }
+    private double minimum = Double.NEGATIVE_INFINITY;
+    private double maximum = Double.POSITIVE_INFINITY;
 
     public String getTopic() {
         return topic;
@@ -70,6 +75,43 @@ public class MockDataConfig {
         this.valueSchema = valueSchema;
     }
 
+    /**
+     * Parse an AvroTopic from the values in this class. If keySchema is not set, MeasurementKey
+     * will be used as a key schema.
+     */
+    @SuppressWarnings("unchecked")
+    public AvroTopic<? extends SpecificRecord, ? extends SpecificRecord> parseAvroTopic()
+            throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
+            IllegalAccessException {
+
+        Class<? extends SpecificRecord> keyClass;
+        Schema keyAvroSchema;
+
+        if (this.keySchema == null) {
+            keyClass = MeasurementKey.class;
+            keyAvroSchema = MeasurementKey.getClassSchema();
+        } else {
+            keyClass = (Class<? extends SpecificRecord>) Class.forName(this.keySchema);
+            keyAvroSchema = (Schema) keyClass
+                    .getMethod("getClassSchema").invoke(null);
+            // check instantiation
+            SpecificData.newInstance(keyClass, keyAvroSchema);
+        }
+
+        Class<? extends SpecificRecord> valueClass = (Class<? extends SpecificRecord>)
+                Class.forName(this.valueSchema);
+        Schema valueAvroSchema = (Schema) valueClass
+                .getMethod("getClassSchema").invoke(null);
+        // check instantiation
+        SpecificData.newInstance(valueClass, valueAvroSchema);
+
+        return new AvroTopic<>(topic, keyAvroSchema, valueAvroSchema, keyClass, valueClass);
+    }
+
+    /**
+     * Get the data file associated with this definition, relative to given configuration file.
+     * If the data file is specified as an absolute path, then this will return that path.
+     */
     public File getDataFile(File configFile) {
         File directDataFile = new File(dataFile);
         if (directDataFile.isAbsolute()) {
@@ -89,14 +131,6 @@ public class MockDataConfig {
         this.dataFile = dataFile;
     }
 
-    public Double getFrequency() {
-        return frequency;
-    }
-
-    public void setFrequency(Double frequency) {
-        this.frequency = frequency;
-    }
-
     public String getSensor() {
         return sensor;
     }
@@ -109,11 +143,52 @@ public class MockDataConfig {
         return this.absolutePath;
     }
 
-    public String getAssertHeader() {
-        return assertHeader;
+    public List<String> getValueFields() {
+        return valueFields;
     }
 
-    public void setAssertHeader(String assertHeader) {
-        this.assertHeader = assertHeader;
+    public void setValueFields(List<String> valueFields) {
+        this.valueFields = valueFields;
+    }
+
+    public void setValueField(String valueField) {
+        setValueFields(Collections.singletonList(valueField));
+    }
+
+    public double getMaximumDifference() {
+        return maximumDifference;
+    }
+
+    public void setMaximumDifference(double maximumDifference) {
+        this.maximumDifference = maximumDifference;
+    }
+
+    public void setFrequency(int frequency) {
+        this.frequency = frequency;
+    }
+
+    public double getMinimum() {
+        return minimum;
+    }
+
+    public void setMinimum(double minimum) {
+        this.minimum = minimum;
+    }
+
+    public void setInterval(double minimum, double maximum) {
+        this.minimum = minimum;
+        this.maximum = maximum;
+    }
+
+    public double getMaximum() {
+        return maximum;
+    }
+
+    public void setMaximum(double maximum) {
+        this.maximum = maximum;
+    }
+
+    public int getFrequency() {
+        return frequency;
     }
 }

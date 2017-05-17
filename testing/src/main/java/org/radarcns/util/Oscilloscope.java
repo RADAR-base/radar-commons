@@ -28,6 +28,10 @@ public class Oscilloscope {
     private int iteration;
     private long baseTime;
 
+    /**
+     * Frequency which will give beat at given frequency per second.
+     * @param frequency number of beats per second.
+     */
     public Oscilloscope(int frequency) {
         this.frequency = frequency;
         this.baseTime = System.nanoTime();
@@ -35,7 +39,7 @@ public class Oscilloscope {
         this.iteration = 0;
     }
 
-    /** Restart the oscilloscope at zero */
+    /** Restart the oscilloscope at zero. */
     public void reset() {
         this.baseTime = System.nanoTime();
         this.iteration = 0;

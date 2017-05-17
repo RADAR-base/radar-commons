@@ -39,18 +39,31 @@ public class RestClientTest {
     public void setUp() {
         server = new MockWebServer();
         config = new ServerConfig(server.url("base").url());
-        client = new RestClient(config, 1);
+        client = new RestClient(config, 1, new ManagedConnectionPool());
     }
 
     @Test
     public void request() throws Exception {
         server.enqueue(new MockResponse().setBody("{\"id\":10,\"version\":2,\"schema\":\"\\\"string\\\"\"}"));
-        Request request = client.requestBuilder("myPath").get().build();
+        Request request = client.requestBuilder("myPath").build();
         try (Response response = client.request(request)) {
             assertTrue(response.isSuccessful());
             assertEquals("{\"id\":10,\"version\":2,\"schema\":\"\\\"string\\\"\"}", response.body().string());
         }
         RecordedRequest recordedRequest = server.takeRequest();
+        assertEquals("GET", recordedRequest.getMethod());
+        assertEquals("/base/myPath", recordedRequest.getPath());
+    }
+
+    @Test
+    public void requestString() throws Exception {
+        server.enqueue(new MockResponse().setBody("{\"id\":10,\"version\":2,\"schema\":\"\\\"string\\\"\"}"));
+        try (Response response = client.request("myPath")) {
+            assertTrue(response.isSuccessful());
+            assertEquals("{\"id\":10,\"version\":2,\"schema\":\"\\\"string\\\"\"}", response.body().string());
+        }
+        RecordedRequest recordedRequest = server.takeRequest();
+        assertEquals("GET", recordedRequest.getMethod());
         assertEquals("/base/myPath", recordedRequest.getPath());
     }
 

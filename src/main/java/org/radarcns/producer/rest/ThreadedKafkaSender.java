@@ -48,8 +48,7 @@ public class ThreadedKafkaSender<K, V> implements KafkaSender<K, V> {
     private final ScheduledExecutorService executor;
     private final RollingTimeAverage opsSent;
     private final RollingTimeAverage opsRequests;
-    private long lastConnection;
-    private boolean wasDisconnected;
+    private final ConnectionState state;
 
     /**
      * Create a REST producer that caches some values
@@ -58,8 +57,6 @@ public class ThreadedKafkaSender<K, V> implements KafkaSender<K, V> {
      */
     public ThreadedKafkaSender(KafkaSender<K, V> sender) {
         this.wrappedSender = sender;
-        this.wasDisconnected = true;
-        this.lastConnection = 0L;
         this.executor = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
             @Override
             public Thread newThread( Runnable r) {
@@ -68,6 +65,7 @@ public class ThreadedKafkaSender<K, V> implements KafkaSender<K, V> {
         });
         opsSent = new RollingTimeAverage(20000L);
         opsRequests = new RollingTimeAverage(20000L);
+        state = new ConnectionState(HEARTBEAT_TIMEOUT_MARGIN, TimeUnit.MILLISECONDS);
 
         executor.scheduleAtFixedRate(new Runnable() {
             @Override
@@ -76,10 +74,10 @@ public class ThreadedKafkaSender<K, V> implements KafkaSender<K, V> {
 
                 boolean success = sendHeartbeat();
                 if (success) {
-                    updateLastConnection();
+                    state.didConnect();
                 } else {
                     logger.error("Failed to send message");
-                    disconnect();
+                    state.didDisconnect();
                 }
 
                 if (opsSent.hasAverage() && opsRequests.hasAverage()) {
@@ -199,10 +197,10 @@ public class ThreadedKafkaSender<K, V> implements KafkaSender<K, V> {
                 }
 
                 if (exception == null) {
-                    updateLastConnection();
+                    state.didConnect();
                 } else {
                     logger.error("Failed to send message");
-                    disconnect();
+                    state.didDisconnect();
                     break;
                 }
             }
@@ -214,47 +212,37 @@ public class ThreadedKafkaSender<K, V> implements KafkaSender<K, V> {
     private boolean sendHeartbeat() {
         boolean success = false;
         for (int i = 0; !success && i < RETRIES; i++) {
-            success = wrappedSender.isConnected();
+            success = wrappedSender.resetConnection();
         }
         return success;
     }
 
-    private synchronized void updateLastConnection() {
-        lastConnection = System.currentTimeMillis();
-    }
-
-    private synchronized void disconnect() {
-        this.wasDisconnected = true;
-        this.lastConnection = 0L;
-        notifyAll();
-    }
-
     @Override
     public synchronized boolean isConnected() {
-        if (this.wasDisconnected) {
-            return false;
+        switch (state.getState()) {
+            case CONNECTED:
+                return true;
+            case DISCONNECTED:
+                return false;
+            case UNKNOWN:
+                state.didDisconnect();
+                return false;
+            default:
+                throw new IllegalStateException("Illegal connection state");
         }
-        if (System.currentTimeMillis() - lastConnection > HEARTBEAT_TIMEOUT_MARGIN) {
-            this.wasDisconnected = true;
-            disconnect();
-            return false;
-        }
-
-        return true;
     }
 
     @Override
     public boolean resetConnection() {
         if (isConnected()) {
             return true;
-        } else if (wrappedSender.isConnected()) {
-            synchronized (this) {
-                lastConnection = System.currentTimeMillis();
-                this.wasDisconnected = false;
-                return true;
-            }
+        } else if (wrappedSender.resetConnection()) {
+            state.didConnect();
+            return true;
+        } else {
+            state.didDisconnect();
+            return false;
         }
-        return false;
     }
 
     @Override

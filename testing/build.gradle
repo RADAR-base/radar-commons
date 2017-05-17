@@ -14,6 +14,18 @@
  * limitations under the License.
  */
 
+apply plugin: 'application'
+
+mainClassName = 'org.radarcns.mock.MockProducer'
+
+run {
+    if (project.hasProperty("mockConfig")) {
+        args project.property("mockConfig")
+    } else {
+        args 'mock.yml'
+    }
+}
+
 ext.testingName = 'radar-commons-testing'
 ext.description = 'RADAR Common testing library mocking code and utilities.'
 
@@ -27,8 +39,7 @@ dependencies {
 
     implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
 
-    // for Stream aggregators statistic calculations
-    implementation group: 'org.apache.commons', name: 'commons-math3', version: mathVersion
+    runtimeOnly group: 'org.slf4j', name: 'slf4j-simple', version: slf4jVersion
 
     // Direct producer uses KafkaAvroSerializer if initialized
     testImplementation group: 'junit', name: 'junit', version: junitVersion

@@ -17,8 +17,10 @@
 package org.radarcns.util;
 
 import java.io.BufferedWriter;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.Flushable;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.Iterator;
@@ -27,51 +29,63 @@ import java.util.List;
 /**
  * CSV writer.
  */
-public class CsvWriter {
+public class CsvWriter implements Flushable, Closeable {
     public static final char DEFAULT_SEPARATOR = ',';
     private final int separator;
+    private final boolean shouldClose;
+    private final Writer writer;
+    private final int headerLength;
 
-    public CsvWriter() {
-        this(DEFAULT_SEPARATOR);
+    /**
+     * Constructs a CSV writer to write to a file. The header is written immediately.
+     * @param file file to write to, it will be created or emptied.
+     * @param header header to write
+     * @throws IOException if writing to the file fails
+     */
+    public CsvWriter(File file, List<String> header) throws IOException {
+        this(new BufferedWriter(new FileWriter(file, false)), header, true, DEFAULT_SEPARATOR);
     }
 
-    public CsvWriter(char separator) {
+    /**
+     * Constructs a CSV writer to write to a writer. The header is written immediately.
+     * @param writer writer to write to, it will not be closed when this CsvWriter is closed.
+     * @param header header to write
+     * @throws IOException if writing to the writer fails
+     */
+    public CsvWriter(Writer writer, List<String> header) throws IOException {
+        this(writer, header, false, DEFAULT_SEPARATOR);
+    }
+
+    /**
+     * Constructs a CSV writer to write to a writer. The header is written immediately.
+     * @param writer writer to write to
+     * @param header header to write
+     * @param shouldClose if and only if true, given writer will be closed when this writer is
+     *                    closed
+     * @param separator separator to use in the CSV file, comma ',' by default.
+     * @throws IOException if writing to the writer fails
+     */
+    public CsvWriter(Writer writer, List<String> header, boolean shouldClose, char separator)
+            throws IOException {
         this.separator = separator;
+        this.writer = writer;
+        this.shouldClose = shouldClose;
+        headerLength = header.size();
+        writeRow(header);
     }
 
-    /**
-     * Writes a CSV file.
-     *
-     * @param header header to write
-     * @param data data to write, with each iteration yielding the same size elements
-     * @param file that has to be written
-     **/
-    public void write(File file, List<String> header, Iterator<List<String>> data)
-            throws IOException {
-
-        try (FileWriter fw = new FileWriter(file, false);
-                BufferedWriter writer = new BufferedWriter(fw)) {
-            write(writer, header, data);
+    /** Write all rows in given iterator. */
+    public void writeRows(Iterator<List<String>> rows) throws IOException {
+        while (rows.hasNext()) {
+            writeRow(rows.next());
         }
     }
 
-    /**
-     * Writes a CSV file.
-     *
-     * @param header header to write
-     * @param data data to write, with each iteration yielding the same size elements
-     * @param writer sink to write to
-     **/
-    public void write(Writer writer, List<String> header, Iterator<List<String>> data)
-            throws IOException {
-        writeRow(header, writer);
-
-        while (data.hasNext()) {
-            writeRow(data.next(), writer);
+    /** Write a single row, with each list entry as a column. */
+    public void writeRow(List<String> strings) throws IOException {
+        if (strings.size() != headerLength) {
+            throw new IllegalArgumentException("Row size does not match header size");
         }
-    }
-
-    private void writeRow(List<String> strings, Writer writer) throws IOException {
         boolean first = true;
         for (String v : strings) {
             if (first) {
@@ -82,5 +96,20 @@ public class CsvWriter {
             writer.write(v);
         }
         writer.write('\n');
+    }
+
+    @Override
+    public void flush() throws IOException {
+        writer.flush();
+    }
+
+    @Override
+    public void close() throws IOException {
+        flush();
+        if (shouldClose) {
+            try (Writer localWriter = writer) {
+                localWriter.flush();
+            }
+        }
     }
 }

@@ -20,10 +20,19 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import okhttp3.ConnectionPool;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import okhttp3.OkHttpClient;
+import okhttp3.OkHttpClient.Builder;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.radarcns.config.ServerConfig;
@@ -33,48 +42,131 @@ public class RestClient implements Closeable {
     private final long timeout;
     private final ServerConfig config;
     private final OkHttpClient httpClient;
+    private final ManagedConnectionPool connectionPool;
 
-    private static final Object POOL_SYNC_OBJECT = new Object();
-    private static ConnectionPool connectionPool = null;
-    private static int connectionPoolReferences;
-
-    private static ConnectionPool getGlobalConnectionPool() {
-        synchronized (POOL_SYNC_OBJECT) {
-            if (connectionPool == null) {
-                connectionPool = new ConnectionPool();
-            }
-            connectionPoolReferences++;
-            return connectionPool;
-        }
-    }
-
-    private static void releaseGlobalConnectionPool() {
-        synchronized (POOL_SYNC_OBJECT) {
-            connectionPoolReferences--;
-            if (connectionPoolReferences == 0) {
-                connectionPool = null;
-            }
-        }
+    /**
+     * REST client. This client will use the OkHttp3 default connection pool and 30 second timeout.
+     *
+     * @param config server configuration
+     */
+    public RestClient(ServerConfig config) {
+        this(config, 10, null);
     }
 
     /**
-     * REST client.
+     * REST client. This client will reuse a global connection pool unless
      *
      * @param config server configuration
      * @param connectionTimeout connection timeout in seconds
+     * @param connectionPool connection pool to use. If null, default OkHttp3 connection pool will
+     *                       be used. Otherwise, given pool will be closed when this client is
+     *                       closed.
      */
-    public RestClient(ServerConfig config, long connectionTimeout) {
+    public RestClient(ServerConfig config, long connectionTimeout,
+            ManagedConnectionPool connectionPool) {
         Objects.requireNonNull(config);
         this.config = config;
         this.timeout = connectionTimeout;
+        this.connectionPool = connectionPool;
 
-        httpClient = new OkHttpClient.Builder()
-                .connectTimeout(connectionTimeout, TimeUnit.SECONDS)
-                .writeTimeout(connectionTimeout, TimeUnit.SECONDS)
-                .readTimeout(connectionTimeout, TimeUnit.SECONDS)
-                .connectionPool(getGlobalConnectionPool())
-                .proxy(config.getHttpProxy())
-                .build();
+        OkHttpClient.Builder builder;
+        if (config.isUnsafe()) {
+            try {
+                builder = getUnsafeBuilder();
+            } catch (NoSuchAlgorithmException | KeyManagementException e) {
+                throw new IllegalStateException(
+                        "Failed to create unsafe SSL certificate connection", e);
+            }
+        } else {
+            builder = new OkHttpClient.Builder();
+        }
+        httpClient = buildHttpClient(builder, connectionPool);
+    }
+
+    /**
+     * Generate a {@code OkHttpClient.Builder} to establish connection with server using
+     *      self-signed certificate.
+     *
+     * @return builder to create an {@code OkHttpClient}
+     * @throws NoSuchAlgorithmException if the required cryptographic algorithm is not available
+     * @throws KeyManagementException if key management fails
+     */
+    public static OkHttpClient.Builder getUnsafeBuilder()
+        throws NoSuchAlgorithmException, KeyManagementException {
+        final TrustManager[] trustAllCerts = new TrustManager[] {
+            new X509TrustManager() {
+                @Override
+                public void checkClientTrusted(java.security.cert.X509Certificate[] chain,
+                        String authType) throws CertificateException {
+                    //Nothing to do
+                }
+
+                @Override
+                public void checkServerTrusted(java.security.cert.X509Certificate[] chain,
+                        String authType) throws CertificateException {
+                    //Nothing to do
+                }
+
+                @Override
+                public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                    return new java.security.cert.X509Certificate[]{};
+                }
+            }
+        };
+
+        final SSLContext sslContext = SSLContext.getInstance("SSL");
+        sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+
+        final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+
+        OkHttpClient.Builder builder = new OkHttpClient.Builder();
+        builder.sslSocketFactory(sslSocketFactory, (X509TrustManager)trustAllCerts[0]);
+        builder.hostnameVerifier(new HostnameVerifier() {
+            @Override
+            public boolean verify(String hostname, SSLSession session) {
+                return true;
+            }
+        });
+
+        return builder;
+    }
+
+    /**
+     * Build a OkHttpClient setting timeouts, connection pool and proxy.
+     *
+     * @param builder builder useful to provide extra configuration
+     * @param connectionPool connection pool to use. If null, default OkHttp3 connection pool will
+     *                       be used.
+     * @return OkHttpClient client
+     */
+    private OkHttpClient buildHttpClient(Builder builder,
+            ManagedConnectionPool connectionPool) {
+        builder
+            .connectTimeout(timeout, TimeUnit.SECONDS)
+            .writeTimeout(timeout, TimeUnit.SECONDS)
+            .readTimeout(timeout, TimeUnit.SECONDS)
+            .proxy(config.getHttpProxy());
+
+        if (connectionPool != null) {
+            builder.connectionPool(connectionPool.acquire());
+        }
+
+        return builder.build();
+    }
+
+    /** Configured connection timeout in seconds. */
+    public long getTimeout() {
+        return timeout;
+    }
+
+    /** Configured server. */
+    public ServerConfig getConfig() {
+        return config;
+    }
+
+    /** Connection pool being used. */
+    public ManagedConnectionPool getConnectionPool() {
+        return connectionPool;
     }
 
     /**
@@ -89,14 +181,15 @@ public class RestClient implements Closeable {
         return httpClient.newCall(request).execute();
     }
 
-    /** Configured connection timeout in seconds. */
-    public long getTimeout() {
-        return timeout;
-    }
-
-    /** Configured server. */
-    public ServerConfig getConfig() {
-        return config;
+    /**
+     * Make a request to given relative path. This does not set any request properties except the
+     * URL.
+     * @param relativePath relative path to request
+     * @return response to the request
+     * @throws IOException if the path is invalid or the request failed.
+     */
+    public Response request(String relativePath) throws IOException {
+        return request(requestBuilder(relativePath).build());
     }
 
     /**
@@ -154,6 +247,8 @@ public class RestClient implements Closeable {
 
     @Override
     public void close() {
-        releaseGlobalConnectionPool();
+        if (connectionPool != null) {
+            connectionPool.release();
+        }
     }
 }

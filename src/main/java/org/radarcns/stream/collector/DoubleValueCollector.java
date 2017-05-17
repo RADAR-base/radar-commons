@@ -14,25 +14,31 @@
  * limitations under the License.
  */
 
-package org.radarcns.integration.aggregator;
+package org.radarcns.stream.collector;
 
+import static org.radarcns.util.Serialization.floatToDouble;
+
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
 /** Java class to aggregate data using Kafka Streams. Double is the base unit */
 public class DoubleValueCollector {
     private double min = Double.MAX_VALUE;
     private double max = Double.MIN_VALUE;
-    private double sum = 0.0;
-    private double count = 0.0;
-    private double avg = 0.0;
-    private final double[] quartile = new double[3];
-    private double iqr = 0.0;
-
+    private BigDecimal sum = BigDecimal.ZERO;
+    private int count = 0;
+    private double avg = 0;
+    private final Double[] quartile = new Double[3];
+    private double iqr = 0;
 
     private final List<Double> history = new ArrayList<>();
+
+    public DoubleValueCollector add(float value) {
+        return this.add(floatToDouble(value));
+    }
 
     /**
      * @param value new sample that has to be analysed
@@ -69,9 +75,9 @@ public class DoubleValueCollector {
      */
     private void updateAvg(double value) {
         count++;
-        sum += value;
+        sum = sum.add(BigDecimal.valueOf(value));
 
-        avg = sum / count;
+        avg = sum.doubleValue() / count;
     }
 
     /**
@@ -79,30 +85,42 @@ public class DoubleValueCollector {
      */
     private void updateQuartile(double value) {
         history.add(value);
-        double[] data = new double[history.size()];
-        for (int i = 0; i < history.size(); i++) {
-            data[i] = history.get(i);
+        Collections.sort(history);
+
+        int length = history.size();
+
+        if (length == 1) {
+            quartile[0] = quartile[1] = quartile[2] = history.get(0);
+        } else {
+            for (int i = 0; i < 3; i++) {
+                double pos = (i + 1) * (length + 1) / 4.0d;  // == (i + 1) * 25 * (length + 1) / 100
+                int intPos = (int) pos;
+                if (intPos == 0) {
+                    quartile[i] = history.get(0);
+                } else if (intPos == length) {
+                    quartile[i] = history.get(length - 1);
+                } else {
+                    double diff = pos - intPos;
+                    double base = history.get(intPos - 1);
+                    quartile[i] = base + diff * (history.get(intPos) - base);
+                }
+            }
         }
 
-        DescriptiveStatistics ds = new DescriptiveStatistics(data);
-
-        quartile[0] = ds.getPercentile(25);
-        quartile[1] = ds.getPercentile(50);
-        quartile[2] = ds.getPercentile(75);
-
-        iqr = quartile[2] - quartile[0];
+        iqr = BigDecimal.valueOf(quartile[2]).subtract(
+                BigDecimal.valueOf(quartile[0])).doubleValue();
     }
 
     @Override
     public String toString() {
         return "DoubleValueCollector{"
-                + "min=" + min
-                + ", max=" + max
-                + ", sum=" + sum
-                + ", count=" + count
-                + ", avg=" + avg
-                + ", quartile=" + Arrays.toString(quartile)
-                + ", iqr=" + iqr
+                + "min=" + getMin()
+                + ", max=" + getMax()
+                + ", sum=" + getSum()
+                + ", count=" + getCount()
+                + ", avg=" + getAvg()
+                + ", quartile=" + getQuartile()
+                + ", iqr=" + getIqr()
                 + ", history=" + history + '}';
     }
 
@@ -115,7 +133,7 @@ public class DoubleValueCollector {
     }
 
     public double getSum() {
-        return sum;
+        return sum.doubleValue();
     }
 
     public double getCount() {
@@ -126,8 +144,8 @@ public class DoubleValueCollector {
         return avg;
     }
 
-    public double[] getQuartile() {
-        return quartile;
+    public List<Double> getQuartile() {
+        return  Arrays.asList(quartile);
     }
 
     public double getIqr() {

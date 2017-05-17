@@ -23,6 +23,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.Request;
@@ -34,6 +35,7 @@ import org.radarcns.data.Record;
 import org.radarcns.producer.KafkaSender;
 import org.radarcns.producer.KafkaTopicSender;
 import org.radarcns.producer.SchemaRetriever;
+import org.radarcns.producer.rest.ConnectionState.State;
 import org.radarcns.topic.AvroTopic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,65 +50,62 @@ import org.slf4j.LoggerFactory;
  * @param <K> base key class
  * @param <V> base value class
  */
+@SuppressWarnings("PMD.GodClass")
 public class RestSender<K, V> implements KafkaSender<K, V> {
     private static final Logger logger = LoggerFactory.getLogger(RestSender.class);
+    public static final String KAFKA_REST_ACCEPT_ENCODING =
+            "application/vnd.kafka.v2+json, application/vnd.kafka+json, application/json";
+    public static final String KAFKA_REST_ACCEPT_LEGACY_ENCODING =
+            "application/vnd.kafka.v1+json, application/vnd.kafka+json, application/json";
+    public static final MediaType KAFKA_REST_AVRO_ENCODING =
+            MediaType.parse("application/vnd.kafka.avro.v2+json; charset=utf-8");
+    public static final MediaType KAFKA_REST_AVRO_LEGACY_ENCODING =
+            MediaType.parse("application/vnd.kafka.avro.v1+json; charset=utf-8");
+
     private final AvroEncoder keyEncoder;
     private final AvroEncoder valueEncoder;
     private final JsonFactory jsonFactory;
-    public static final String KAFKA_REST_ACCEPT_ENCODING =
-            "application/vnd.kafka.v2+json, application/vnd.kafka+json, application/json";
-    public static final MediaType KAFKA_REST_AVRO_ENCODING =
-            MediaType.parse("application/vnd.kafka.avro.v2+json; charset=utf-8");
-    private boolean useCompression;
 
     private HttpUrl schemalessKeyUrl;
     private HttpUrl schemalessValueUrl;
     private Request isConnectedRequest;
     private SchemaRetriever schemaRetriever;
     private RestClient httpClient;
-
-    /**
-     * Construct a non-compressing RestSender.
-     * @param kafkaConfig non-null server to send data to
-     * @param schemaRetriever non-null Retriever of avro schemas
-     * @param keyEncoder non-null Avro encoder for keys
-     * @param valueEncoder non-null Avro encoder for values
-     * @param connectionTimeout socket connection timeout in seconds
-     */
-    public RestSender(ServerConfig kafkaConfig, SchemaRetriever schemaRetriever,
-            AvroEncoder keyEncoder, AvroEncoder valueEncoder,
-            long connectionTimeout) {
-        this(kafkaConfig, schemaRetriever, keyEncoder, valueEncoder, connectionTimeout, false);
-    }
+    private String acceptType;
+    private MediaType contentType;
+    private boolean useCompression;
+    private final ConnectionState state;
 
     /**
      * Construct a RestSender.
-     * @param kafkaConfig non-null server to send data to
+     * @param httpClient client to send requests with
      * @param schemaRetriever non-null Retriever of avro schemas
      * @param keyEncoder non-null Avro encoder for keys
      * @param valueEncoder non-null Avro encoder for values
-     * @param connectionTimeout socket connection timeout in seconds
      * @param useCompression use compression to send data
+     * @param sharedState shared connection state
      */
-    public RestSender(ServerConfig kafkaConfig, SchemaRetriever schemaRetriever,
-            AvroEncoder keyEncoder, AvroEncoder valueEncoder,
-            long connectionTimeout, boolean useCompression) {
-        Objects.requireNonNull(kafkaConfig);
-        Objects.requireNonNull(schemaRetriever);
-        Objects.requireNonNull(keyEncoder);
-        Objects.requireNonNull(valueEncoder);
+    private RestSender(RestClient httpClient, SchemaRetriever schemaRetriever,
+            AvroEncoder keyEncoder, AvroEncoder valueEncoder, boolean useCompression,
+            ConnectionState sharedState) {
         this.schemaRetriever = schemaRetriever;
         this.keyEncoder = keyEncoder;
         this.valueEncoder = valueEncoder;
         this.jsonFactory = new JsonFactory();
         this.useCompression = useCompression;
-        setRestClient(new RestClient(kafkaConfig, connectionTimeout));
+        this.acceptType = KAFKA_REST_ACCEPT_ENCODING;
+        this.contentType = KAFKA_REST_AVRO_ENCODING;
+        this.state = sharedState;
+        setRestClient(httpClient);
     }
 
     public synchronized void setConnectionTimeout(long connectionTimeout) {
         if (connectionTimeout != httpClient.getTimeout()) {
+            RestClient newRestClient = new RestClient(httpClient.getConfig(),
+                    connectionTimeout, httpClient.getConnectionPool());
             httpClient.close();
-            httpClient = new RestClient(httpClient.getConfig(), connectionTimeout);
+            httpClient = newRestClient;
+            state.setTimeout(connectionTimeout, TimeUnit.SECONDS);
         }
     }
 
@@ -115,8 +114,10 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         if (kafkaConfig.equals(httpClient.getConfig())) {
             return;
         }
+        RestClient newRestClient = new RestClient(kafkaConfig, httpClient.getTimeout(),
+                httpClient.getConnectionPool());
         httpClient.close();
-        setRestClient(new RestClient(kafkaConfig, httpClient.getTimeout()));
+        setRestClient(newRestClient);
     }
 
     private void setRestClient(RestClient newClient) {
@@ -199,39 +200,71 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
 
             HttpUrl sendToUrl = updateRequestData(records);
 
+            MediaType currentContentType;
+            String currentAcceptType;
+
+            synchronized (RestSender.this) {
+                currentContentType = contentType;
+                currentAcceptType = acceptType;
+            }
+
             TopicRequestBody requestBody;
             Request.Builder requestBuilder = new Request.Builder()
                     .url(sendToUrl)
-                    .addHeader("Accept", KAFKA_REST_ACCEPT_ENCODING);
+                    .addHeader("Accept", currentAcceptType);
+
             if (hasCompression()) {
-                requestBody = new GzipTopicRequestBody(requestData);
+                requestBody = new GzipTopicRequestBody(requestData, currentContentType);
                 requestBuilder.addHeader("Content-Encoding", "gzip");
             } else {
-                requestBody = new TopicRequestBody(requestData);
+                requestBody = new TopicRequestBody(requestData, currentContentType);
             }
             Request request = requestBuilder.post(requestBody).build();
 
+            boolean doResend = false;
             try (Response response = getRestClient().request(request)) {
                 // Evaluate the result
                 if (response.isSuccessful()) {
+                    state.didConnect();
                     if (logger.isDebugEnabled()) {
                         logger.debug("Added message to topic {} -> {}",
                                 topic, response.body().string());
                     }
                     lastOffsetSent = records.get(records.size() - 1).offset;
+                } else if (response.code() == 415
+                        && currentAcceptType.equals(KAFKA_REST_ACCEPT_ENCODING)) {
+                    state.didConnect();
+                    logger.warn("Latest Avro encoding is not supported. Switching to legacy "
+                            + "encoding.");
+                    synchronized (RestSender.this) {
+                        contentType = KAFKA_REST_AVRO_LEGACY_ENCODING;
+                        acceptType = KAFKA_REST_ACCEPT_LEGACY_ENCODING;
+                    }
+                    doResend = true;
                 } else {
+                    state.didDisconnect();
                     String content = response.body().string();
+                    String requestContent = requestBody.content();
+                    requestContent = requestContent.substring(0,
+                            Math.min(requestContent.length(), 255));
                     logger.error("FAILED to transmit message: {} -> {}...",
-                            content, requestBody.content().substring(0, 255));
+                            content, requestContent);
                     throw new IOException("Failed to submit (HTTP status code " + response.code()
                             + "): " + content);
                 }
             } catch (IOException ex) {
-                logger.error("FAILED to transmit message:\n{}...",
-                        requestBody.content().substring(0, 255) );
+                state.didDisconnect();
+                String requestContent = requestBody.content();
+                requestContent = requestContent.substring(0,
+                        Math.min(requestContent.length(), 255));
+                logger.error("FAILED to transmit message:\n{}...", requestContent);
                 throw ex;
             } finally {
                 requestData.reset();
+            }
+
+            if (doResend) {
+                send(records);
             }
         }
 
@@ -247,6 +280,8 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                         .getOrSetSchemaMetadata(sendTopic, false, topic.getKeySchema(), -1);
                 requestData.setKeySchemaId(metadata.getId());
             } catch (IOException ex) {
+                logger.error("Failed to get schema for key {} of topic {}",
+                        topic.getKeyClass().getName(), topic, ex);
                 sendToUrl = getSchemalessKeyUrl();
             }
             if (requestData.getKeySchemaId() == null) {
@@ -258,6 +293,8 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                         sendTopic, true, valueSchema, -1);
                 requestData.setValueSchemaId(metadata.getId());
             } catch (IOException ex) {
+                logger.error("Failed to get schema for value {} of topic {}",
+                        topic.getValueClass().getName(), topic, ex);
                 sendToUrl = getSchemalessValueUrl();
             }
             if (requestData.getValueSchemaId() == null) {
@@ -291,7 +328,6 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
 
     }
 
-
     @Override
     public <L extends K, W extends V> KafkaTopicSender<L, W> sender(AvroTopic<L, W> topic)
             throws IOException {
@@ -300,22 +336,37 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
 
     @Override
     public boolean resetConnection() {
-        return isConnected();
-    }
-
-    public boolean isConnected() {
+        if (state.getState() == State.CONNECTED) {
+            return true;
+        }
         try (Response response = httpClient.request(getIsConnectedRequest())) {
             if (response.isSuccessful()) {
+                state.didConnect();
                 return true;
             } else {
+                state.didDisconnect();
                 logger.warn("Failed to make heartbeat request to {} (HTTP status code {}): {}",
                         httpClient, response.code(), response.body().string());
                 return false;
             }
         } catch (IOException ex) {
             // no stack trace is needed
+            state.didDisconnect();
             logger.warn("Failed to make heartbeat request to {}: {}", httpClient, ex.toString());
             return false;
+        }
+    }
+
+    public boolean isConnected() {
+        switch (state.getState()) {
+            case CONNECTED:
+                return true;
+            case DISCONNECTED:
+                return false;
+            case UNKNOWN:
+                return resetConnection();
+            default:
+                throw new IllegalStateException("Illegal connection state");
         }
     }
 
@@ -324,4 +375,70 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         httpClient.close();
     }
 
+    public static class Builder<K, V> {
+        private ServerConfig kafkaConfig;
+        private SchemaRetriever retriever;
+        private AvroEncoder keyEncoder;
+        private AvroEncoder valueEncoder;
+        private boolean compression = false;
+        private long timeout = 10;
+        private ConnectionState state;
+        private ManagedConnectionPool pool;
+
+        public Builder<K, V> server(ServerConfig kafkaConfig) {
+            this.kafkaConfig = kafkaConfig;
+            return this;
+        }
+
+        public Builder<K, V> schemaRetriever(SchemaRetriever schemaRetriever) {
+            this.retriever = schemaRetriever;
+            return this;
+        }
+
+        public Builder<K, V> encoders(AvroEncoder keyEncoder, AvroEncoder valueEncoder) {
+            this.keyEncoder = keyEncoder;
+            this.valueEncoder = valueEncoder;
+            return this;
+        }
+
+        public Builder<K, V> useCompression(boolean compression) {
+            this.compression = compression;
+            return this;
+        }
+
+        public Builder<K, V> connectionState(ConnectionState state) {
+            this.state = state;
+            return this;
+        }
+
+        public Builder<K, V> connectionTimeout(long timeout, TimeUnit unit) {
+            this.timeout = TimeUnit.SECONDS.convert(timeout, unit);
+            return this;
+        }
+
+        public Builder<K, V> connectionPool(ManagedConnectionPool pool) {
+            this.pool = pool;
+            return this;
+        }
+
+        public RestSender<K, V> build() {
+            Objects.requireNonNull(kafkaConfig);
+            Objects.requireNonNull(retriever);
+            Objects.requireNonNull(keyEncoder);
+            Objects.requireNonNull(valueEncoder);
+            if (timeout <= 0) {
+                throw new IllegalStateException("Connection timeout must be strictly positive");
+            }
+            ConnectionState useState = state;
+            if (useState == null) {
+                useState = new ConnectionState(timeout, TimeUnit.SECONDS);
+            }
+            ManagedConnectionPool usePool = pool;
+            if (usePool == null) {
+                usePool = ManagedConnectionPool.GLOBAL_POOL;
+            }
+            return new RestSender<>(new RestClient(kafkaConfig, timeout, usePool),
+                    retriever, keyEncoder, valueEncoder, compression, useState);
+        }
+    }
 }

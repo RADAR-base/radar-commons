@@ -16,7 +16,8 @@
 
 package org.radarcns.integration.model;
 
-import org.radarcns.integration.aggregator.DoubleValueCollector;
+import org.radarcns.stream.collector.DoubleValueCollector;
+import org.radarcns.key.MeasurementKey;
 
 /**
  * {@code ExpectedValue} represented as {@code Double}.
@@ -24,15 +25,12 @@ import org.radarcns.integration.aggregator.DoubleValueCollector;
  * {@link ExpectedValue}
  */
 public class ExpectedDoubleValue extends ExpectedValue<DoubleValueCollector> {
-
-    //private static final Logger logger = LoggerFactory.getLogger(ExpectedDoubleValue.class);
-
     /**
      * Constructor.
      **/
-    public ExpectedDoubleValue(String user, String source)
+    public ExpectedDoubleValue(MeasurementKey key)
             throws InstantiationException, IllegalAccessException {
-        super(user, source);
+        super(key, DoubleValueCollector.class);
     }
 
     /**
@@ -43,7 +41,7 @@ public class ExpectedDoubleValue extends ExpectedValue<DoubleValueCollector> {
      * @param timestamp time associated with the value
      * @param value sample value
      **/
-    public void add(Long startTimeWindow, Long timestamp, double value) {
+    public void add(long startTimeWindow, long timestamp, double value) {
         if (timestamp < lastTimestamp + DURATION) {
             lastValue.add(value);
         } else {

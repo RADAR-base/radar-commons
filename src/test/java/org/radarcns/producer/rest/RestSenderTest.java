@@ -63,7 +63,12 @@ public class RestSenderTest {
         SpecificRecordEncoder encoder = new SpecificRecordEncoder(false);
 
         ServerConfig config = new ServerConfig(webServer.url("/").url());
-        this.sender = new RestSender<>(config, retriever, encoder, encoder, 10, false);
+        this.sender = new RestSender.Builder<MeasurementKey, SpecificRecord>()
+                .server(config)
+                .schemaRetriever(retriever)
+                .encoders(encoder, encoder)
+                .connectionPool(new ManagedConnectionPool())
+                .build();
     }
 
     @Test
@@ -176,26 +181,28 @@ public class RestSenderTest {
 
     @Test
     public void resetConnection() throws Exception {
+        int n_requests = 0;
+
         webServer.enqueue(new MockResponse().setResponseCode(500));
         assertFalse(sender.isConnected());
-        webServer.enqueue(new MockResponse().setResponseCode(500));
-        assertFalse(sender.resetConnection());
-        webServer.enqueue(new MockResponse());
-        assertTrue(sender.isConnected());
-        webServer.enqueue(new MockResponse());
-        assertTrue(sender.resetConnection());
-    }
-
-    @Test
-    public void isConnected() throws Exception {
-        webServer.enqueue(new MockResponse());
-        assertTrue(sender.isConnected());
+        assertEquals(++n_requests, webServer.getRequestCount());
         RecordedRequest request = webServer.takeRequest();
         assertEquals("/", request.getPath());
         assertEquals("HEAD", request.getMethod());
+        webServer.enqueue(new MockResponse().setResponseCode(500));
+        assertFalse(sender.resetConnection());
+        assertEquals(++n_requests, webServer.getRequestCount());
+        request = webServer.takeRequest();
+        assertEquals("/", request.getPath());
+        assertEquals("HEAD", request.getMethod());
         webServer.enqueue(new MockResponse());
-        webServer.close();
         assertFalse(sender.isConnected());
+        assertEquals(n_requests, webServer.getRequestCount());
+        assertTrue(sender.resetConnection());
+        assertEquals(++n_requests, webServer.getRequestCount());
+        request = webServer.takeRequest();
+        assertEquals("/", request.getPath());
+        assertEquals("HEAD", request.getMethod());
     }
 
     @Test
