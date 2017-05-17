@@ -21,16 +21,12 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.radarcns.integration.model.ExpectedArrayValue;
 import org.radarcns.integration.model.ExpectedDoubleValue;
 import org.radarcns.integration.model.ExpectedValue;
-import org.radarcns.integration.model.ExpectedValue.ExpectedType;
 import org.radarcns.integration.model.MockConfigToCsvParser;
+import org.radarcns.integration.model.MockRecord;
 import org.radarcns.mock.MockDataConfig;
-import org.radarcns.integration.model.MockConfigToCsvParser.Variable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The MockAggregator simulates the behaviour of a Kafka Streams application based on time window.
@@ -40,9 +36,6 @@ import org.slf4j.LoggerFactory;
  * </ul>
  */
 public final class MockAggregator {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(MockAggregator.class);
-
     /**
      * Default constructor
      */
@@ -54,65 +47,47 @@ public final class MockAggregator {
      * {@link org.radarcns.integration.model.ExpectedArrayValue}
      **/
     public static ExpectedArrayValue simulateArrayCollector(MockConfigToCsvParser parser)
-        throws IOException, IllegalAccessException, InstantiationException {
-        Map<Variable, Object> record = parser.next();
+            throws IOException, IllegalAccessException, InstantiationException {
 
-        String user = null;
-        String source = null;
-        if (record != null) {
-            user = record.get(Variable.USER).toString();
-            source = record.get(Variable.SOURCE).toString();
-        }
-
-        ExpectedArrayValue eav = new ExpectedArrayValue(user, source);
+        MockRecord.DoubleArrayType record = parser.nextDoubleArrayRecord();
+        ExpectedArrayValue eav = new ExpectedArrayValue(record.getKey());
 
         while (record != null) {
-            eav.add((Long) record.get(Variable.TIME_WINDOW),
-                    (Long) record.get(Variable.TIMESTAMP),
-                    (Double[]) record.get(Variable.VALUE));
+            eav.add(record.getTimeWindow(10_000),
+                    record.getTimeMillis(),
+                    record.getValues());
 
-            record = parser.next();
+            record = parser.nextDoubleArrayRecord();
         }
-
-        parser.close();
 
         return eav;
     }
 
     /**
-     * @param parser class that reads a CVS file line by line returning an {@code HashMap}.
+     * @param parser class that reads a CSV file line by line returning an {@code HashMap}.
      * @return {@code ExpectedDoubleValue} the simulated results computed using the input parser.
      * {@link ExpectedDoubleValue}
      **/
     public static ExpectedDoubleValue simulateSingletonCollector(MockConfigToCsvParser parser)
-        throws IOException, IllegalAccessException, InstantiationException {
-        Map<Variable, Object> record = parser.next();
+            throws IOException, IllegalAccessException, InstantiationException {
 
-        String user = null;
-        String source = null;
-        if (record != null) {
-            user = record.get(Variable.USER).toString();
-            source = record.get(Variable.SOURCE).toString();
-        }
-
-        ExpectedDoubleValue edv = new ExpectedDoubleValue(user, source);
+        MockRecord.DoubleType record = parser.nextDoubleRecord();
+        ExpectedDoubleValue edv = new ExpectedDoubleValue(record.getKey());
 
         while (record != null) {
-            edv.add((Long) record.get(Variable.TIME_WINDOW),
-                    (Long) record.get(Variable.TIMESTAMP),
-                    (Double) record.get(Variable.VALUE));
+            edv.add(record.getTimeWindow(10_000),
+                    record.getTimeMillis(),
+                    record.getValue());
 
-            record = parser.next();
+            record = parser.nextDoubleRecord();
         }
-
-        parser.close();
 
         return edv;
     }
 
     /**
      * Given a list of configurations, it simulates all of them that has
-     * {@link ExpectedValue.ExpectedType#DOUBLE} as expected type.
+     * double as expected type.
      *
      * @param configs list containing all configurations that have to be tested.
      * @return {@code Map} of key {@code MockDataConfig} and value {@code ExpectedValue}. {@link
@@ -121,22 +96,23 @@ public final class MockAggregator {
     public static Map<MockDataConfig, ExpectedValue> simulateSingleton(List<MockDataConfig> configs)
         throws ClassNotFoundException, NoSuchMethodException, IOException, IllegalAccessException,
         InvocationTargetException, InstantiationException {
-        Map<MockDataConfig, ExpectedValue> exepctedValue = new HashMap<>();
+        Map<MockDataConfig, ExpectedValue> expectedOutput = new HashMap<>();
 
         for (MockDataConfig config : configs) {
             MockConfigToCsvParser parser = new MockConfigToCsvParser(config);
 
-            if (parser.getExpecedType().equals(ExpectedType.DOUBLE)) {
-                exepctedValue.put(config, MockAggregator.simulateSingletonCollector(parser));
+            if (config.getValueFields() != null && config.getValueFields().size() == 1) {
+                expectedOutput.put(config,
+                        MockAggregator.simulateSingletonCollector(parser));
             }
         }
 
-        return exepctedValue;
+        return expectedOutput;
     }
 
     /**
      * Given a list of configurations, it simulates all of them that has
-     * {@link ExpectedValue.ExpectedType#ARRAY} as expected type.
+     * array as expected type.
      *
      * @param configs list containing all configurations that have to be tested.
      * @return {@code Map} of key {@code MockDataConfig} and value {@code ExpectedValue}. {@link
@@ -148,9 +124,10 @@ public final class MockAggregator {
         Map<MockDataConfig, ExpectedValue> exepctedValue = new HashMap<>();
 
         for (MockDataConfig config : configs) {
-            MockConfigToCsvParser parser = new MockConfigToCsvParser(config);
-            if (parser.getExpecedType().equals(ExpectedType.ARRAY)) {
-                exepctedValue.put(config, MockAggregator.simulateArrayCollector(parser));
+            try (MockConfigToCsvParser parser = new MockConfigToCsvParser(config)) {
+                if (config.getValueFields() != null && config.getValueFields().size() > 1) {
+                    exepctedValue.put(config, MockAggregator.simulateArrayCollector(parser));
+                }
             }
         }
 
@@ -173,6 +150,4 @@ public final class MockAggregator {
 
         return map;
     }
-
-
 }

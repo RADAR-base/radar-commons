@@ -34,16 +34,16 @@ import org.junit.rules.TemporaryFolder;
 
 public class CsvWriterTest {
     @Rule
-    public TemporaryFolder folder= new TemporaryFolder();
+    public TemporaryFolder folder = new TemporaryFolder();
 
     @Test
     public void write() throws Exception {
-        CsvWriter writer = new CsvWriter();
         File f = folder.newFile();
-
-        writer.write(f,
-                Arrays.asList("a", "b"),
-                Arrays.asList(Arrays.asList("1", "2"), Arrays.asList("3", "4")).iterator());
+        try (CsvWriter writer = new CsvWriter(f, Arrays.asList("a", "b"))) {
+            writer.writeRows(Arrays.asList(
+                    Arrays.asList("1", "2"),
+                    Arrays.asList("3", "4")).iterator());
+        }
 
         String result = new String(Files.readAllBytes(f.toPath()));
         assertThat(result, is(equalTo("a,b\n1,2\n3,4\n")));

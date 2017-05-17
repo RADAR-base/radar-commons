@@ -17,6 +17,7 @@
 package org.radarcns.integration.model;
 
 import org.radarcns.integration.aggregator.DoubleArrayCollector;
+import org.radarcns.key.MeasurementKey;
 
 /**
  * {@code ExpectedValue} represented as {@code Double[]}.
@@ -24,13 +25,12 @@ import org.radarcns.integration.aggregator.DoubleArrayCollector;
  * {@link ExpectedValue}
  */
 public class ExpectedArrayValue extends ExpectedValue<DoubleArrayCollector> {
-
     /**
      * Constructor.
      **/
-    public ExpectedArrayValue(String user, String source)
+    public ExpectedArrayValue(MeasurementKey key)
             throws InstantiationException, IllegalAccessException {
-        super(user, source);
+        super(key, DoubleArrayCollector.class);
     }
 
     /**
@@ -41,24 +41,7 @@ public class ExpectedArrayValue extends ExpectedValue<DoubleArrayCollector> {
      * @param timestamp time associated with the value
      * @param array sample value
      **/
-    public void add(Long startTimeWindow, Long timestamp, Double[] array) {
-        double[] temp = new double[array.length];
-
-        for (int i = 0; i < array.length; i++) {
-            temp[i] = (double)array[i];
-        }
-        add(startTimeWindow, timestamp, temp);
-    }
-
-    /**
-     * It adds a new value the simulation taking into account if it belongs to an existing time
-     * window or not.
-     *
-     * @param startTimeWindow timeZero for a time window that has this sample as initil value
-     * @param timestamp time associated with the value
-     * @param array sample value
-     **/
-    public void add(Long startTimeWindow, Long timestamp, double[] array) {
+    public void add(long startTimeWindow, long timestamp, double[] array) {
         if (timestamp < lastTimestamp + DURATION) {
             lastValue.add(array);
         } else {
@@ -68,5 +51,4 @@ public class ExpectedArrayValue extends ExpectedValue<DoubleArrayCollector> {
             getSeries().put(startTimeWindow, lastValue);
         }
     }
-
 }

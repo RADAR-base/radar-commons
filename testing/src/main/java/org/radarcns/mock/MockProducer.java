@@ -27,13 +27,21 @@ import java.lang.reflect.InvocationTargetException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.avro.specific.SpecificRecord;
+import org.radarcns.config.ServerConfig;
 import org.radarcns.config.YamlConfigLoader;
 import org.radarcns.data.SpecificRecordEncoder;
+import org.radarcns.empatica.EmpaticaE4Acceleration;
+import org.radarcns.empatica.EmpaticaE4BatteryLevel;
+import org.radarcns.empatica.EmpaticaE4BloodVolumePulse;
+import org.radarcns.empatica.EmpaticaE4ElectroDermalActivity;
+import org.radarcns.empatica.EmpaticaE4InterBeatInterval;
+import org.radarcns.empatica.EmpaticaE4Temperature;
 import org.radarcns.key.MeasurementKey;
 import org.radarcns.producer.KafkaSender;
 import org.radarcns.producer.SchemaRetriever;
@@ -47,19 +55,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A Mock Producer class that can be used to stream data. It can use MockFile and MockDevice for
- * testing purposes, with direct or indirect streaming.
+ * A Mock Producer class that can be used to stream data. It can use MockFileSender and MockDevice
+ * for testing purposes, with direct or indirect streaming.
  */
 public class MockProducer {
 
     private static final Logger logger = LoggerFactory.getLogger(MockProducer.class);
 
     private final List<MockDevice<MeasurementKey>> devices;
-    private final List<MockFile> files;
+    private final List<MockFileSender> files;
     private final List<KafkaSender<MeasurementKey, SpecificRecord>> senders;
 
     public MockProducer(BasicMockConfig mockConfig) throws IOException {
-        int numDevices = 0;
+        int numDevices;
         if (mockConfig.getData() != null) {
             numDevices = mockConfig.getData().size();
         } else if (mockConfig.getNumberOfDevices() != 0) {
@@ -83,16 +91,25 @@ public class MockProducer {
         String sourceId = "SourceID_";
 
         if (mockConfig.getData() == null) {
+            List<RecordGenerator<MeasurementKey>> generators;
+            try {
+                generators = createGenerators(defaultDataConfig());
+            } catch (NoSuchMethodException | IllegalAccessException | ClassNotFoundException
+                    | InvocationTargetException ex) {
+                throw new IllegalStateException("Default configuration invalid", ex);
+            }
+
             for (int i = 0; i < numDevices; i++) {
-                devices.add(new MockDevice<>(senders.get(i), new MeasurementKey(userId + i,
-                        sourceId + i), MeasurementKey.getClassSchema(), MeasurementKey.class));
+                MeasurementKey key = new MeasurementKey(userId + i, sourceId + i);
+                devices.add(new MockDevice<>(senders.get(i), key, generators));
             }
         } else {
             try {
-
                 for (int i = 0; i < numDevices; i++) {
                     File mockFile = new File(mockConfig.getData().get(i).getAbsoluteDataFile());
-                    files.add(new MockFile(senders.get(i), mockFile, mockConfig.getData().get(i)));
+                    MockFile parser = new MockFile(
+                            mockFile, mockConfig.getData().get(i));
+                    files.add(new MockFileSender(senders.get(i), parser));
                 }
             } catch (NoSuchMethodException | IllegalAccessException
                     | InvocationTargetException | ClassNotFoundException ex) {
@@ -104,53 +121,70 @@ public class MockProducer {
     private List<KafkaSender<MeasurementKey, SpecificRecord>> createSenders(
             BasicMockConfig mockConfig, int numDevices)
             throws KeyManagementException, NoSuchAlgorithmException {
-        List<KafkaSender<MeasurementKey, SpecificRecord>> result = new ArrayList<>(numDevices);
         try (SchemaRetriever retriever = new SchemaRetriever(
                 mockConfig.getSchemaRegistry(), 10)) {
 
             if (mockConfig.isDirectProducer()) {
-                for (int i = 0; i < numDevices; i++) {
-                    Properties properties = new Properties();
-                    properties.put(KEY_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
-                    properties.put(VALUE_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
-                    properties.put(SCHEMA_REGISTRY_CONFIG, retriever);
-                    properties.put(BOOTSTRAP_SERVERS_CONFIG, mockConfig.getBrokerPaths());
-
-                    result.add(new DirectSender<MeasurementKey, SpecificRecord>(properties));
-                }
+                return createDirectSenders(numDevices, retriever, mockConfig.getBrokerPaths());
             } else {
-                ConnectionState sharedState = new ConnectionState(10, TimeUnit.SECONDS);
-                RestSender.Builder<MeasurementKey, SpecificRecord> restBuilder =
-                        new RestSender.Builder<MeasurementKey, SpecificRecord>()
-                                .server(mockConfig.getRestProxy())
-                                .schemaRetriever(retriever)
-                                .useCompression(mockConfig.hasCompression())
-                                .encoders(new SpecificRecordEncoder(false),
-                                        new SpecificRecordEncoder(false))
-                                .connectionState(sharedState)
-                                .connectionTimeout(10, TimeUnit.SECONDS);
-
-                for (int i = 0; i < numDevices; i++) {
-                    RestSender<MeasurementKey, SpecificRecord> firstSender = restBuilder
-                            .connectionPool(new ManagedConnectionPool())
-                            .build();
-
-                    result.add(new BatchedKafkaSender<>(firstSender, 10_000, 1000));
-                }
+                return createRestSenders(numDevices, retriever, mockConfig.getRestProxy(),
+                        mockConfig.hasCompression());
             }
+        }
+    }
+
+    /** Create senders that directly produce data to Kafka. */
+    private List<KafkaSender<MeasurementKey, SpecificRecord>> createDirectSenders(int numDevices,
+            SchemaRetriever retriever, String brokerPaths) {
+        List<KafkaSender<MeasurementKey, SpecificRecord>> result = new ArrayList<>(numDevices);
+        for (int i = 0; i < numDevices; i++) {
+            Properties properties = new Properties();
+            properties.put(KEY_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
+            properties.put(VALUE_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
+            properties.put(SCHEMA_REGISTRY_CONFIG, retriever);
+            properties.put(BOOTSTRAP_SERVERS_CONFIG, brokerPaths);
+
+            result.add(new DirectSender<MeasurementKey, SpecificRecord>(properties));
         }
         return result;
     }
 
+    /** Create senders that produce data to Kafka via the REST proxy. */
+    private List<KafkaSender<MeasurementKey, SpecificRecord>> createRestSenders(int numDevices,
+            SchemaRetriever retriever, ServerConfig restProxy, boolean useCompression) {
+        List<KafkaSender<MeasurementKey, SpecificRecord>> result = new ArrayList<>(numDevices);
+        ConnectionState sharedState = new ConnectionState(10, TimeUnit.SECONDS);
+        RestSender.Builder<MeasurementKey, SpecificRecord> restBuilder =
+                new RestSender.Builder<MeasurementKey, SpecificRecord>()
+                        .server(restProxy)
+                        .schemaRetriever(retriever)
+                        .useCompression(useCompression)
+                        .encoders(new SpecificRecordEncoder(false),
+                                new SpecificRecordEncoder(false))
+                        .connectionState(sharedState)
+                        .connectionTimeout(10, TimeUnit.SECONDS);
+
+        for (int i = 0; i < numDevices; i++) {
+            RestSender<MeasurementKey, SpecificRecord> firstSender = restBuilder
+                    .connectionPool(new ManagedConnectionPool())
+                    .build();
+
+            result.add(new BatchedKafkaSender<>(firstSender, 10_000, 1000));
+        }
+        return result;
+    }
+
+    /** Start sending data. */
     public void start() throws IOException {
         for (MockDevice device : devices) {
             device.start();
         }
-        for (MockFile file : files) {
+        for (MockFileSender file : files) {
             file.send();
         }
     }
 
+    /** Stop sending data and clean up all resources. */
     public void shutdown() throws IOException, InterruptedException {
         if (devices.isEmpty()) {
             return;
@@ -199,6 +233,7 @@ public class MockProducer {
         }
     }
 
+    /** Wait for given duration and then stop the producer. */
     private static void waitForProducer(final MockProducer producer, long duration)
             throws IOException, InterruptedException {
         final AtomicBoolean isShutdown = new AtomicBoolean(false);
@@ -235,5 +270,64 @@ public class MockProducer {
             isShutdown.set(true);
             logger.info("Producing data done.");
         }
+    }
+
+    private List<MockDataConfig> defaultDataConfig() {
+        MockDataConfig acceleration = new MockDataConfig();
+        acceleration.setTopic("android_empatica_e4_acceleration");
+        acceleration.setFrequency(32);
+        acceleration.setValueSchema(EmpaticaE4Acceleration.class.getName());
+        acceleration.setInterval(-2d, 2d);
+        acceleration.setValueFields(Arrays.asList("x", "y", "z"));
+
+        MockDataConfig battery = new MockDataConfig();
+        battery.setTopic("android_empatica_e4_battery_level");
+        battery.setValueSchema(EmpaticaE4BatteryLevel.class.getName());
+        battery.setFrequency(1);
+        battery.setInterval(0d, 1d);
+        battery.setValueField("batteryLevel");
+
+        MockDataConfig bvp = new MockDataConfig();
+        bvp.setTopic("android_empatica_e4_blood_volume_pulse");
+        bvp.setValueSchema(EmpaticaE4BloodVolumePulse.class.getName());
+        bvp.setFrequency(64);
+        bvp.setInterval(60d, 90d);
+        bvp.setValueField("bloodVolumePulse");
+
+        MockDataConfig eda = new MockDataConfig();
+        eda.setTopic("android_empatica_e4_electrodermal_activity");
+        eda.setValueSchema(EmpaticaE4ElectroDermalActivity.class.getName());
+        eda.setValueField("electroDermalActivity");
+        eda.setFrequency(4);
+        eda.setInterval(0.01d, 0.05d);
+
+        MockDataConfig ibi = new MockDataConfig();
+        ibi.setTopic("android_empatica_e4_inter_beat_interval");
+        ibi.setValueSchema(EmpaticaE4InterBeatInterval.class.getName());
+        ibi.setValueField("interBeatInterval");
+        ibi.setFrequency(1);
+        ibi.setInterval(40d, 150d);
+
+        MockDataConfig temperature = new MockDataConfig();
+        temperature.setTopic("android_empatica_e4_temperature");
+        temperature.setValueSchema(EmpaticaE4Temperature.class.getName());
+        temperature.setFrequency(4);
+        temperature.setInterval(20d, 60d);
+        temperature.setValueField("temperature");
+
+        return Arrays.asList(acceleration, battery, bvp, eda, ibi, temperature);
+    }
+
+    private List<RecordGenerator<MeasurementKey>> createGenerators(List<MockDataConfig> configs)
+            throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException,
+            InvocationTargetException {
+
+        List<RecordGenerator<MeasurementKey>> result = new ArrayList<>(configs.size());
+
+        for (MockDataConfig config : configs) {
+            result.add(new RecordGenerator<>(config, MeasurementKey.class));
+        }
+
+        return result;
     }
 }
