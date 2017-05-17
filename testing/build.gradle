@@ -39,9 +39,6 @@ dependencies {
 
     implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
 
-    // for Stream aggregators statistic calculations
-    implementation group: 'org.apache.commons', name: 'commons-math3', version: mathVersion
-
     runtimeOnly group: 'org.slf4j', name: 'slf4j-simple', version: slf4jVersion
 
     // Direct producer uses KafkaAvroSerializer if initialized
