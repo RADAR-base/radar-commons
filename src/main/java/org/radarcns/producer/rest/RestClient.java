@@ -37,12 +37,13 @@ import okhttp3.Request;
 import okhttp3.Response;
 import org.radarcns.config.ServerConfig;
 
-/** REST client using OkHttp3. */
+/** REST client using OkHttp3. This class is not thread-safe. */
 public class RestClient implements Closeable {
     private final long timeout;
     private final ServerConfig config;
     private final OkHttpClient httpClient;
     private final ManagedConnectionPool connectionPool;
+    private boolean isClosed;
 
     /**
      * REST client. This client will use the OkHttp3 default connection pool and 30 second timeout.
@@ -68,6 +69,7 @@ public class RestClient implements Closeable {
         this.config = config;
         this.timeout = connectionTimeout;
         this.connectionPool = connectionPool;
+        this.isClosed = false;
 
         OkHttpClient.Builder builder;
         if (config.isUnsafe()) {
@@ -247,6 +249,10 @@ public class RestClient implements Closeable {
 
     @Override
     public void close() {
+        if (isClosed) {
+            return;
+        }
+        isClosed = true;
         if (connectionPool != null) {
             connectionPool.release();
         }

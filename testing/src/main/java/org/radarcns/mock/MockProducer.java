@@ -65,6 +65,7 @@ public class MockProducer {
     private final List<MockDevice<MeasurementKey>> devices;
     private final List<MockFileSender> files;
     private final List<KafkaSender<MeasurementKey, SpecificRecord>> senders;
+    private final SchemaRetriever retriever;
 
     /**
      * Basic constructor.
@@ -81,6 +82,9 @@ public class MockProducer {
             throw new IllegalArgumentException(
                     "Error simulating mock device setup. Please provide data or number_of_devices");
         }
+
+        retriever = new SchemaRetriever(mockConfig.getSchemaRegistry(), 10);
+        List<KafkaSender<MeasurementKey, SpecificRecord>> tmpSenders = null;
 
         try {
             senders = createSenders(mockConfig, numDevices);
@@ -124,17 +128,13 @@ public class MockProducer {
     }
 
     private List<KafkaSender<MeasurementKey, SpecificRecord>> createSenders(
-            BasicMockConfig mockConfig, int numDevices)
-            throws KeyManagementException, NoSuchAlgorithmException {
-        try (SchemaRetriever retriever = new SchemaRetriever(
-                mockConfig.getSchemaRegistry(), 10)) {
+            BasicMockConfig mockConfig, int numDevices) {
 
-            if (mockConfig.isDirectProducer()) {
-                return createDirectSenders(numDevices, retriever, mockConfig.getBrokerPaths());
-            } else {
-                return createRestSenders(numDevices, retriever, mockConfig.getRestProxy(),
-                        mockConfig.hasCompression());
-            }
+        if (mockConfig.isDirectProducer()) {
+            return createDirectSenders(numDevices, retriever, mockConfig.getBrokerPaths());
+        } else {
+            return createRestSenders(numDevices, retriever, mockConfig.getRestProxy(),
+                    mockConfig.hasCompression());
         }
     }
 
@@ -206,6 +206,7 @@ public class MockProducer {
         for (KafkaSender<MeasurementKey, SpecificRecord> sender : senders) {
             sender.close();
         }
+        retriever.close();
 
         for (MockDevice device : devices) {
             if (device.getException() != null) {

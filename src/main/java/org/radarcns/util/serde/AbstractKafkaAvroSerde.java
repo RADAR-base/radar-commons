@@ -60,6 +60,7 @@ public class AbstractKafkaAvroSerde {
     public void close() {
         if (schemaRetriever != null) {
             schemaRetriever.close();
+            schemaRetriever = null;
         }
     }
 }
