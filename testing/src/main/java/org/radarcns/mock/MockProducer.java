@@ -71,54 +71,44 @@ public class MockProducer {
      * @throws IOException if data could not be sent
      */
     public MockProducer(BasicMockConfig mockConfig) throws IOException {
-        int numDevices;
-        if (mockConfig.getData() != null) {
-            numDevices = mockConfig.getData().size();
-        } else if (mockConfig.getNumberOfDevices() != 0) {
-            numDevices = mockConfig.getNumberOfDevices();
-        } else {
-            throw new IllegalArgumentException(
-                    "Error simulating mock device setup. Please provide data or number_of_devices");
-        }
+        int numDevices = mockConfig.getNumberOfDevices();
 
         retriever = new SchemaRetriever(mockConfig.getSchemaRegistry(), 10);
         List<KafkaSender<MeasurementKey, SpecificRecord>> tmpSenders = null;
 
         try {
-            tmpSenders = createSenders(mockConfig, numDevices);
-
             devices = new ArrayList<>(numDevices);
             files = new ArrayList<>(numDevices);
 
-            String userId = "UserID_";
-            String sourceId = "SourceID_";
+            List<MockDataConfig> dataConfigs = mockConfig.getData();
+            if (dataConfigs == null) {
+                dataConfigs = defaultDataConfig();
+            }
 
-            if (mockConfig.getData() == null) {
-                List<RecordGenerator<MeasurementKey>> generators;
-                try {
-                    generators = createGenerators(defaultDataConfig());
-                } catch (NoSuchMethodException | IllegalAccessException | ClassNotFoundException
-                        | InvocationTargetException ex) {
-                    throw new IllegalStateException("Default configuration invalid", ex);
-                }
+            List<RecordGenerator<MeasurementKey>> generators;
+            List<MockFile<MeasurementKey>> mockFiles;
+            try {
+                generators = createGenerators(dataConfigs);
+                mockFiles = createMockFiles(dataConfigs);
+            } catch (NoSuchMethodException | IllegalAccessException | ClassNotFoundException
+                    | InvocationTargetException ex) {
+                throw new IllegalStateException("Configuration invalid", ex);
+            }
+
+            tmpSenders = createSenders(mockConfig, numDevices + mockFiles.size());
+
+            if (!generators.isEmpty()) {
+                String userId = "UserID_";
+                String sourceId = "SourceID_";
 
                 for (int i = 0; i < numDevices; i++) {
                     MeasurementKey key = new MeasurementKey(userId + i, sourceId + i);
                     devices.add(new MockDevice<>(tmpSenders.get(i), key, generators));
                 }
-            } else {
-                try {
-                    for (int i = 0; i < numDevices; i++) {
-                        File mockFile = new File(
-                                mockConfig.getData().get(i).getAbsoluteDataFile());
-                        MockFile parser = new MockFile(
-                                mockFile, mockConfig.getData().get(i));
-                        files.add(new MockFileSender(tmpSenders.get(i), parser));
-                    }
-                } catch (NoSuchMethodException | IllegalAccessException
-                        | InvocationTargetException | ClassNotFoundException ex) {
-                    throw new IOException("Cannot instantiate mock file", ex);
-                }
+            }
+
+            for (int i = 0; i < mockFiles.size(); i++) {
+                files.add(new MockFileSender(tmpSenders.get(i + numDevices), mockFiles.get(i)));
             }
         } catch (Exception ex) {
             if (tmpSenders != null) {
@@ -346,7 +336,25 @@ public class MockProducer {
         List<RecordGenerator<MeasurementKey>> result = new ArrayList<>(configs.size());
 
         for (MockDataConfig config : configs) {
-            result.add(new RecordGenerator<>(config, MeasurementKey.class));
+            if (config.getDataFile() == null) {
+                result.add(new RecordGenerator<>(config, MeasurementKey.class));
+            }
+        }
+
+        return result;
+    }
+
+    private List<MockFile<MeasurementKey>> createMockFiles(List<MockDataConfig> configs)
+            throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException,
+            InvocationTargetException, IOException {
+
+        List<MockFile<MeasurementKey>> result = new ArrayList<>(configs.size());
+
+        File cwd = new File(".").getAbsoluteFile();
+        for (MockDataConfig config : configs) {
+            if (config.getDataFile() != null) {
+                result.add(new MockFile<MeasurementKey>(config.getDataFile(cwd), config));
+            }
         }
 
         return result;
