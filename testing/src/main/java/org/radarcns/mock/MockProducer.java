@@ -24,8 +24,6 @@ import static org.radarcns.util.serde.AbstractKafkaAvroSerde.SCHEMA_REGISTRY_CON
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -87,44 +85,52 @@ public class MockProducer {
         List<KafkaSender<MeasurementKey, SpecificRecord>> tmpSenders = null;
 
         try {
-            senders = createSenders(mockConfig, numDevices);
-        } catch (KeyManagementException | NoSuchAlgorithmException ex) {
-            logger.error("Sender cannot be created.", ex);
-            throw new IOException(ex);
-        }
+            tmpSenders = createSenders(mockConfig, numDevices);
 
-        devices = new ArrayList<>(numDevices);
-        files = new ArrayList<>(numDevices);
+            devices = new ArrayList<>(numDevices);
+            files = new ArrayList<>(numDevices);
 
-        String userId = "UserID_";
-        String sourceId = "SourceID_";
+            String userId = "UserID_";
+            String sourceId = "SourceID_";
 
-        if (mockConfig.getData() == null) {
-            List<RecordGenerator<MeasurementKey>> generators;
-            try {
-                generators = createGenerators(defaultDataConfig());
-            } catch (NoSuchMethodException | IllegalAccessException | ClassNotFoundException
-                    | InvocationTargetException ex) {
-                throw new IllegalStateException("Default configuration invalid", ex);
-            }
-
-            for (int i = 0; i < numDevices; i++) {
-                MeasurementKey key = new MeasurementKey(userId + i, sourceId + i);
-                devices.add(new MockDevice<>(senders.get(i), key, generators));
-            }
-        } else {
-            try {
-                for (int i = 0; i < numDevices; i++) {
-                    File mockFile = new File(mockConfig.getData().get(i).getAbsoluteDataFile());
-                    MockFile parser = new MockFile(
-                            mockFile, mockConfig.getData().get(i));
-                    files.add(new MockFileSender(senders.get(i), parser));
+            if (mockConfig.getData() == null) {
+                List<RecordGenerator<MeasurementKey>> generators;
+                try {
+                    generators = createGenerators(defaultDataConfig());
+                } catch (NoSuchMethodException | IllegalAccessException | ClassNotFoundException
+                        | InvocationTargetException ex) {
+                    throw new IllegalStateException("Default configuration invalid", ex);
                 }
-            } catch (NoSuchMethodException | IllegalAccessException
-                    | InvocationTargetException | ClassNotFoundException ex) {
-                throw new IOException("Cannot instantiate mock file", ex);
+
+                for (int i = 0; i < numDevices; i++) {
+                    MeasurementKey key = new MeasurementKey(userId + i, sourceId + i);
+                    devices.add(new MockDevice<>(tmpSenders.get(i), key, generators));
+                }
+            } else {
+                try {
+                    for (int i = 0; i < numDevices; i++) {
+                        File mockFile = new File(
+                                mockConfig.getData().get(i).getAbsoluteDataFile());
+                        MockFile parser = new MockFile(
+                                mockFile, mockConfig.getData().get(i));
+                        files.add(new MockFileSender(tmpSenders.get(i), parser));
+                    }
+                } catch (NoSuchMethodException | IllegalAccessException
+                        | InvocationTargetException | ClassNotFoundException ex) {
+                    throw new IOException("Cannot instantiate mock file", ex);
+                }
             }
+        } catch (Exception ex) {
+            if (tmpSenders != null) {
+                for (KafkaSender<?, ?> sender : tmpSenders) {
+                    sender.close();
+                }
+            }
+            retriever.close();
+            throw ex;
         }
+
+        senders = tmpSenders;
     }
 
     private List<KafkaSender<MeasurementKey, SpecificRecord>> createSenders(
