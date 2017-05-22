@@ -48,8 +48,8 @@ public class MockDataConfig {
     @JsonProperty("maximum_difference")
     private double maximumDifference = 1e-10d;
 
-    private double minimum = Double.NEGATIVE_INFINITY;
-    private double maximum = Double.POSITIVE_INFINITY;
+    private double minimum = -1e5;
+    private double maximum = 1e5;
 
     public String getTopic() {
         return topic;
