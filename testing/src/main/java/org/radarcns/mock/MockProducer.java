@@ -77,7 +77,8 @@ public class MockProducer {
 
     /**
      * Basic constructor.
-     * @param mockConfig configuration to mock.
+     * @param mockConfig configuration to mock
+     * @param root root directory of where mock files are located
      * @throws IOException if data could not be sent
      */
     public MockProducer(BasicMockConfig mockConfig, File root) throws IOException {
