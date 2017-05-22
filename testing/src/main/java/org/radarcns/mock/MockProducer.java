@@ -66,7 +66,8 @@ public class MockProducer {
     private final SchemaRetriever retriever;
 
     /**
-     * MockProducer with files from current directory.
+     * MockProducer with files from current directory. The data root directory will be the current
+     * directory.
      * @param mockConfig configuration to mock
      * @throws IOException if the data could not be read or sent
      */
