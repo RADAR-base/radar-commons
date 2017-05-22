@@ -66,6 +66,15 @@ public class MockProducer {
     private final SchemaRetriever retriever;
 
     /**
+     * MockProducer with files from current directory.
+     * @param mockConfig configuration to mock
+     * @throws IOException if the data could not be read or sent
+     */
+    public MockProducer(BasicMockConfig mockConfig) throws IOException {
+        this(mockConfig, null);
+    }
+
+    /**
      * Basic constructor.
      * @param mockConfig configuration to mock.
      * @throws IOException if data could not be sent
