@@ -70,7 +70,7 @@ public class MockProducer {
      * @param mockConfig configuration to mock.
      * @throws IOException if data could not be sent
      */
-    public MockProducer(BasicMockConfig mockConfig) throws IOException {
+    public MockProducer(BasicMockConfig mockConfig, File root) throws IOException {
         int numDevices = mockConfig.getNumberOfDevices();
 
         retriever = new SchemaRetriever(mockConfig.getSchemaRegistry(), 10);
@@ -89,7 +89,7 @@ public class MockProducer {
             List<MockFile<MeasurementKey>> mockFiles;
             try {
                 generators = createGenerators(dataConfigs);
-                mockFiles = createMockFiles(dataConfigs);
+                mockFiles = createMockFiles(dataConfigs, root);
             } catch (NoSuchMethodException | IllegalAccessException | ClassNotFoundException
                     | InvocationTargetException ex) {
                 throw new IllegalStateException("Configuration invalid", ex);
@@ -220,7 +220,7 @@ public class MockProducer {
             System.exit(1);
         }
 
-        File mockFile = new File(args[0]);
+        File mockFile = new File(args[0]).getAbsoluteFile();
         BasicMockConfig config = null;
         try {
             config = new YamlConfigLoader().load(mockFile, BasicMockConfig.class);
@@ -230,7 +230,7 @@ public class MockProducer {
         }
 
         try {
-            MockProducer producer = new MockProducer(config);
+            MockProducer producer = new MockProducer(config, mockFile.getParentFile());
             producer.start();
             waitForProducer(producer, config.getDuration());
         } catch (IllegalArgumentException ex) {
@@ -344,16 +344,21 @@ public class MockProducer {
         return result;
     }
 
-    private List<MockFile<MeasurementKey>> createMockFiles(List<MockDataConfig> configs)
+    private List<MockFile<MeasurementKey>> createMockFiles(List<MockDataConfig> configs,
+            File dataRoot)
             throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException,
             InvocationTargetException, IOException {
 
         List<MockFile<MeasurementKey>> result = new ArrayList<>(configs.size());
 
-        File cwd = new File(".").getAbsoluteFile();
+        File parent = dataRoot;
+        if (parent == null) {
+            parent = new File(".").getAbsoluteFile();
+        }
+
         for (MockDataConfig config : configs) {
             if (config.getDataFile() != null) {
-                result.add(new MockFile<MeasurementKey>(config.getDataFile(cwd), config));
+                result.add(new MockFile<MeasurementKey>(config.getDataFile(parent), config));
             }
         }
 
