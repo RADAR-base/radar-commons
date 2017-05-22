@@ -77,7 +77,7 @@ public class MockConfigToCsvParser implements Closeable {
         MockRecord.DoubleType result = new MockRecord.DoubleType();
         result.setKey(record.key);
         result.setTime((Double)record.value.get(timeReceivedPos));
-        result.setValue(((Number)record.value.get(valuePos[0])).doubleValue());
+        result.setValue(Double.parseDouble(record.value.get(valuePos[0]).toString()));
         return result;
     }
 
@@ -95,7 +95,7 @@ public class MockConfigToCsvParser implements Closeable {
         result.setTime((Double)record.value.get(timeReceivedPos));
         double[] values = new double[valuePos.length];
         for (int i = 0; i < valuePos.length; i++) {
-            values[i] = ((Number)record.value.get(valuePos[i])).doubleValue();
+            values[i] = Double.parseDouble(record.value.get(valuePos[i]).toString());
         }
         result.setValues(values);
         return result;
