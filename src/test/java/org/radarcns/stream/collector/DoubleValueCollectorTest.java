@@ -85,6 +85,16 @@ public class DoubleValueCollectorTest {
         for (double d : input) {
             valueCollector.add(d);
         }
-        assertEquals(36.850894682312116, valueCollector.getAvg(), Math.pow(10, -10.0));
+        assertEquals(36.850894682312116, valueCollector.getAvg(), 0);
+    }
+
+    @Test
+    public void testAverageFloat() {
+        double[] input = {36.793899922141186, 36.878288191353626, 36.965575690177715, 36.988087035729855, 36.628622572158214};
+        for (double d : input) {
+            valueCollector.add((float)d);
+        }
+        // converting to float will give a lower number of decimals on the double result
+        assertEquals(36.8508954, valueCollector.getAvg(), 0);
     }
 }
