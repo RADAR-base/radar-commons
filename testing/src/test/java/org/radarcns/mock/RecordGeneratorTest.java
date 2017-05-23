@@ -25,6 +25,8 @@ import org.junit.Test;
 import org.radarcns.data.Record;
 import org.radarcns.empatica.EmpaticaE4Acceleration;
 import org.radarcns.key.MeasurementKey;
+import org.radarcns.mock.config.MockDataConfig;
+import org.radarcns.mock.data.RecordGenerator;
 
 /**
  * Created by joris on 17/05/2017.

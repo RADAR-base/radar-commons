@@ -41,6 +41,10 @@ import org.radarcns.empatica.EmpaticaE4ElectroDermalActivity;
 import org.radarcns.empatica.EmpaticaE4InterBeatInterval;
 import org.radarcns.empatica.EmpaticaE4Temperature;
 import org.radarcns.key.MeasurementKey;
+import org.radarcns.mock.config.BasicMockConfig;
+import org.radarcns.mock.config.MockDataConfig;
+import org.radarcns.mock.data.MockCsvParser;
+import org.radarcns.mock.data.RecordGenerator;
 import org.radarcns.producer.KafkaSender;
 import org.radarcns.producer.SchemaRetriever;
 import org.radarcns.producer.direct.DirectSender;
@@ -97,7 +101,7 @@ public class MockProducer {
             }
 
             List<RecordGenerator<MeasurementKey>> generators;
-            List<MockFile<MeasurementKey>> mockFiles;
+            List<MockCsvParser<MeasurementKey>> mockFiles;
             try {
                 generators = createGenerators(dataConfigs);
                 mockFiles = createMockFiles(dataConfigs, root);
@@ -355,12 +359,12 @@ public class MockProducer {
         return result;
     }
 
-    private List<MockFile<MeasurementKey>> createMockFiles(List<MockDataConfig> configs,
+    private List<MockCsvParser<MeasurementKey>> createMockFiles(List<MockDataConfig> configs,
             File dataRoot)
             throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException,
             InvocationTargetException, IOException {
 
-        List<MockFile<MeasurementKey>> result = new ArrayList<>(configs.size());
+        List<MockCsvParser<MeasurementKey>> result = new ArrayList<>(configs.size());
 
         File parent = dataRoot;
         if (parent == null) {
@@ -369,7 +373,7 @@ public class MockProducer {
 
         for (MockDataConfig config : configs) {
             if (config.getDataFile() != null) {
-                result.add(new MockFile<MeasurementKey>(config, parent));
+                result.add(new MockCsvParser<MeasurementKey>(config, parent));
             }
         }
 

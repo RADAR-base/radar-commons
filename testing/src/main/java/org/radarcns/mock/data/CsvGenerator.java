@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package org.radarcns.mock;
+package org.radarcns.mock.data;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import org.radarcns.key.MeasurementKey;
+import org.radarcns.mock.config.MockDataConfig;
 import org.radarcns.util.CsvWriter;
 
 /**

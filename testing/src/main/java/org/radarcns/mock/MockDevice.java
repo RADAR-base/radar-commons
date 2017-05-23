@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.data.Record;
+import org.radarcns.mock.data.RecordGenerator;
 import org.radarcns.producer.KafkaSender;
 import org.radarcns.producer.KafkaTopicSender;
 import org.radarcns.util.Oscilloscope;

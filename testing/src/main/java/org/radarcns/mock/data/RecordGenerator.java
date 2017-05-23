@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.radarcns.mock;
+package org.radarcns.mock.data;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -30,6 +30,7 @@ import org.apache.avro.Schema.Field;
 import org.apache.avro.Schema.Type;
 import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.data.Record;
+import org.radarcns.mock.config.MockDataConfig;
 import org.radarcns.topic.AvroTopic;
 import org.radarcns.util.Metronome;
 
