@@ -52,7 +52,7 @@ public class CsvGeneratorTest {
         CsvGenerator generator = new CsvGenerator();
 
         MockDataConfig config = makeConfig();
-        generator.generate(config, 100L, folder.getRoot());
+        generator.generate(config, 100_000L, folder.getRoot());
 
         CsvParser parser = new CsvParser(new BufferedReader(new FileReader(config.getDataFile())));
         List<String> headers = Arrays.asList(
@@ -94,7 +94,7 @@ public class CsvGeneratorTest {
             }
         };
 
-        generator.generate(recordGenerator, 1L, new File(config.getDataFile()));
+        generator.generate(recordGenerator, 1000L, new File(config.getDataFile()));
 
         CsvParser parser = new CsvParser(new BufferedReader(new FileReader(config.getDataFile())));
         assertEquals(recordGenerator.getHeader(), parser.parseLine());

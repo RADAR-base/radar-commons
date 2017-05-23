@@ -28,10 +28,10 @@ import org.radarcns.util.CsvWriter;
  */
 public final class CsvGenerator {
     /**
-     * Generates new CSV file to simulation a single user with a single device as longs as seconds.
+     * Generates new CSV file to simulation a single user with a single device.
      *
      * @param config properties containing metadata to generate data
-     * @param duration simulation duration expressed in seconds
+     * @param duration simulation duration expressed in milliseconds
      * @param root directory relative to which the output csv file is generated
      * @throws IOException if the CSV file cannot be written to
      */
@@ -48,10 +48,10 @@ public final class CsvGenerator {
     }
 
     /**
-     * Generates new CSV file to simulation a single user with a single device as longs as seconds.
+     * Generates new CSV file to simulation a single user with a single device.
      *
      * @param generator generator to generate data
-     * @param duration simulation duration expressed in seconds
+     * @param duration simulation duration expressed in milliseconds
      * @param csvFile CSV file to write data to
      * @throws IOException if the CSV file cannot be written to
      */
