@@ -16,6 +16,7 @@
 
 package org.radarcns.integration.aggregator;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
@@ -90,16 +91,18 @@ public final class MockAggregator {
      * double as expected type.
      *
      * @param configs list containing all configurations that have to be tested.
+     * @param root directory relative to which the data files should be generated
      * @return {@code Map} of key {@code MockDataConfig} and value {@code ExpectedValue}. {@link
      * ExpectedDoubleValue}.
      **/
-    public static Map<MockDataConfig, ExpectedValue> simulateSingleton(List<MockDataConfig> configs)
-        throws ClassNotFoundException, NoSuchMethodException, IOException, IllegalAccessException,
-        InvocationTargetException, InstantiationException {
+    public static Map<MockDataConfig, ExpectedValue> simulateSingleton(List<MockDataConfig> configs,
+            File root)
+            throws ClassNotFoundException, NoSuchMethodException, IOException,
+            IllegalAccessException, InvocationTargetException, InstantiationException {
         Map<MockDataConfig, ExpectedValue> expectedOutput = new HashMap<>();
 
         for (MockDataConfig config : configs) {
-            MockConfigToCsvParser parser = new MockConfigToCsvParser(config);
+            MockConfigToCsvParser parser = new MockConfigToCsvParser(config, root);
 
             if (config.getValueFields() != null && config.getValueFields().size() == 1) {
                 expectedOutput.put(config,
@@ -115,16 +118,18 @@ public final class MockAggregator {
      * array as expected type.
      *
      * @param configs list containing all configurations that have to be tested.
+     * @param root directory relative to which the data files should be generated
      * @return {@code Map} of key {@code MockDataConfig} and value {@code ExpectedValue}. {@link
      * ExpectedDoubleValue}.
      **/
-    public static Map<MockDataConfig, ExpectedValue> simulateArray(List<MockDataConfig> configs)
+    public static Map<MockDataConfig, ExpectedValue> simulateArray(List<MockDataConfig> configs,
+            File root)
         throws ClassNotFoundException, NoSuchMethodException, IOException, IllegalAccessException,
         InvocationTargetException, InstantiationException {
         Map<MockDataConfig, ExpectedValue> exepctedValue = new HashMap<>();
 
         for (MockDataConfig config : configs) {
-            try (MockConfigToCsvParser parser = new MockConfigToCsvParser(config)) {
+            try (MockConfigToCsvParser parser = new MockConfigToCsvParser(config, root)) {
                 if (config.getValueFields() != null && config.getValueFields().size() > 1) {
                     exepctedValue.put(config, MockAggregator.simulateArrayCollector(parser));
                 }
@@ -141,12 +146,12 @@ public final class MockAggregator {
      * ExpectedDoubleValue}.
      **/
     public static Map<MockDataConfig, ExpectedValue> getSimulations(
-            List<MockDataConfig> mockDataConfigs)
-        throws ClassNotFoundException, NoSuchMethodException, IOException, IllegalAccessException,
-        InvocationTargetException, InstantiationException {
+            List<MockDataConfig> mockDataConfigs, File root)
+            throws ClassNotFoundException, NoSuchMethodException, IOException,
+            IllegalAccessException, InvocationTargetException, InstantiationException {
         Map<MockDataConfig, ExpectedValue> map = new HashMap<>();
-        map.putAll(simulateSingleton(mockDataConfigs));
-        map.putAll(simulateArray(mockDataConfigs));
+        map.putAll(simulateSingleton(mockDataConfigs, root));
+        map.putAll(simulateArray(mockDataConfigs, root));
 
         return map;
     }

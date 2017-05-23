@@ -32,12 +32,12 @@ public final class CsvGenerator {
      *
      * @param config properties containing metadata to generate data
      * @param duration simulation duration expressed in seconds
-     * @param parentFile of csv file to be generate
+     * @param root directory relative to which the output csv file is generated
      * @throws IOException if the CSV file cannot be written to
      */
-    public void generate(MockDataConfig config, long duration, File parentFile)
+    public void generate(MockDataConfig config, long duration, File root)
             throws IOException {
-        File file = config.getDataFile(parentFile);
+        File file = config.getDataFile(root);
 
         try {
             generate(new RecordGenerator<>(config, MeasurementKey.class), duration, file);
@@ -52,14 +52,14 @@ public final class CsvGenerator {
      *
      * @param generator generator to generate data
      * @param duration simulation duration expressed in seconds
-     * @param dataFile file to write data to
+     * @param csvFile CSV file to write data to
      * @throws IOException if the CSV file cannot be written to
      */
-    public void generate(RecordGenerator<MeasurementKey> generator, long duration, File dataFile)
+    public void generate(RecordGenerator<MeasurementKey> generator, long duration, File csvFile)
             throws IOException {
         MeasurementKey key = new MeasurementKey("UserID_0", "SourceID_0");
 
-        try (CsvWriter writer = new CsvWriter(dataFile, generator.getHeader())) {
+        try (CsvWriter writer = new CsvWriter(csvFile, generator.getHeader())) {
             writer.writeRows(generator.iterateRawValues(key, duration));
         }
     }

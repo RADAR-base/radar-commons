@@ -40,11 +40,12 @@ public class MockConfigToCsvParser implements Closeable {
      * Constructor that initialises the {@code CSVReader} and computes the {@code ExpectedType}.
      *
      * @param config containing the CSV file path that has to be parsed
+     * @param root directory relative to which the data files are located
      **/
-    public MockConfigToCsvParser(MockDataConfig config)
+    public MockConfigToCsvParser(MockDataConfig config, File root)
         throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
         IllegalAccessException, IOException {
-        this.mockFile = new MockFile<>(new File(config.getAbsoluteDataFile()), config);
+        this.mockFile = new MockFile<>(config, root);
         Schema valueSchema = mockFile.getTopic().getValueSchema();
         timeReceivedPos = valueSchema.getField("timeReceived").pos();
 

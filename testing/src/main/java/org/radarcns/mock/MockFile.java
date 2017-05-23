@@ -53,16 +53,16 @@ public class MockFile<K extends SpecificRecord> implements Closeable {
 
     /**
      * Base constructor.
-     * @param baseFile parent directory of the data file.
      * @param config configuration of the stream.
+     * @param root parent directory of the data file.
      */
-    public MockFile(File baseFile, MockDataConfig config)
+    public MockFile(MockDataConfig config, File root)
             throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
             IllegalAccessException, IOException {
         //noinspection unchecked
         topic = (AvroTopic<K, SpecificRecord>) config.parseAvroTopic();
 
-        fileReader = new FileReader(config.getDataFile(baseFile));
+        fileReader = new FileReader(config.getDataFile(root));
         bufferedReader = new BufferedReader(fileReader);
         csvReader = new CsvParser(bufferedReader);
         List<String> header = csvReader.parseLine();

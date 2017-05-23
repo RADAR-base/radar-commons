@@ -369,7 +369,7 @@ public class MockProducer {
 
         for (MockDataConfig config : configs) {
             if (config.getDataFile() != null) {
-                result.add(new MockFile<MeasurementKey>(config.getDataFile(parent), config));
+                result.add(new MockFile<MeasurementKey>(config, parent));
             }
         }
 

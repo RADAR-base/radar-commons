@@ -109,15 +109,19 @@ public class MockDataConfig {
     }
 
     /**
-     * Get the data file associated with this definition, relative to given configuration file.
+     * Get the data file associated with this definition, relative to given directory.
      * If the data file is specified as an absolute path, then this will return that path.
+     *
+     * @param root directory the data file is relative to.
+     * @return absolute path to the data file
+     * @throws NullPointerException if root is null
      */
-    public File getDataFile(File configFile) {
+    public File getDataFile(File root) {
         File directDataFile = new File(dataFile);
         if (directDataFile.isAbsolute()) {
             return directDataFile;
         } else {
-            File absoluteFile = new File(configFile.getParentFile(), dataFile);
+            File absoluteFile = new File(root, dataFile);
             this.absolutePath = absoluteFile.getAbsolutePath();
             return absoluteFile;
         }
