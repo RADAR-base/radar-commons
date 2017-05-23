@@ -119,7 +119,10 @@ public class MockRecordValidator {
     private void checkDuration() {
         long interval = (long)(time * 1000d) - (long)(startTime * 1000d);
 
-        if (duration <= interval || duration > interval + 1000L) {
+        // add a margin of 50 for clock error purposes
+        long margin = 50L;
+
+        if (duration <= interval - margin || duration > interval + 1000L + margin) {
             error("Data does not cover " + duration + " milliseconds but "
                     + interval + " instead.", -1L, null);
         }

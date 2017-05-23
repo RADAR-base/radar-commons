@@ -18,7 +18,6 @@ package org.radarcns.mock.model;
 
 import java.util.List;
 import org.apache.avro.Schema;
-import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.stream.collector.DoubleArrayCollector;
 
 /**
@@ -34,16 +33,20 @@ public class ExpectedArrayValue extends ExpectedValue<DoubleArrayCollector> {
         super(valueSchema, valueFields);
     }
 
+    public ExpectedArrayValue() {
+        super();
+    }
+
     @Override
     protected DoubleArrayCollector createValue() {
         return new DoubleArrayCollector();
     }
 
     @Override
-    protected void addToValue(DoubleArrayCollector collector, SpecificRecord record) {
+    protected void addToValue(DoubleArrayCollector collector, Object[] rawValues) {
         double[] values = new double[getValueFieldLength()];
         for (int i = 0; i < values.length; i++) {
-            values[i] = Double.parseDouble(getValue(record, i).toString());
+            values[i] = Double.parseDouble(rawValues[i].toString());
         }
         collector.add(values);
     }

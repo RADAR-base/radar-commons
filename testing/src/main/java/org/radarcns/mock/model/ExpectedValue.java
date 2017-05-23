@@ -56,6 +56,18 @@ public abstract class ExpectedValue<V> {
     }
 
     /**
+     * Constructor.
+     **/
+    public ExpectedValue() {
+        timeReceivedPos = -1;
+        valuePos = null;
+
+        series = new HashMap<>();
+        lastTimestamp = 0L;
+        lastValue = null;
+    }
+
+    /**
      * Create a new value for the series. This is called when the time window of a record does not
      * match a previous value in the time series.
      */
@@ -64,9 +76,9 @@ public abstract class ExpectedValue<V> {
     /**
      * Add record to a single time series value.
      * @param value value to add record to.
-     * @param record record to add.
+     * @param values values of the record to add
      */
-    protected abstract void addToValue(V value, SpecificRecord record);
+    protected abstract void addToValue(V value, Object[] values);
 
     /** Number of value fields of the records in this expected value. */
     public int getValueFieldLength() {
@@ -86,16 +98,32 @@ public abstract class ExpectedValue<V> {
      * @param record record to add
      */
     public void add(Record<MeasurementKey, SpecificRecord> record) {
-        this.lastKey = record.key;
+        if (timeReceivedPos == -1) {
+            throw new IllegalStateException("Cannot parse record without a schema.");
+        }
         long timeMillis = (long) ((Double) record.value.get(timeReceivedPos) / 1000d);
-        if (timeMillis < lastTimestamp + DURATION) {
-            addToValue(lastValue, record.value);
-        } else {
+        Object[] obj = new Object[valuePos.length];
+        for (int i = 0; i < valuePos.length; i++) {
+            obj[i] = record.value.get(valuePos[i]);
+        }
+
+        add(record.key, timeMillis, obj);
+    }
+
+    /**
+     * Add a new record to the series of expected values.
+     * @param key measurement key
+     * @param timeMillis time the record is received
+     * @param values values to add
+     */
+    public void add(MeasurementKey key, long timeMillis, Object[] values) {
+        this.lastKey = key;
+        if (timeMillis >= lastTimestamp + DURATION) {
             lastTimestamp = timeMillis - (timeMillis % DURATION);
             lastValue = createValue();
             getSeries().put(lastTimestamp, lastValue);
-            addToValue(lastValue, record.value);
         }
+        addToValue(lastValue, values);
     }
 
     public MeasurementKey getLastKey() {

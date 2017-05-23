@@ -18,7 +18,6 @@ package org.radarcns.mock.model;
 
 import java.util.List;
 import org.apache.avro.Schema;
-import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.stream.collector.DoubleValueCollector;
 
 /**
@@ -34,13 +33,17 @@ public class ExpectedDoubleValue extends ExpectedValue<DoubleValueCollector> {
         super(valueSchema, valueFields);
     }
 
+    public ExpectedDoubleValue() {
+        super();
+    }
+
     @Override
     protected DoubleValueCollector createValue() {
         return new DoubleValueCollector();
     }
 
     @Override
-    protected void addToValue(DoubleValueCollector collector, SpecificRecord record) {
-        collector.add(Double.parseDouble(getValue(record, 0).toString()));
+    protected void addToValue(DoubleValueCollector collector, Object[] values) {
+        collector.add(Double.parseDouble(values[0].toString()));
     }
 }
