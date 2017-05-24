@@ -101,7 +101,7 @@ public abstract class ExpectedValue<V> {
         if (timeReceivedPos == -1) {
             throw new IllegalStateException("Cannot parse record without a schema.");
         }
-        long timeMillis = (long) ((Double) record.value.get(timeReceivedPos) / 1000d);
+        long timeMillis = (long) ((Double) record.value.get(timeReceivedPos) * 1000d);
         Object[] obj = new Object[valuePos.length];
         for (int i = 0; i < valuePos.length; i++) {
             obj[i] = record.value.get(valuePos[i]);
