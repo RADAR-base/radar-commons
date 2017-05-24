@@ -44,7 +44,7 @@ public class ExpectedArrayValue extends ExpectedValue<DoubleArrayCollector> {
 
     @Override
     protected void addToValue(DoubleArrayCollector collector, Object[] rawValues) {
-        double[] values = new double[getValueFieldLength()];
+        double[] values = new double[rawValues.length];
         for (int i = 0; i < values.length; i++) {
             values[i] = Double.parseDouble(rawValues[i].toString());
         }

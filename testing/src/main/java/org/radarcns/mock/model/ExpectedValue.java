@@ -116,9 +116,9 @@ public abstract class ExpectedValue<V> {
      * @param timeMillis time the record is received
      * @param values values to add
      */
-    public void add(MeasurementKey key, long timeMillis, Object[] values) {
+    public void add(MeasurementKey key, long timeMillis, Object... values) {
         this.lastKey = key;
-        if (timeMillis >= lastTimestamp + DURATION) {
+        if (timeMillis >= lastTimestamp + DURATION || lastValue == null) {
             lastTimestamp = timeMillis - (timeMillis % DURATION);
             lastValue = createValue();
             getSeries().put(lastTimestamp, lastValue);
