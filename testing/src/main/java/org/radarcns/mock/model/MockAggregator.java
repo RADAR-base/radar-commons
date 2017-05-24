@@ -69,9 +69,9 @@ public final class MockAggregator {
 
                 ExpectedValue<?> value;
                 if (config.getValueFields().size() == 1) {
-                    value = new ExpectedArrayValue(valueSchema, valueFields);
-                } else {
                     value = new ExpectedDoubleValue(valueSchema, valueFields);
+                } else {
+                    value = new ExpectedArrayValue(valueSchema, valueFields);
                 }
 
                 while (parser.hasNext()) {
