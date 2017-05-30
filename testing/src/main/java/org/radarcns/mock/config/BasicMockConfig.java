@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.radarcns.mock;
+package org.radarcns.mock.config;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;

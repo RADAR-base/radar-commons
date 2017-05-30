@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.radarcns.mock;
+package org.radarcns.mock.data;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -30,6 +30,7 @@ import org.apache.avro.Schema.Field;
 import org.apache.avro.Schema.Type;
 import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.data.Record;
+import org.radarcns.mock.config.MockDataConfig;
 import org.radarcns.topic.AvroTopic;
 import org.radarcns.util.Metronome;
 
@@ -128,7 +129,7 @@ public class RecordGenerator<K extends SpecificRecord> {
     /**
      * Simulates data of a sensor with the given frequency for a time interval specified by
      *      duration. The data is converted to lists of strings.
-     * @param duration in seconds for the simulation
+     * @param duration in milliseconds for the simulation
      * @param key key to generate data with
      * @return list containing simulated values
      */
@@ -141,7 +142,7 @@ public class RecordGenerator<K extends SpecificRecord> {
     /**
      * Simulates data of a sensor with the given frequency for a time interval specified by
      *      duration.
-     * @param duration in seconds for the simulation
+     * @param duration in milliseconds for the simulation
      * @param key key to generate data with
      * @return list containing simulated values
      */
@@ -219,7 +220,7 @@ public class RecordGenerator<K extends SpecificRecord> {
 
         public RecordIterator(long duration, K key) {
             this.key = key;
-            timestamps = new Metronome(duration * config.getFrequency(),
+            timestamps = new Metronome(duration * config.getFrequency() / 1000L,
                     config.getFrequency());
             offset = 0;
         }

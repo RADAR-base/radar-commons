@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.data.Record;
+import org.radarcns.mock.data.RecordGenerator;
 import org.radarcns.producer.KafkaSender;
 import org.radarcns.producer.KafkaTopicSender;
 import org.radarcns.util.Oscilloscope;
@@ -75,20 +76,27 @@ public class MockDevice<K extends SpecificRecord> extends Thread {
             }
             Oscilloscope oscilloscope = new Oscilloscope(baseFrequency);
 
-            while (!stopping.get()) {
-                // The time keeping is regulated with beats, with baseFrequency beats per second.
-                int beat = oscilloscope.beat();
+            try {
+                while (!stopping.get()) {
+                    // The time keeping is regulated with beats, with baseFrequency beats per
+                    // second.
+                    int beat = oscilloscope.beat();
 
-                for (int i = 0; i < generators.size(); i++) {
-                    int frequency = generators.get(i).getConfig().getFrequency();
-                    if (frequency > 0 && beat % (baseFrequency / frequency) == 0) {
-                        Record<K, SpecificRecord> record = recordIterators.get(i).next();
-                        topicSenders.get(i).send(record.offset, record.key, record.value);
+                    for (int i = 0; i < generators.size(); i++) {
+                        int frequency = generators.get(i).getConfig().getFrequency();
+                        if (frequency > 0 && beat % (baseFrequency / frequency) == 0) {
+                            Record<K, SpecificRecord> record = recordIterators.get(i).next();
+                            topicSenders.get(i).send(record.offset, record.key, record.value);
+                        }
                     }
                 }
+            } catch (InterruptedException ex) {
+                // do nothing, just exit the loop
             }
-        } catch (InterruptedException ex) {
-            // do nothing, just exit the loop
+
+            for (KafkaTopicSender<K, SpecificRecord> topicSender : topicSenders) {
+                topicSender.close();
+            }
         } catch (IOException e) {
             synchronized (this) {
                 this.exception = e;

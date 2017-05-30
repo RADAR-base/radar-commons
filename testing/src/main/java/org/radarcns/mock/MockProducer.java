@@ -24,8 +24,6 @@ import static org.radarcns.util.serde.AbstractKafkaAvroSerde.SCHEMA_REGISTRY_CON
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -43,6 +41,10 @@ import org.radarcns.empatica.EmpaticaE4ElectroDermalActivity;
 import org.radarcns.empatica.EmpaticaE4InterBeatInterval;
 import org.radarcns.empatica.EmpaticaE4Temperature;
 import org.radarcns.key.MeasurementKey;
+import org.radarcns.mock.config.BasicMockConfig;
+import org.radarcns.mock.config.MockDataConfig;
+import org.radarcns.mock.data.MockCsvParser;
+import org.radarcns.mock.data.RecordGenerator;
 import org.radarcns.producer.KafkaSender;
 import org.radarcns.producer.SchemaRetriever;
 import org.radarcns.producer.direct.DirectSender;
@@ -65,76 +67,85 @@ public class MockProducer {
     private final List<MockDevice<MeasurementKey>> devices;
     private final List<MockFileSender> files;
     private final List<KafkaSender<MeasurementKey, SpecificRecord>> senders;
+    private final SchemaRetriever retriever;
+
+    /**
+     * MockProducer with files from current directory. The data root directory will be the current
+     * directory.
+     * @param mockConfig configuration to mock
+     * @throws IOException if the data could not be read or sent
+     */
+    public MockProducer(BasicMockConfig mockConfig) throws IOException {
+        this(mockConfig, null);
+    }
 
     /**
      * Basic constructor.
-     * @param mockConfig configuration to mock.
+     * @param mockConfig configuration to mock
+     * @param root root directory of where mock files are located
      * @throws IOException if data could not be sent
      */
-    public MockProducer(BasicMockConfig mockConfig) throws IOException {
-        int numDevices;
-        if (mockConfig.getData() != null) {
-            numDevices = mockConfig.getData().size();
-        } else if (mockConfig.getNumberOfDevices() != 0) {
-            numDevices = mockConfig.getNumberOfDevices();
-        } else {
-            throw new IllegalArgumentException(
-                    "Error simulating mock device setup. Please provide data or number_of_devices");
-        }
+    public MockProducer(BasicMockConfig mockConfig, File root) throws IOException {
+        int numDevices = mockConfig.getNumberOfDevices();
+
+        retriever = new SchemaRetriever(mockConfig.getSchemaRegistry(), 10);
+        List<KafkaSender<MeasurementKey, SpecificRecord>> tmpSenders = null;
 
         try {
-            senders = createSenders(mockConfig, numDevices);
-        } catch (KeyManagementException | NoSuchAlgorithmException ex) {
-            logger.error("Sender cannot be created.", ex);
-            throw new IOException(ex);
-        }
+            devices = new ArrayList<>(numDevices);
+            files = new ArrayList<>(numDevices);
 
-        devices = new ArrayList<>(numDevices);
-        files = new ArrayList<>(numDevices);
+            List<MockDataConfig> dataConfigs = mockConfig.getData();
+            if (dataConfigs == null) {
+                dataConfigs = defaultDataConfig();
+            }
 
-        String userId = "UserID_";
-        String sourceId = "SourceID_";
-
-        if (mockConfig.getData() == null) {
             List<RecordGenerator<MeasurementKey>> generators;
+            List<MockCsvParser<MeasurementKey>> mockFiles;
             try {
-                generators = createGenerators(defaultDataConfig());
+                generators = createGenerators(dataConfigs);
+                mockFiles = createMockFiles(dataConfigs, root);
             } catch (NoSuchMethodException | IllegalAccessException | ClassNotFoundException
                     | InvocationTargetException ex) {
-                throw new IllegalStateException("Default configuration invalid", ex);
+                throw new IllegalStateException("Configuration invalid", ex);
             }
 
-            for (int i = 0; i < numDevices; i++) {
-                MeasurementKey key = new MeasurementKey(userId + i, sourceId + i);
-                devices.add(new MockDevice<>(senders.get(i), key, generators));
-            }
-        } else {
-            try {
+            tmpSenders = createSenders(mockConfig, numDevices + mockFiles.size());
+
+            if (!generators.isEmpty()) {
+                String userId = "UserID_";
+                String sourceId = "SourceID_";
+
                 for (int i = 0; i < numDevices; i++) {
-                    File mockFile = new File(mockConfig.getData().get(i).getAbsoluteDataFile());
-                    MockFile parser = new MockFile(
-                            mockFile, mockConfig.getData().get(i));
-                    files.add(new MockFileSender(senders.get(i), parser));
+                    MeasurementKey key = new MeasurementKey(userId + i, sourceId + i);
+                    devices.add(new MockDevice<>(tmpSenders.get(i), key, generators));
                 }
-            } catch (NoSuchMethodException | IllegalAccessException
-                    | InvocationTargetException | ClassNotFoundException ex) {
-                throw new IOException("Cannot instantiate mock file", ex);
             }
+
+            for (int i = 0; i < mockFiles.size(); i++) {
+                files.add(new MockFileSender(tmpSenders.get(i + numDevices), mockFiles.get(i)));
+            }
+        } catch (Exception ex) {
+            if (tmpSenders != null) {
+                for (KafkaSender<?, ?> sender : tmpSenders) {
+                    sender.close();
+                }
+            }
+            retriever.close();
+            throw ex;
         }
+
+        senders = tmpSenders;
     }
 
     private List<KafkaSender<MeasurementKey, SpecificRecord>> createSenders(
-            BasicMockConfig mockConfig, int numDevices)
-            throws KeyManagementException, NoSuchAlgorithmException {
-        try (SchemaRetriever retriever = new SchemaRetriever(
-                mockConfig.getSchemaRegistry(), 10)) {
+            BasicMockConfig mockConfig, int numDevices) {
 
-            if (mockConfig.isDirectProducer()) {
-                return createDirectSenders(numDevices, retriever, mockConfig.getBrokerPaths());
-            } else {
-                return createRestSenders(numDevices, retriever, mockConfig.getRestProxy(),
-                        mockConfig.hasCompression());
-            }
+        if (mockConfig.isDirectProducer()) {
+            return createDirectSenders(numDevices, retriever, mockConfig.getBrokerPaths());
+        } else {
+            return createRestSenders(numDevices, retriever, mockConfig.getRestProxy(),
+                    mockConfig.hasCompression());
         }
     }
 
@@ -206,6 +217,7 @@ public class MockProducer {
         for (KafkaSender<MeasurementKey, SpecificRecord> sender : senders) {
             sender.close();
         }
+        retriever.close();
 
         for (MockDevice device : devices) {
             if (device.getException() != null) {
@@ -223,7 +235,7 @@ public class MockProducer {
             System.exit(1);
         }
 
-        File mockFile = new File(args[0]);
+        File mockFile = new File(args[0]).getAbsoluteFile();
         BasicMockConfig config = null;
         try {
             config = new YamlConfigLoader().load(mockFile, BasicMockConfig.class);
@@ -233,7 +245,7 @@ public class MockProducer {
         }
 
         try {
-            MockProducer producer = new MockProducer(config);
+            MockProducer producer = new MockProducer(config, mockFile.getParentFile());
             producer.start();
             waitForProducer(producer, config.getDuration());
         } catch (IllegalArgumentException ex) {
@@ -339,7 +351,30 @@ public class MockProducer {
         List<RecordGenerator<MeasurementKey>> result = new ArrayList<>(configs.size());
 
         for (MockDataConfig config : configs) {
-            result.add(new RecordGenerator<>(config, MeasurementKey.class));
+            if (config.getDataFile() == null) {
+                result.add(new RecordGenerator<>(config, MeasurementKey.class));
+            }
+        }
+
+        return result;
+    }
+
+    private List<MockCsvParser<MeasurementKey>> createMockFiles(List<MockDataConfig> configs,
+            File dataRoot)
+            throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException,
+            InvocationTargetException, IOException {
+
+        List<MockCsvParser<MeasurementKey>> result = new ArrayList<>(configs.size());
+
+        File parent = dataRoot;
+        if (parent == null) {
+            parent = new File(".").getAbsoluteFile();
+        }
+
+        for (MockDataConfig config : configs) {
+            if (config.getDataFile() != null) {
+                result.add(new MockCsvParser<MeasurementKey>(config, parent));
+            }
         }
 
         return result;

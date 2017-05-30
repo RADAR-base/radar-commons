@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package org.radarcns.mock;
+package org.radarcns.mock.data;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import org.radarcns.key.MeasurementKey;
+import org.radarcns.mock.config.MockDataConfig;
 import org.radarcns.util.CsvWriter;
 
 /**
@@ -28,29 +29,39 @@ import org.radarcns.util.CsvWriter;
  */
 public final class CsvGenerator {
     /**
-     * Generates new CSV file to simulation a single user with a single device as longs as seconds.
+     * Generates new CSV file to simulation a single user with a single device.
      *
      * @param config properties containing metadata to generate data
-     * @param duration simulation duration expressed in seconds
-     * @param parentFile of csv file to be generate
-     * @throws IOException in case configuration file cannot be retrieved
+     * @param duration simulation duration expressed in milliseconds
+     * @param root directory relative to which the output csv file is generated
+     * @throws IOException if the CSV file cannot be written to
      */
-    public void generate(MockDataConfig config, long duration, File parentFile)
+    public void generate(MockDataConfig config, long duration, File root)
             throws IOException {
-        File file = config.getDataFile(parentFile);
+        File file = config.getDataFile(root);
 
         try {
-            RecordGenerator<MeasurementKey> generator = new RecordGenerator<>(
-                    config, MeasurementKey.class);
-
-            MeasurementKey key = new MeasurementKey("UserID_0", "SourceID_0");
-
-            try (CsvWriter writer = new CsvWriter(file, generator.getHeader())) {
-                writer.writeRows(generator.iterateRawValues(key, duration));
-            }
+            generate(new RecordGenerator<>(config, MeasurementKey.class), duration, file);
         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException
                 | ClassNotFoundException ex) {
             throw new IOException("Failed to generate data", ex);
+        }
+    }
+
+    /**
+     * Generates new CSV file to simulation a single user with a single device.
+     *
+     * @param generator generator to generate data
+     * @param duration simulation duration expressed in milliseconds
+     * @param csvFile CSV file to write data to
+     * @throws IOException if the CSV file cannot be written to
+     */
+    public void generate(RecordGenerator<MeasurementKey> generator, long duration, File csvFile)
+            throws IOException {
+        MeasurementKey key = new MeasurementKey("UserID_0", "SourceID_0");
+
+        try (CsvWriter writer = new CsvWriter(csvFile, generator.getHeader())) {
+            writer.writeRows(generator.iterateRawValues(key, duration));
         }
     }
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.radarcns.mock;
+package org.radarcns.mock.data;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
@@ -31,6 +31,7 @@ import org.apache.avro.Schema.Field;
 import org.apache.avro.specific.SpecificData;
 import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.data.Record;
+import org.radarcns.mock.config.MockDataConfig;
 import org.radarcns.topic.AvroTopic;
 import org.radarcns.util.CsvParser;
 
@@ -38,7 +39,7 @@ import org.radarcns.util.CsvParser;
  * Parse mock data from a CSV file
  * @param <K> key type.
  */
-public class MockFile<K extends SpecificRecord> implements Closeable {
+public class MockCsvParser<K extends SpecificRecord> implements Closeable {
     private static final char ARRAY_SEPARATOR = ';';
     private static final char ARRAY_START = '[';
     private static final char ARRAY_END = ']';
@@ -53,16 +54,17 @@ public class MockFile<K extends SpecificRecord> implements Closeable {
 
     /**
      * Base constructor.
-     * @param baseFile parent directory of the data file.
      * @param config configuration of the stream.
+     * @param root parent directory of the data file.
+     * @throws IllegalArgumentException if the second row has the wrong number of columns
      */
-    public MockFile(File baseFile, MockDataConfig config)
+    public MockCsvParser(MockDataConfig config, File root)
             throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
             IllegalAccessException, IOException {
         //noinspection unchecked
         topic = (AvroTopic<K, SpecificRecord>) config.parseAvroTopic();
 
-        fileReader = new FileReader(config.getDataFile(baseFile));
+        fileReader = new FileReader(config.getDataFile(root));
         bufferedReader = new BufferedReader(fileReader);
         csvReader = new CsvParser(bufferedReader);
         List<String> header = csvReader.parseLine();
@@ -80,6 +82,10 @@ public class MockFile<K extends SpecificRecord> implements Closeable {
 
     /**
      * Read the next record in the file.
+     * @throws NullPointerException if a field from the Avro schema is missing as a column
+     * @throws IllegalArgumentException if the row has the wrong number of columns
+     * @throws IllegalStateException if a next row is not available
+     * @throws IOException if the next row could not be read
      */
     public Record<K, SpecificRecord> next() throws IOException {
         if (!hasNext()) {
