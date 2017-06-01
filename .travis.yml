@@ -27,11 +27,9 @@ deploy:
       tags: true
   - provider: script
     script: ./gradlew artifactoryPublish --info --stacktrace
-    skip_cleanup: true
     on:
       branch: dev
   - provider: script
     script: ./gradlew bintrayUpload
-    skip_cleanup: true
     on:
       tags: true
