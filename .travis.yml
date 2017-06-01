@@ -26,7 +26,7 @@ deploy:
     on:
       tags: true
   - provider: script
-    script: ./gradlew artifactoryPublish
+    script: ./gradlew artifactoryPublish --info --stacktrace
     skip_cleanup: true
     on:
       branch: dev
