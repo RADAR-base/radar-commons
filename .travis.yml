@@ -16,15 +16,22 @@ after_script:
   - ./gradlew sendCoverageToCodacy
 
 deploy:
-  provider: releases
-  api_key: ${GH_TOKEN}
-  file_glob: true
-  file:
-    - "build/libs/*.jar"
-    - "testing/build/libs/*.jar"
-  skip_cleanup: true
-  on:
-    tags: true
-
-after_deploy:
-  - ./gradlew bintrayUpload
+  - provider: releases
+    api_key: ${GH_TOKEN}
+    file_glob: true
+    file:
+      - "build/libs/*.jar"
+      - "testing/build/libs/*.jar"
+    skip_cleanup: true
+    on:
+      tags: true
+  - provider: script
+    script: ./gradlew artifactoryUpload
+    skip_cleanup: true
+    on:
+      branch: dev
+  - provider: script
+    script: ./gradlew bintrayUpload
+    skip_cleanup: true
+    on:
+      tags: true
