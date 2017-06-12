@@ -9,7 +9,6 @@ cache:
     - $HOME/.gradle/caches/jars-2
     - $HOME/.gradle/caches/jars-3
     - $HOME/.gradle/caches/modules-2/files-2.1/
-    - $HOME/.gradle/daemon
     - $HOME/.gradle/native
     - $HOME/.gradle/wrapper
 
