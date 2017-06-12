@@ -45,8 +45,13 @@ repositories {
     maven { url  'http://oss.jfrog.org/artifactory/oss-snapshot-local/' }
 }
 
+configurations.all {
+    // Check for updates every build
+    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+}
+
 dependencies {
-    compile group: 'org.radarcns', name: 'radar-commons', version: '0.4.1-SNAPSHOT'
+    compile group: 'org.radarcns', name: 'radar-commons', version: '0.4.1-SNAPSHOT', changing: true
 }
 ```
 
