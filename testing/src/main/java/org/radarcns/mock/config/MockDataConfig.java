@@ -21,8 +21,6 @@ import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.List;
-import org.apache.avro.Schema;
-import org.apache.avro.specific.SpecificData;
 import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.config.AvroTopicConfig;
 import org.radarcns.key.MeasurementKey;
