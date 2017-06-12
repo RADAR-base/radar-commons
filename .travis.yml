@@ -2,13 +2,16 @@ language: java
 jdk:
   - oraclejdk8
 sudo: false
-#before_cache:
-#  - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
-#  - rm -fr $HOME/.gradle/caches/3.*.*
-#cache:
-#  directories:
-#    - $HOME/.gradle/caches/
-#    - $HOME/.gradle/wrapper/
+
+cache:
+  directories:
+    - $HOME/.gradle/caches/3.4.1
+    - $HOME/.gradle/caches/jars-1
+    - $HOME/.gradle/caches/jars-2
+    - $HOME/.gradle/caches/jars-3
+    - $HOME/.gradle/daemon
+    - $HOME/.gradle/native
+    - $HOME/.gradle/wrapper
 
 before_install:
   - ./gradlew downloadDependencies
@@ -26,10 +29,12 @@ deploy:
     on:
       tags: true
   - provider: script
-    script: ./gradlew artifactoryPublish --info --stacktrace
+    script: ./gradlew artifactoryPublish
+    skip_cleanup: true
     on:
       branch: dev
   - provider: script
     script: ./gradlew bintrayUpload
+    skip_cleanup: true
     on:
       tags: true
