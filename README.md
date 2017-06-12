@@ -38,6 +38,17 @@ to send data to your backend.
 
 ## Contributing
 
-For latest code use `dev` branch.
+For latest code use `dev` branch. This is released on JFrog's OSS Artifactory. To use that release, add the following fragment to your `build.gradle` file.
+
+```gradle
+repositories {
+    maven { url  'http://oss.jfrog.org/artifactory/oss-snapshot-local/' }
+}
+
+dependencies {
+    compile group: 'org.radarcns', name: 'radar-commons', version: '0.4.1-SNAPSHOT'
+}
+```
+
 Code should be formatted using the [Google Java Code Style Guide](https://google.github.io/styleguide/javaguide.html).
 If you want to contribute a feature or fix browse our [issues](https://github.com/RADAR-CNS/RADAR-Commons/issues), and please make a pull request.
