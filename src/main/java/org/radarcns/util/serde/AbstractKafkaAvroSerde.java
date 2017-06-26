@@ -23,7 +23,7 @@ import org.radarcns.config.ServerConfig;
 import org.radarcns.producer.SchemaRetriever;
 
 /**
- * Abstract class for KafkaAvro(De)serializer
+ * Abstract class for KafkaAvro(De)serializer.
  */
 public class AbstractKafkaAvroSerde {
     public static final String SCHEMA_REGISTRY_CONFIG = "schema.registry";

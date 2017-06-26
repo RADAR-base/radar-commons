@@ -20,8 +20,12 @@ import com.fasterxml.jackson.core.JsonFactory;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import okhttp3.HttpUrl;
@@ -76,7 +80,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
     private MediaType contentType;
     private boolean useCompression;
     private final ConnectionState state;
-    private String token;
+    private List<Entry<String, String>> additionalHeaders;
 
     /**
      * Construct a RestSender.
@@ -86,20 +90,20 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
      * @param valueEncoder non-null Avro encoder for values
      * @param useCompression use compression to send data
      * @param sharedState shared connection state
-     * @param token access accessToken for the service; if null, no access accessToken is used
+     * @param additionalHeaders
      */
     private RestSender(RestClient httpClient, SchemaRetriever schemaRetriever,
             AvroEncoder keyEncoder, AvroEncoder valueEncoder, boolean useCompression,
-            ConnectionState sharedState, String token) {
+            ConnectionState sharedState, List<Entry<String, String>> additionalHeaders) {
         this.schemaRetriever = schemaRetriever;
         this.keyEncoder = keyEncoder;
         this.valueEncoder = valueEncoder;
-        this.token = token;
         this.jsonFactory = new JsonFactory();
         this.useCompression = useCompression;
         this.acceptType = KAFKA_REST_ACCEPT_ENCODING;
         this.contentType = KAFKA_REST_AVRO_ENCODING;
         this.state = sharedState;
+        this.additionalHeaders = additionalHeaders;
         setRestClient(httpClient);
     }
 
@@ -122,10 +126,6 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                 httpClient.getConnectionPool());
         httpClient.close();
         setRestClient(newRestClient);
-    }
-
-    public synchronized void setAccessToken(String token) {
-        this.token = token;
     }
 
     private void setRestClient(RestClient newClient) {
@@ -169,6 +169,14 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
 
     private synchronized boolean hasCompression() {
         return this.useCompression;
+    }
+
+    public synchronized List<Entry<String, String>> getHeaders() {
+        return additionalHeaders;
+    }
+
+    public synchronized void setHeaders(List<Entry<String, String>> additionalHeaders) {
+        this.additionalHeaders = additionalHeaders;
     }
 
     private class RestTopicSender<L extends K, W extends V> implements KafkaTopicSender<L, W> {
@@ -262,12 +270,12 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
 
             MediaType currentContentType;
             String currentAcceptType;
-            String currentToken;
+            List<Entry<String, String>> currentHeaders;
 
             synchronized (RestSender.this) {
                 currentContentType = contentType;
                 currentAcceptType = acceptType;
-                currentToken = token;
+                currentHeaders = additionalHeaders;
             }
 
             TopicRequestBody requestBody;
@@ -275,8 +283,8 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                     .url(sendToUrl)
                     .addHeader("Accept", currentAcceptType);
 
-            if (currentToken != null) {
-                requestBuilder.addHeader("Authorization", "Bearer " + token);
+            for (Map.Entry<String, String> header : currentHeaders) {
+                requestBuilder.addHeader(header.getKey(), header.getValue());
             }
 
             if (hasCompression()) {
@@ -405,7 +413,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         private long timeout = 10;
         private ConnectionState state;
         private ManagedConnectionPool pool;
-        private String token;
+        private List<Entry<String, String>> additionalHeaders;
 
         public Builder<K, V> server(ServerConfig kafkaConfig) {
             this.kafkaConfig = kafkaConfig;
@@ -443,8 +451,16 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
             return this;
         }
 
-        public Builder<K, V> accessToken(String accessToken) {
-            this.token = accessToken;
+        public Builder<K, V> headers(List<Map.Entry<String, String>> headers) {
+            this.additionalHeaders = headers;
+            return this;
+        }
+
+        public Builder<K, V> addHeader(String header, String value) {
+            if (additionalHeaders == null) {
+                additionalHeaders = new ArrayList<>();
+            }
+            additionalHeaders.add(new AbstractMap.SimpleImmutableEntry<>(header, value));
             return this;
         }
 
@@ -456,16 +472,28 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
             if (timeout <= 0) {
                 throw new IllegalStateException("Connection timeout must be strictly positive");
             }
-            ConnectionState useState = state;
-            if (useState == null) {
+            ConnectionState useState;
+            ManagedConnectionPool usePool;
+            List<Entry<String, String>> useHeaders;
+
+            if (state != null) {
+                useState = state;
+            } else {
                 useState = new ConnectionState(timeout, TimeUnit.SECONDS);
             }
-            ManagedConnectionPool usePool = pool;
-            if (usePool == null) {
+            if (pool != null) {
+                usePool = pool;
+            } else {
                 usePool = ManagedConnectionPool.GLOBAL_POOL;
             }
+            if (additionalHeaders != null) {
+                useHeaders = additionalHeaders;
+            } else {
+                useHeaders = Collections.emptyList();
+            }
+
             return new RestSender<>(new RestClient(kafkaConfig, timeout, usePool),
-                    retriever, keyEncoder, valueEncoder, compression, useState, token);
+                    retriever, keyEncoder, valueEncoder, compression, useState, useHeaders);
         }
     }
 }
