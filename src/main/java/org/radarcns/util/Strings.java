@@ -20,12 +20,19 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.regex.Pattern;
 
+/**
+ * String utilities.
+ */
 public final class Strings {
 
     private Strings() {
         // utility class
     }
 
+    /**
+     * For each string, compiles a pattern that checks if it is contained in another string in a
+     * case-insensitive way.
+     */
     public static Pattern[] containsPatterns(Collection<String> contains) {
         Pattern[] patterns = new Pattern[contains.size()];
         Iterator<String> containsIterator = contains.iterator();
@@ -35,6 +42,10 @@ public final class Strings {
         return patterns;
     }
 
+    /**
+     * Compiles a pattern that checks if it is contained in another string in a case-insensitive
+     * 7way.
+     */
     public static Pattern containsIgnoreCasePattern(String containsString) {
         int flags = Pattern.CASE_INSENSITIVE // case insensitive
                 | Pattern.LITERAL // do not compile special characters
@@ -42,6 +53,9 @@ public final class Strings {
         return Pattern.compile(containsString, flags);
     }
 
+    /**
+     * Whether any of the patterns matches given value.
+     */
     public static boolean findAny(Pattern[] patterns, CharSequence value) {
         for (Pattern pattern : patterns) {
             if (pattern.matcher(value).find()) {
@@ -51,6 +65,7 @@ public final class Strings {
         return false;
     }
 
+    /** Whether given value is null or empty. */
     public static boolean isNullOrEmpty(String value) {
         return value == null || value.isEmpty();
     }
