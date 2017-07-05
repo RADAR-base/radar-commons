@@ -34,6 +34,11 @@ public class AvroTopic<K, V> extends KafkaTopic {
             Schema keySchema, Schema valueSchema,
             Class<K> keyClass, Class<V> valueClass) {
         super(name);
+
+        if (keySchema == null || valueSchema == null || keyClass == null || valueClass == null) {
+            throw new IllegalArgumentException("Topic values may not be null");
+        }
+
         this.keySchema = keySchema;
         this.valueSchema = valueSchema;
         this.valueClass = valueClass;
