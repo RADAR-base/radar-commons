@@ -16,12 +16,14 @@
 
 package org.radarcns.util;
 
+/** Serialization utility class. */
 public final class Serialization {
 
     private Serialization() {
         // utility class
     }
 
+    /** Read a little-endian encoded long from given bytes, starting from startIndex. */
     public static long bytesToLong(byte[] b, int startIndex) {
         long result = 0;
         for (int i = 0; i < 8; i++) {
@@ -31,6 +33,7 @@ public final class Serialization {
         return result;
     }
 
+    /** Write a long to given bytes with little-endian encoding, starting from startIndex. */
     public static void longToBytes(long value, byte[] b, int startIndex) {
         b[startIndex] = (byte)((value >> 56) & 0xFF);
         b[startIndex + 1] = (byte)((value >> 48) & 0xFF);
@@ -42,6 +45,7 @@ public final class Serialization {
         b[startIndex + 7] = (byte)(value & 0xFF);
     }
 
+    /** Write an int to given bytes with little-endian encoding, starting from startIndex. */
     public static void intToBytes(int value, byte[] b, int startIndex) {
         b[startIndex] = (byte)((value >> 24) & 0xFF);
         b[startIndex + 1] = (byte)((value >> 16) & 0xFF);
@@ -49,6 +53,7 @@ public final class Serialization {
         b[startIndex + 3] = (byte)(value & 0xFF);
     }
 
+    /** Read a little-endian encoded int from given bytes, starting from startIndex. */
     public static int bytesToInt(byte[] b, int startIndex) {
         int result = 0;
         for (int i = 0; i < 4; i++) {
@@ -58,6 +63,7 @@ public final class Serialization {
         return result;
     }
 
+    /** Read a little-endian encoded short from given bytes, starting from startIndex. */
     public static short bytesToShort(byte[] b, int startIndex) {
         short result = 0;
         for (int i = 0; i < 2; i++) {
@@ -67,6 +73,10 @@ public final class Serialization {
         return result;
     }
 
+    /**
+     * Convert a boolean to a byte.
+     * @return -1 if b is null, 1 if b, and 0 if not b
+     */
     public static byte booleanToByte(Boolean b) {
         if (b == null) {
             return -1;
@@ -77,6 +87,10 @@ public final class Serialization {
         }
     }
 
+    /**
+     * Read a boolean from a byte.
+     * @return null if b == -1, true if b == 1, false otherwise.
+     */
     public static Boolean byteToBoolean(byte b) {
         if (b == -1) {
             return null;

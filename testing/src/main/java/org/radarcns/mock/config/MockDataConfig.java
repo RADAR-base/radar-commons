@@ -21,18 +21,12 @@ import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.List;
-import org.apache.avro.Schema;
-import org.apache.avro.specific.SpecificData;
 import org.apache.avro.specific.SpecificRecord;
+import org.radarcns.config.AvroTopicConfig;
 import org.radarcns.key.MeasurementKey;
 import org.radarcns.topic.AvroTopic;
 
-public class MockDataConfig {
-    private String topic;
-    @JsonProperty("key_schema")
-    private String keySchema;
-    @JsonProperty("value_schema")
-    private String valueSchema;
+public class MockDataConfig extends AvroTopicConfig {
     @JsonProperty("file")
     private String dataFile;
 
@@ -51,61 +45,18 @@ public class MockDataConfig {
     private double minimum = -1e5;
     private double maximum = 1e5;
 
-    public String getTopic() {
-        return topic;
-    }
-
-    public void setTopic(String topic) {
-        this.topic = topic;
-    }
-
-    public String getKeySchema() {
-        return keySchema;
-    }
-
-    public void setKeySchema(String keySchema) {
-        this.keySchema = keySchema;
-    }
-
-    public String getValueSchema() {
-        return valueSchema;
-    }
-
-    public void setValueSchema(String valueSchema) {
-        this.valueSchema = valueSchema;
-    }
-
     /**
      * Parse an AvroTopic from the values in this class. If keySchema is not set, MeasurementKey
      * will be used as a key schema.
      */
-    @SuppressWarnings("unchecked")
-    public AvroTopic<? extends SpecificRecord, ? extends SpecificRecord> parseAvroTopic()
+    @Override
+    public <K extends SpecificRecord, V extends SpecificRecord> AvroTopic<K, V> parseAvroTopic()
             throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
             IllegalAccessException {
-
-        Class<? extends SpecificRecord> keyClass;
-        Schema keyAvroSchema;
-
-        if (this.keySchema == null) {
-            keyClass = MeasurementKey.class;
-            keyAvroSchema = MeasurementKey.getClassSchema();
-        } else {
-            keyClass = (Class<? extends SpecificRecord>) Class.forName(this.keySchema);
-            keyAvroSchema = (Schema) keyClass
-                    .getMethod("getClassSchema").invoke(null);
-            // check instantiation
-            SpecificData.newInstance(keyClass, keyAvroSchema);
+        if (getKeySchema() == null) {
+            setKeySchema(MeasurementKey.class.getName());
         }
-
-        Class<? extends SpecificRecord> valueClass = (Class<? extends SpecificRecord>)
-                Class.forName(this.valueSchema);
-        Schema valueAvroSchema = (Schema) valueClass
-                .getMethod("getClassSchema").invoke(null);
-        // check instantiation
-        SpecificData.newInstance(valueClass, valueAvroSchema);
-
-        return new AvroTopic<>(topic, keyAvroSchema, valueAvroSchema, keyClass, valueClass);
+        return super.parseAvroTopic();
     }
 
     /**

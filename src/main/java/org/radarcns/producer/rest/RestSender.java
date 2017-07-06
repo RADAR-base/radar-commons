@@ -20,8 +20,12 @@ import com.fasterxml.jackson.core.JsonFactory;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import okhttp3.HttpUrl;
@@ -32,6 +36,7 @@ import org.apache.avro.Schema;
 import org.radarcns.config.ServerConfig;
 import org.radarcns.data.AvroEncoder;
 import org.radarcns.data.Record;
+import org.radarcns.producer.AuthenticationException;
 import org.radarcns.producer.KafkaSender;
 import org.radarcns.producer.KafkaTopicSender;
 import org.radarcns.producer.SchemaRetriever;
@@ -75,6 +80,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
     private MediaType contentType;
     private boolean useCompression;
     private final ConnectionState state;
+    private List<Entry<String, String>> additionalHeaders;
 
     /**
      * Construct a RestSender.
@@ -84,10 +90,11 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
      * @param valueEncoder non-null Avro encoder for values
      * @param useCompression use compression to send data
      * @param sharedState shared connection state
+     * @param additionalHeaders
      */
     private RestSender(RestClient httpClient, SchemaRetriever schemaRetriever,
             AvroEncoder keyEncoder, AvroEncoder valueEncoder, boolean useCompression,
-            ConnectionState sharedState) {
+            ConnectionState sharedState, List<Entry<String, String>> additionalHeaders) {
         this.schemaRetriever = schemaRetriever;
         this.keyEncoder = keyEncoder;
         this.valueEncoder = valueEncoder;
@@ -96,6 +103,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         this.acceptType = KAFKA_REST_ACCEPT_ENCODING;
         this.contentType = KAFKA_REST_AVRO_ENCODING;
         this.state = sharedState;
+        this.additionalHeaders = additionalHeaders;
         setRestClient(httpClient);
     }
 
@@ -163,6 +171,14 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         return this.useCompression;
     }
 
+    public synchronized List<Entry<String, String>> getHeaders() {
+        return additionalHeaders;
+    }
+
+    public synchronized void setHeaders(List<Entry<String, String>> additionalHeaders) {
+        this.additionalHeaders = additionalHeaders;
+    }
+
     private class RestTopicSender<L extends K, W extends V> implements KafkaTopicSender<L, W> {
         private long lastOffsetSent = -1L;
         private final AvroTopic<L, W> topic;
@@ -198,28 +214,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                 return;
             }
 
-            HttpUrl sendToUrl = updateRequestData(records);
-
-            MediaType currentContentType;
-            String currentAcceptType;
-
-            synchronized (RestSender.this) {
-                currentContentType = contentType;
-                currentAcceptType = acceptType;
-            }
-
-            TopicRequestBody requestBody;
-            Request.Builder requestBuilder = new Request.Builder()
-                    .url(sendToUrl)
-                    .addHeader("Accept", currentAcceptType);
-
-            if (hasCompression()) {
-                requestBody = new GzipTopicRequestBody(requestData, currentContentType);
-                requestBuilder.addHeader("Content-Encoding", "gzip");
-            } else {
-                requestBody = new TopicRequestBody(requestData, currentContentType);
-            }
-            Request request = requestBuilder.post(requestBody).build();
+            Request request = buildRequest(records);
 
             boolean doResend = false;
             try (Response response = getRestClient().request(request)) {
@@ -231,8 +226,10 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                                 topic, response.body().string());
                     }
                     lastOffsetSent = records.get(records.size() - 1).offset;
+                } else if (response.code() == 401) {
+                    throw new AuthenticationException("Cannot authenticate");
                 } else if (response.code() == 415
-                        && currentAcceptType.equals(KAFKA_REST_ACCEPT_ENCODING)) {
+                        && request.header("Accept").equals(KAFKA_REST_ACCEPT_ENCODING)) {
                     state.didConnect();
                     logger.warn("Latest Avro encoding is not supported. Switching to legacy "
                             + "encoding.");
@@ -244,7 +241,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                 } else {
                     state.didDisconnect();
                     String content = response.body().string();
-                    String requestContent = requestBody.content();
+                    String requestContent = ((TopicRequestBody)request.body()).content();
                     requestContent = requestContent.substring(0,
                             Math.min(requestContent.length(), 255));
                     logger.error("FAILED to transmit message: {} -> {}...",
@@ -254,7 +251,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                 }
             } catch (IOException ex) {
                 state.didDisconnect();
-                String requestContent = requestBody.content();
+                String requestContent = ((TopicRequestBody)request.body()).content();
                 requestContent = requestContent.substring(0,
                         Math.min(requestContent.length(), 255));
                 logger.error("FAILED to transmit message:\n{}...", requestContent);
@@ -266,6 +263,38 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
             if (doResend) {
                 send(records);
             }
+        }
+
+        private Request buildRequest(List<Record<L, W>> records) throws IOException {
+            HttpUrl sendToUrl = updateRequestData(records);
+
+            MediaType currentContentType;
+            String currentAcceptType;
+            List<Entry<String, String>> currentHeaders;
+
+            synchronized (RestSender.this) {
+                currentContentType = contentType;
+                currentAcceptType = acceptType;
+                currentHeaders = additionalHeaders;
+            }
+
+            TopicRequestBody requestBody;
+            Request.Builder requestBuilder = new Request.Builder()
+                    .url(sendToUrl)
+                    .addHeader("Accept", currentAcceptType);
+
+            for (Map.Entry<String, String> header : currentHeaders) {
+                requestBuilder.addHeader(header.getKey(), header.getValue());
+            }
+
+            if (hasCompression()) {
+                requestBody = new GzipTopicRequestBody(requestData, currentContentType);
+                requestBuilder.addHeader("Content-Encoding", "gzip");
+            } else {
+                requestBody = new TopicRequestBody(requestData, currentContentType);
+            }
+
+            return requestBuilder.post(requestBody).build();
         }
 
         private HttpUrl updateRequestData(List<Record<L, W>> records) {
@@ -384,6 +413,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         private long timeout = 10;
         private ConnectionState state;
         private ManagedConnectionPool pool;
+        private List<Entry<String, String>> additionalHeaders;
 
         public Builder<K, V> server(ServerConfig kafkaConfig) {
             this.kafkaConfig = kafkaConfig;
@@ -421,6 +451,19 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
             return this;
         }
 
+        public Builder<K, V> headers(List<Map.Entry<String, String>> headers) {
+            this.additionalHeaders = headers;
+            return this;
+        }
+
+        public Builder<K, V> addHeader(String header, String value) {
+            if (additionalHeaders == null) {
+                additionalHeaders = new ArrayList<>();
+            }
+            additionalHeaders.add(new AbstractMap.SimpleImmutableEntry<>(header, value));
+            return this;
+        }
+
         public RestSender<K, V> build() {
             Objects.requireNonNull(kafkaConfig);
             Objects.requireNonNull(retriever);
@@ -429,16 +472,28 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
             if (timeout <= 0) {
                 throw new IllegalStateException("Connection timeout must be strictly positive");
             }
-            ConnectionState useState = state;
-            if (useState == null) {
+            ConnectionState useState;
+            ManagedConnectionPool usePool;
+            List<Entry<String, String>> useHeaders;
+
+            if (state != null) {
+                useState = state;
+            } else {
                 useState = new ConnectionState(timeout, TimeUnit.SECONDS);
             }
-            ManagedConnectionPool usePool = pool;
-            if (usePool == null) {
+            if (pool != null) {
+                usePool = pool;
+            } else {
                 usePool = ManagedConnectionPool.GLOBAL_POOL;
             }
+            if (additionalHeaders != null) {
+                useHeaders = additionalHeaders;
+            } else {
+                useHeaders = Collections.emptyList();
+            }
+
             return new RestSender<>(new RestClient(kafkaConfig, timeout, usePool),
-                    retriever, keyEncoder, valueEncoder, compression, useState);
+                    retriever, keyEncoder, valueEncoder, compression, useState, useHeaders);
         }
     }
 }

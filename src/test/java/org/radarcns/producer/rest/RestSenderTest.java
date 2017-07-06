@@ -31,8 +31,11 @@ import com.fasterxml.jackson.databind.node.JsonNodeType;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Arrays;
+import java.util.Map.Entry;
 import java.util.zip.GZIPInputStream;
+import okhttp3.Headers;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -77,6 +80,9 @@ public class RestSenderTest {
         Schema valueSchema = PhoneLight.getClassSchema();
         AvroTopic<MeasurementKey, PhoneLight> topic = new AvroTopic<>("test",
                 keySchema, valueSchema, MeasurementKey.class, PhoneLight.class);
+        sender.setHeaders(Arrays.<Entry<String, String>>asList(
+                new SimpleImmutableEntry<>("Cookie", "ab"),
+                new SimpleImmutableEntry<>("Cookie", "bc")));
         KafkaTopicSender<MeasurementKey, PhoneLight> topicSender = sender.sender(topic);
 
         MeasurementKey key = new MeasurementKey("a", "b");
@@ -122,6 +128,8 @@ public class RestSenderTest {
             assertEquals(0.2, jsonValue.get("timeReceived").asDouble(), 0);
             assertEquals(0.3f, (float)jsonValue.get("light").asDouble(), 0);
         }
+        Headers headers = request.getHeaders();
+        assertEquals(Arrays.asList("ab", "bc"), headers.values("Cookie"));
     }
 
     @Test

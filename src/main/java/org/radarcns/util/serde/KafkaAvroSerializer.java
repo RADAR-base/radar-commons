@@ -25,7 +25,6 @@ import org.apache.avro.io.DatumWriter;
 import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.common.errors.SerializationException;
-import org.apache.kafka.common.serialization.Serializer;
 import org.radarcns.producer.SchemaRetriever;
 import org.radarcns.producer.rest.ParsedSchemaMetadata;
 import org.radarcns.util.Serialization;
@@ -33,7 +32,7 @@ import org.radarcns.util.Serialization;
 /**
  * Serialize Kafka producer data with Avro.
  */
-public class KafkaAvroSerializer extends AbstractKafkaAvroSerde implements Serializer<Object> {
+public class KafkaAvroSerializer extends AbstractKafkaAvroSerde<Object> {
     private final byte[] header = new byte[5];
     private BinaryEncoder encoder;
 
