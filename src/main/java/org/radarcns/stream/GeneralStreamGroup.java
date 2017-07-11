@@ -34,6 +34,9 @@ import org.radarcns.topic.KafkaTopic;
  * method.
  */
 public class GeneralStreamGroup implements StreamGroup {
+
+    public static final String OUTPUT_LABEL = "_output";
+
     private final Map<String, StreamDefinition> topicMap;
     private final Set<String> topicNames;
 
@@ -64,7 +67,7 @@ public class GeneralStreamGroup implements StreamGroup {
      * @return sensor stream definition
      */
     protected StreamDefinition createSensorStream(String input) {
-        return createStream(input, input + "_output");
+        return createStream(input, input + OUTPUT_LABEL);
     }
 
     @Override
