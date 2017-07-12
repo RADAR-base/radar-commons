@@ -37,12 +37,12 @@ allprojects {
     // Configuration                                                             //
     //---------------------------------------------------------------------------//
 
-    version = '0.4.1-SNAPSHOT'
+    version = '0.4.2-SNAPSHOT'
     group = 'org.radarcns'
     ext.githubRepoName = 'RADAR-CNS/RADAR-Commons'
 
     ext.slf4jVersion = '1.7.21'
-    ext.kafkaVersion = '0.10.1.1'
+    ext.kafkaVersion = '0.10.2.1'
     ext.avroVersion = '1.8.1'
     ext.confluentVersion = '3.1.2'
     ext.log4jVersion = '2.7'
@@ -223,6 +223,17 @@ dependencies {
     testImplementation group: 'org.mockito', name: 'mockito-core', version: mockitoVersion
     testImplementation group: 'org.hamcrest', name: 'hamcrest-all', version: hamcrestVersion
     testImplementation group: 'com.squareup.okhttp3', name: 'mockwebserver', version: okhttpVersion
+
+    // For Topic name validation based on Kafka classes
+    testImplementation (group: 'org.apache.kafka', name: 'kafka_2.11', version: kafkaVersion) {
+        exclude group: 'org.apache.kafka', module: 'kafka-clients'
+        exclude group: 'net.sf.jopt-simple'
+        exclude group: 'com.yammer.metrics'
+        exclude group: 'org.scala-lang.modules'
+        exclude group: 'org.slf4j'
+        exclude group: 'com.101tec'
+        exclude group: 'org.apache.zookeeper'
+    }
 
     codacy group: 'com.github.codacy', name: 'codacy-coverage-reporter', version: codacyVersion
 }
