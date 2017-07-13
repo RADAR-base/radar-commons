@@ -224,17 +224,6 @@ dependencies {
     testImplementation group: 'org.hamcrest', name: 'hamcrest-all', version: hamcrestVersion
     testImplementation group: 'com.squareup.okhttp3', name: 'mockwebserver', version: okhttpVersion
 
-    // For Topic name validation based on Kafka classes
-    testImplementation (group: 'org.apache.kafka', name: 'kafka_2.11', version: kafkaVersion) {
-        exclude group: 'org.apache.kafka', module: 'kafka-clients'
-        exclude group: 'net.sf.jopt-simple'
-        exclude group: 'com.yammer.metrics'
-        exclude group: 'org.scala-lang.modules'
-        exclude group: 'org.slf4j'
-        exclude group: 'com.101tec'
-        exclude group: 'org.apache.zookeeper'
-    }
-
     codacy group: 'com.github.codacy', name: 'codacy-coverage-reporter', version: codacyVersion
 }
 
