@@ -19,13 +19,14 @@ package org.radarcns.util.serde;
 import java.util.Map;
 import org.apache.avro.io.EncoderFactory;
 import org.apache.kafka.common.config.ConfigException;
+import org.apache.kafka.common.serialization.Serializer;
 import org.radarcns.config.ServerConfig;
 import org.radarcns.producer.SchemaRetriever;
 
 /**
  * Abstract class for KafkaAvro(De)serializer.
  */
-public class AbstractKafkaAvroSerde {
+public abstract class AbstractKafkaAvroSerde<T> implements Serializer<T> {
     public static final String SCHEMA_REGISTRY_CONFIG = "schema.registry";
 
     protected boolean ofValue;
@@ -40,6 +41,7 @@ public class AbstractKafkaAvroSerde {
         this.schemaRetriever = retriever;
     }
 
+    @Override
     public void configure(Map<String, ?> configs, boolean isKey) {
         this.ofValue = !isKey;
         if (schemaRetriever != null) {
@@ -57,6 +59,7 @@ public class AbstractKafkaAvroSerde {
         }
     }
 
+    @Override
     public void close() {
         if (schemaRetriever != null) {
             schemaRetriever.close();

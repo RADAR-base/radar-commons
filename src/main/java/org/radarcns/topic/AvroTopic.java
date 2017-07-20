@@ -17,11 +17,12 @@
 package org.radarcns.topic;
 
 import org.apache.avro.Schema;
+import org.apache.avro.Schema.Type;
 import org.apache.avro.specific.SpecificData;
 
 import java.util.List;
 
-/** AvroTopic with schema */
+/** AvroTopic with schema. */
 public class AvroTopic<K, V> extends KafkaTopic {
     private final Schema valueSchema;
     private final Schema keySchema;
@@ -33,20 +34,24 @@ public class AvroTopic<K, V> extends KafkaTopic {
             Schema keySchema, Schema valueSchema,
             Class<K> keyClass, Class<V> valueClass) {
         super(name);
+
+        if (keySchema == null || valueSchema == null || keyClass == null || valueClass == null) {
+            throw new IllegalArgumentException("Topic values may not be null");
+        }
+
         this.keySchema = keySchema;
         this.valueSchema = valueSchema;
-        if (this.valueSchema.getField("time") == null) {
-            throw new IllegalArgumentException("Schema must have time as its first field");
-        }
-        if (this.valueSchema.getField("timeReceived") == null) {
-            throw new IllegalArgumentException("Schema must have timeReceived as a field");
-        }
         this.valueClass = valueClass;
         this.keyClass = keyClass;
-        List<Schema.Field> fields = valueSchema.getFields();
-        this.valueFieldTypes = new Schema.Type[fields.size()];
-        for (int i = 0; i < fields.size(); i++) {
-            valueFieldTypes[i] = fields.get(i).schema().getType();
+
+        if (valueSchema.getType() == Type.RECORD) {
+            List<Schema.Field> fields = valueSchema.getFields();
+            this.valueFieldTypes = new Schema.Type[fields.size()];
+            for (int i = 0; i < fields.size(); i++) {
+                valueFieldTypes[i] = fields.get(i).schema().getType();
+            }
+        } else {
+            this.valueFieldTypes = null;
         }
     }
 
