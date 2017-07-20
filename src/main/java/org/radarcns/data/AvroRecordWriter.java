@@ -43,6 +43,7 @@ public class AvroRecordWriter<T> implements AvroWriter<T> {
         }
     }
 
+    @Override
     public byte[] encode(T record) throws IOException {
         try {
             writer.write(record, encoder);

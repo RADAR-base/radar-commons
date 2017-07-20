@@ -91,7 +91,9 @@ public class RollingTimeAverage {
         }
     }
 
-    /** Rounded {@link #getAverage()}. */
+    /**
+     * Rounded {@link #getAverage()}.
+     */
     public int getCount() {
         return (int)Math.round(getAverage());
     }
