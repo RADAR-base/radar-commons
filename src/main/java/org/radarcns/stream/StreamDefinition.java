@@ -19,9 +19,20 @@ package org.radarcns.stream;
 import org.radarcns.topic.KafkaTopic;
 
 public class StreamDefinition {
+
+    public static final String FROM_LABEL = "From-";
+    public static final String TO_LABEL = "-To-";
+
     private final KafkaTopic inputTopic;
     private final KafkaTopic outputTopic;
 
+    /**
+     * Constructor. It takes in input the topic name to be consumed and to topic name where the
+     *      related stream will write the computed values.
+     *
+     * @param input source {@link KafkaTopic}
+     * @param output output {@link KafkaTopic}
+     */
     public StreamDefinition(KafkaTopic input, KafkaTopic output) {
         if (input == null || output == null) {
             throw new IllegalArgumentException("Input and output topic may not be null");
@@ -38,7 +49,14 @@ public class StreamDefinition {
         return outputTopic;
     }
 
+    /**
+     * Kafka Streams allows for stateful stream processing. The internal state is managed in
+     *      so-called state stores. A fault-tolerant state store is an internally created and
+     *      compacted changelog topic. This function return the changelog topic name.
+     *
+     * @return {@code String} representing the changelog topic name
+     */
     public String getStateStoreName() {
-        return getInputTopic().getName() + "->" + getOutputTopic().getName();
+        return FROM_LABEL + getInputTopic().getName() + TO_LABEL + getOutputTopic().getName();
     }
 }
