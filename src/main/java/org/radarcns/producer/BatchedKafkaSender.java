@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package org.radarcns.producer.rest;
+package org.radarcns.producer;
 
 import org.radarcns.data.Record;
 import org.radarcns.topic.AvroTopic;
-import org.radarcns.producer.KafkaSender;
-import org.radarcns.producer.KafkaTopicSender;
 
 import java.io.IOException;
 import java.util.ArrayList;

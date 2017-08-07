@@ -21,7 +21,7 @@ import org.apache.avro.io.EncoderFactory;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.common.serialization.Serializer;
 import org.radarcns.config.ServerConfig;
-import org.radarcns.producer.SchemaRetriever;
+import org.radarcns.producer.rest.SchemaRetriever;
 
 /**
  * Abstract class for KafkaAvro(De)serializer.

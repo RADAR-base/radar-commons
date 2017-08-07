@@ -17,31 +17,34 @@
 package org.radarcns.producer.rest;
 
 import com.fasterxml.jackson.core.JsonFactory;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-
-import okhttp3.*;
+import okhttp3.Headers;
+import okhttp3.HttpUrl;
+import okhttp3.MediaType;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.apache.avro.Schema;
 import org.radarcns.config.ServerConfig;
 import org.radarcns.data.AvroEncoder;
 import org.radarcns.data.Record;
 import org.radarcns.producer.AuthenticationException;
+import org.radarcns.producer.BatchedKafkaSender;
 import org.radarcns.producer.KafkaSender;
 import org.radarcns.producer.KafkaTopicSender;
-import org.radarcns.producer.SchemaRetriever;
+import org.radarcns.producer.ThreadedKafkaSender;
 import org.radarcns.producer.rest.ConnectionState.State;
 import org.radarcns.topic.AvroTopic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
  * RestSender sends records to the Kafka REST Proxy. It does so using an Avro JSON encoding. A new
@@ -408,7 +411,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         private long timeout = 10;
         private ConnectionState state;
         private ManagedConnectionPool pool;
-        private Headers.Builder additionalHeaders;
+        private Headers.Builder additionalHeaders = new Headers.Builder();
 
         public Builder<K, V> server(ServerConfig kafkaConfig) {
             this.kafkaConfig = kafkaConfig;
