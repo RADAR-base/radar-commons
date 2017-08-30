@@ -59,6 +59,8 @@ import java.util.concurrent.TimeUnit;
 @SuppressWarnings("PMD.GodClass")
 public class RestSender<K, V> implements KafkaSender<K, V> {
     private static final Logger logger = LoggerFactory.getLogger(RestSender.class);
+    private static final int LOG_CONTENT_LENGTH = 1024;
+
     public static final String KAFKA_REST_ACCEPT_ENCODING =
             "application/vnd.kafka.v2+json, application/vnd.kafka+json, application/json";
     public static final String KAFKA_REST_ACCEPT_LEGACY_ENCODING =
@@ -244,7 +246,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                     String content = response.body().string();
                     String requestContent = ((TopicRequestBody)request.body()).content();
                     requestContent = requestContent.substring(0,
-                            Math.min(requestContent.length(), 255));
+                            Math.min(requestContent.length(), LOG_CONTENT_LENGTH));
                     logger.error("FAILED to transmit message: {} -> {}...",
                             content, requestContent);
                     throw new IOException("Failed to submit (HTTP status code " + response.code()
@@ -254,7 +256,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                 state.didDisconnect();
                 String requestContent = ((TopicRequestBody)request.body()).content();
                 requestContent = requestContent.substring(0,
-                        Math.min(requestContent.length(), 255));
+                        Math.min(requestContent.length(), LOG_CONTENT_LENGTH));
                 logger.error("FAILED to transmit message:\n{}...", requestContent);
                 throw ex;
             } finally {
