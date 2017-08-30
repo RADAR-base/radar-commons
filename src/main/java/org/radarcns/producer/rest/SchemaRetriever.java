@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.radarcns.producer;
+package org.radarcns.producer.rest;
 
 import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonFactory;
@@ -39,9 +39,6 @@ import org.apache.avro.Schema;
 import org.apache.avro.Schema.Type;
 import org.apache.avro.generic.GenericContainer;
 import org.radarcns.config.ServerConfig;
-import org.radarcns.producer.rest.ManagedConnectionPool;
-import org.radarcns.producer.rest.ParsedSchemaMetadata;
-import org.radarcns.producer.rest.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

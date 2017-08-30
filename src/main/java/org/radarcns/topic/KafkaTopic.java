@@ -16,29 +16,34 @@
 
 package org.radarcns.topic;
 
+import java.util.regex.Pattern;
+
 /**
- * Set of Avro Topics
- * It defines:<ul>
- * <li>a source topic containing collected data(e.g. input topic)</li>
- * <li>a topic where temporary results are stored before the end of the time window
- *     (e.g. in_progress)</li>
- * <li>an output topic that persists the aggregated results (e.g. input topic)</li>
- * </ul>
+ * A topic that used by Apache Kafka.
  */
 public class KafkaTopic {
     private final String name;
+    private static final Pattern TOPIC_NAME_PATTERN = Pattern.compile("[a-zA-Z][a-zA-Z0-9_]*");
 
     /**
+     * Kafka topic with given name.
      * @param name topic name inside the Kafka cluster
+     * @throws IllegalArgumentException if the topic name is null or is not ASCII-alphanumeric with
+     *     possible underscores.
      */
     public KafkaTopic(String name) {
         if (name == null) {
             throw new IllegalArgumentException("Kafka topic name may not be null");
         }
+        if (!TOPIC_NAME_PATTERN.matcher(name).matches()) {
+            throw new IllegalArgumentException("Kafka topic " + name + " is not ASCII-alphanumeric "
+                    + "with possible underscores.");
+        }
         this.name = name;
     }
 
     /**
+     * Get the topic name.
      * @return topic name
      */
     public String getName() {
@@ -65,7 +70,8 @@ public class KafkaTopic {
         return name.hashCode();
     }
 
+    @Override
     public String toString() {
-        return getName();
+        return getClass().getSimpleName() + "<" + name + ">";
     }
 }
