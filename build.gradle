@@ -217,6 +217,7 @@ dependencies {
     // Direct producer uses KafkaAvroSerializer if initialized
     testImplementation (group: 'io.confluent', name: 'kafka-avro-serializer', version: confluentVersion) {
         exclude group: 'com.101tec'
+        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
     }
     testImplementation group: 'org.radarcns', name: 'radar-schemas-commons', version: radarSchemasVersion
     testImplementation group: 'junit', name: 'junit', version: junitVersion

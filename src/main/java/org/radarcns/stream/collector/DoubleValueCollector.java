@@ -24,7 +24,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-/** Java class to aggregate data using Kafka Streams. Double is the base unit */
+/** Java class to aggregate data using Kafka Streams. Double is the base type. */
 public class DoubleValueCollector {
     private double min = Double.MAX_VALUE;
     private double max = Double.MIN_VALUE;
@@ -41,6 +41,7 @@ public class DoubleValueCollector {
     }
 
     /**
+     * Add a sample to the collection.
      * @param value new sample that has to be analysed
      */
     public DoubleValueCollector add(double value) {

@@ -25,7 +25,7 @@ import org.apache.avro.io.DatumWriter;
 import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.common.errors.SerializationException;
-import org.radarcns.producer.SchemaRetriever;
+import org.radarcns.producer.rest.SchemaRetriever;
 import org.radarcns.producer.rest.ParsedSchemaMetadata;
 import org.radarcns.util.Serialization;
 

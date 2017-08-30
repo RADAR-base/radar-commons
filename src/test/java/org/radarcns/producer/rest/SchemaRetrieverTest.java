@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.radarcns.producer;
+package org.radarcns.producer.rest;
 
 import static org.junit.Assert.assertEquals;
 
@@ -33,6 +33,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.radarcns.config.ServerConfig;
 import org.radarcns.producer.rest.ParsedSchemaMetadata;
+import org.radarcns.producer.rest.SchemaRetriever;
 
 public class SchemaRetrieverTest {
     private MockWebServer server;
