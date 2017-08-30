@@ -55,10 +55,12 @@ public class SpecificRecordDecoder implements AvroDecoder {
             this.decoder = null;
         }
 
+        @Override
         public T decode(byte[] record) throws IOException {
             return decode(record, 0);
         }
 
+        @Override
         public T decode(byte[] record, int offset) throws IOException {
             if (binary) {
                 decoder = decoderFactory.binaryDecoder(record, offset, record.length - offset,
