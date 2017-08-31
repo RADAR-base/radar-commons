@@ -102,6 +102,11 @@ publishing {
                 root.appendNode('description', description)
                 root.appendNode('name', testingName)
                 root.appendNode('url', githubUrl)
+                root.dependencies.'*'.findAll() {
+                    it.artifactId.text() == 'slf4j-simple'
+                }.each() {
+                    it.parent().remove(it)
+                }
                 root.children().last() + pomConfig
             }
         }

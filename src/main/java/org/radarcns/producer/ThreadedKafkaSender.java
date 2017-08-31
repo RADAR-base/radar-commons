@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package org.radarcns.producer.rest;
+package org.radarcns.producer;
 
 import org.radarcns.data.Record;
-import org.radarcns.producer.KafkaSender;
-import org.radarcns.producer.KafkaTopicSender;
+import org.radarcns.producer.rest.ConnectionState;
 import org.radarcns.topic.AvroTopic;
 import org.radarcns.util.RollingTimeAverage;
 import org.slf4j.Logger;
@@ -34,9 +33,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Send Avro Records to a Kafka REST Proxy.
- *
- * This queues messages for a specified amount of time and then sends all messages up to that time.
+ * Send Avro Records to a Kafka REST Proxy. This queues messages for a specified amount of time
+ * and then sends all messages up to that time.
  */
 public class ThreadedKafkaSender<K, V> implements KafkaSender<K, V> {
     private static final Logger logger = LoggerFactory.getLogger(ThreadedKafkaSender.class);

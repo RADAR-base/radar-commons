@@ -20,12 +20,13 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Java class to aggregate data using Kafka Streams. Double Array is the base unit
+ * Java class to aggregate data using Kafka Streams. Double Array is the base type.
  */
 public class DoubleArrayCollector {
     private DoubleValueCollector[] collectors;
 
     /**
+     * Add a sample to the collection.
      * @param value new sample that has to be analysed
      */
     public DoubleArrayCollector add(double[] value) {
