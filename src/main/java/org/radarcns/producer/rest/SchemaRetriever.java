@@ -37,7 +37,11 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-/** Retriever of an Avro Schema */
+/** Retriever of an Avro Schema.
+ *
+ * Internally, only {@link JSONObject} is used to manage JSON data, to keep the class as lean as
+ * possible.
+ */
 public class SchemaRetriever implements Closeable {
     private static final Logger logger = LoggerFactory.getLogger(SchemaRetriever.class);
     private static final MediaType CONTENT_TYPE = MediaType.parse(

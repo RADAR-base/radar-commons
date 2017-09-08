@@ -21,10 +21,10 @@ import org.radarcns.data.AvroEncoder;
 import org.radarcns.data.Record;
 import org.radarcns.topic.AvroTopic;
 
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.List;
 
 /**
@@ -47,9 +47,15 @@ class TopicRequestData<K, V> {
         valueWriter = valueEncoder.writer(topic.getValueSchema(), topic.getValueClass());
     }
 
+    /**
+     * Writes the current topic to a stream. This implementation does not use any JSON writers to
+     * write the data, but writes it directly to a stream. {@link JSONObject#quote(String, Writer)}
+     * is used to get the correct formatting. This makes the method as lean as possible.
+     * @param out OutputStream to write to. It is assumed to be buffered.
+     * @throws IOException if a superimposing stream could not be created
+     */
     void writeToStream(OutputStream out) throws IOException {
-        try (BufferedOutputStream buf = new BufferedOutputStream(out);
-                OutputStreamWriter writer = new OutputStreamWriter(buf)) {
+        try (OutputStreamWriter writer = new OutputStreamWriter(out)) {
             writer.append('{');
             if (keySchemaId != null) {
                 writer.append("\"key_schema_id\":").append(String.valueOf(keySchemaId));
@@ -73,11 +79,17 @@ class TopicRequestData<K, V> {
                 } else {
                     writer.append(",{\"key\":");
                 }
+
+                // flush writer and write raw bytes to underlying stream
+                // flush so the data do not overlap.
                 writer.flush();
-                buf.write(keyWriter.encode(record.key));
+                out.write(keyWriter.encode(record.key));
+
                 writer.append(",\"value\":");
+                // flush writer and write raw bytes to underlying stream
+                // flush so the data do not overlap.
                 writer.flush();
-                buf.write(valueWriter.encode(record.value));
+                out.write(valueWriter.encode(record.value));
                 writer.append('}');
             }
             writer.append("]}");
