@@ -207,6 +207,7 @@ dependencies {
     // For POJO classes and ConfigLoader
     implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
     implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: jacksonVersion
+    implementation group: 'org.json', name: 'json', version: '20170516'
 
     // The REST data is serialized with okio
     implementation group: 'com.squareup.okio', name: 'okio', version: okioVersion

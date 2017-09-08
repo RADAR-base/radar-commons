@@ -16,20 +16,6 @@
 
 package org.radarcns.producer.rest;
 
-import com.fasterxml.jackson.core.JsonEncoding;
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -38,9 +24,18 @@ import okio.BufferedSink;
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Type;
 import org.apache.avro.generic.GenericContainer;
+import org.json.JSONObject;
 import org.radarcns.config.ServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /** Retriever of an Avro Schema */
 public class SchemaRetriever implements Closeable {
@@ -61,15 +56,11 @@ public class SchemaRetriever implements Closeable {
     }
 
     private final ConcurrentMap<String, ParsedSchemaMetadata> cache;
-    private final ObjectReader reader;
-    private final JsonFactory jsonFactory;
     private RestClient httpClient;
 
     public SchemaRetriever(ServerConfig config, long connectionTimeout) {
         Objects.requireNonNull(config);
         cache = new ConcurrentHashMap<>();
-        jsonFactory = new JsonFactory();
-        reader = new ObjectMapper(jsonFactory).readerFor(JsonNode.class);
         httpClient = new RestClient(config, connectionTimeout, ManagedConnectionPool.GLOBAL_POOL);
     }
 
@@ -106,15 +97,16 @@ public class SchemaRetriever implements Closeable {
                 .build();
 
         try (Response response = restClient.request(request)) {
+            String responseBody = response.body().string();
             if (!response.isSuccessful()) {
                 throw new IOException("Cannot retrieve metadata " + request.url()
                         + " (HTTP " + response.code() + ": " + response.message()
-                        + ") -> " + response.body().string());
+                        + ") -> " + responseBody);
             }
-            JsonNode node = reader.readTree(response.body().byteStream());
-            int newVersion = version < 1 ? node.get("version").asInt() : version;
-            int schemaId = node.get("id").asInt();
-            Schema schema = parseSchema(node.get("schema").asText());
+            JSONObject node = new JSONObject(responseBody);
+            int newVersion = version < 1 ? ((Number)node.get("version")).intValue() : version;
+            int schemaId = ((Number)node.get("id")).intValue();
+            Schema schema = parseSchema((String)node.get("schema"));
             return new ParsedSchemaMetadata(schemaId, newVersion, schema);
         }
     }
@@ -156,13 +148,14 @@ public class SchemaRetriever implements Closeable {
                     .build();
 
             try (Response response = restClient.request(request)) {
+                String responseBody = response.body().string();
                 if (!response.isSuccessful()) {
                     throw new IOException("Cannot post schema to " + request.url()
                             + " (HTTP " + response.code() + ": " + response.message()
-                            + ") -> " + response.body().string());
+                            + ") -> " + responseBody);
                 }
-                JsonNode node = reader.readTree(response.body().byteStream());
-                int schemaId = node.get("id").asInt();
+                JSONObject node = new JSONObject(responseBody);
+                int schemaId = ((Number)node.get("id")).intValue();
                 metadata.setId(schemaId);
             }
         }
@@ -210,13 +203,9 @@ public class SchemaRetriever implements Closeable {
 
         @Override
         public void writeTo(BufferedSink sink) throws IOException {
-            try (OutputStream out = sink.outputStream();
-                    JsonGenerator writer = jsonFactory.createGenerator(out, JsonEncoding.UTF8)) {
-                writer.writeStartObject();
-                writer.writeFieldName("schema");
-                writer.writeString(schema.toString());
-                writer.writeEndObject();
-            }
+            sink.writeUtf8("{\"schema\":");
+            sink.writeUtf8(JSONObject.quote(schema.toString()));
+            sink.writeUtf8("}");
         }
     }
 

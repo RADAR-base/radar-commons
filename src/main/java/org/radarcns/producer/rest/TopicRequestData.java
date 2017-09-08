@@ -16,15 +16,16 @@
 
 package org.radarcns.producer.rest;
 
-import com.fasterxml.jackson.core.JsonEncoding;
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.List;
+import org.json.JSONObject;
 import org.radarcns.data.AvroEncoder;
 import org.radarcns.data.Record;
 import org.radarcns.topic.AvroTopic;
+
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.util.List;
 
 /**
  * Request data to submit records to the Kafka REST proxy.
@@ -32,7 +33,6 @@ import org.radarcns.topic.AvroTopic;
 class TopicRequestData<K, V> {
     private final AvroEncoder.AvroWriter<K> keyWriter;
     private final AvroEncoder.AvroWriter<V> valueWriter;
-    private final JsonFactory jsonFactory;
 
     private Integer keySchemaId;
     private Integer valueSchemaId;
@@ -41,40 +41,46 @@ class TopicRequestData<K, V> {
 
     private List<Record<K, V>> records;
 
-    TopicRequestData(AvroTopic<K, V> topic, AvroEncoder keyEncoder, AvroEncoder valueEncoder,
-            JsonFactory jsonFactory) throws IOException {
+    TopicRequestData(AvroTopic<K, V> topic, AvroEncoder keyEncoder, AvroEncoder valueEncoder)
+            throws IOException {
         keyWriter = keyEncoder.writer(topic.getKeySchema(), topic.getKeyClass());
         valueWriter = valueEncoder.writer(topic.getValueSchema(), topic.getValueClass());
-        this.jsonFactory = jsonFactory;
     }
 
     void writeToStream(OutputStream out) throws IOException {
-        try (JsonGenerator writer = jsonFactory.createGenerator(out, JsonEncoding.UTF8)) {
-            writer.writeStartObject();
+        try (BufferedOutputStream buf = new BufferedOutputStream(out);
+                OutputStreamWriter writer = new OutputStreamWriter(buf)) {
+            writer.append('{');
             if (keySchemaId != null) {
-                writer.writeNumberField("key_schema_id", keySchemaId);
+                writer.append("\"key_schema_id\":").append(String.valueOf(keySchemaId));
             } else {
-                writer.writeStringField("key_schema", keySchemaString);
+                writer.append("\"key_schema\":");
+                JSONObject.quote(keySchemaString, writer);
             }
-
             if (valueSchemaId != null) {
-                writer.writeNumberField("value_schema_id", valueSchemaId);
+                writer.append(",\"value_schema_id\":").append(String.valueOf(valueSchemaId));
             } else {
-                writer.writeStringField("value_schema", valueSchemaString);
+                writer.append(",\"value_schema\":");
+                JSONObject.quote(valueSchemaString, writer);
             }
+            writer.append(",\"records\":[");
 
-            writer.writeArrayFieldStart("records");
+            for (int i = 0; i < records.size(); i++) {
+                Record<K, V> record = records.get(i);
 
-            for (Record<K, V> record : records) {
-                writer.writeStartObject();
-                writer.writeFieldName("key");
-                writer.writeRawValue(new String(keyWriter.encode(record.key)));
-                writer.writeFieldName("value");
-                writer.writeRawValue(new String(valueWriter.encode(record.value)));
-                writer.writeEndObject();
+                if (i == 0) {
+                    writer.append("{\"key\":");
+                } else {
+                    writer.append(",{\"key\":");
+                }
+                writer.flush();
+                buf.write(keyWriter.encode(record.key));
+                writer.append(",\"value\":");
+                writer.flush();
+                buf.write(valueWriter.encode(record.value));
+                writer.append('}');
             }
-            writer.writeEndArray();
-            writer.writeEndObject();
+            writer.append("]}");
         }
     }
 
