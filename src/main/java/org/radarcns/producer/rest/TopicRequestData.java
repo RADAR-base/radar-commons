@@ -58,13 +58,13 @@ class TopicRequestData<K, V> {
         try (OutputStreamWriter writer = new OutputStreamWriter(out)) {
             writer.append('{');
             if (keySchemaId != null) {
-                writer.append("\"key_schema_id\":").append(String.valueOf(keySchemaId));
+                writer.append("\"key_schema_id\":").append(keySchemaId.toString());
             } else {
                 writer.append("\"key_schema\":");
                 JSONObject.quote(keySchemaString, writer);
             }
             if (valueSchemaId != null) {
-                writer.append(",\"value_schema_id\":").append(String.valueOf(valueSchemaId));
+                writer.append(",\"value_schema_id\":").append(valueSchemaId.toString());
             } else {
                 writer.append(",\"value_schema\":");
                 JSONObject.quote(valueSchemaString, writer);

@@ -20,6 +20,7 @@ import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 import okio.BufferedSink;
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Type;
@@ -101,16 +102,17 @@ public class SchemaRetriever implements Closeable {
                 .build();
 
         try (Response response = restClient.request(request)) {
-            String responseBody = response.body().string();
-            if (!response.isSuccessful()) {
+            ResponseBody responseBody = response.body();
+            String responseString = responseBody != null ? responseBody.string() : "";
+            if (!response.isSuccessful() || responseBody == null) {
                 throw new IOException("Cannot retrieve metadata " + request.url()
                         + " (HTTP " + response.code() + ": " + response.message()
-                        + ") -> " + responseBody);
+                        + ") -> " + responseString);
             }
-            JSONObject node = new JSONObject(responseBody);
-            int newVersion = version < 1 ? ((Number)node.get("version")).intValue() : version;
-            int schemaId = ((Number)node.get("id")).intValue();
-            Schema schema = parseSchema((String)node.get("schema"));
+            JSONObject node = new JSONObject(responseString);
+            int newVersion = version < 1 ? node.getInt("version") : version;
+            int schemaId = node.getInt("id");
+            Schema schema = parseSchema(node.getString("schema"));
             return new ParsedSchemaMetadata(schemaId, newVersion, schema);
         }
     }
@@ -152,14 +154,15 @@ public class SchemaRetriever implements Closeable {
                     .build();
 
             try (Response response = restClient.request(request)) {
-                String responseBody = response.body().string();
-                if (!response.isSuccessful()) {
+                ResponseBody responseBody = response.body();
+                String responseString = responseBody != null ? responseBody.string() : "";
+                if (!response.isSuccessful() || responseBody == null) {
                     throw new IOException("Cannot post schema to " + request.url()
                             + " (HTTP " + response.code() + ": " + response.message()
-                            + ") -> " + responseBody);
+                            + ") -> " + responseString);
                 }
-                JSONObject node = new JSONObject(responseBody);
-                int schemaId = ((Number)node.get("id")).intValue();
+                JSONObject node = new JSONObject(responseString);
+                int schemaId = node.getInt("id");
                 metadata.setId(schemaId);
             }
         }

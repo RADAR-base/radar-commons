@@ -54,6 +54,7 @@ allprojects {
     ext.hamcrestVersion = '1.3'
     ext.codacyVersion = '1.0.10'
     ext.radarSchemasVersion = '0.1'
+    ext.jsonVersion = '20170516'
 
     ext.githubUrl = 'https://github.com/' + githubRepoName + '.git'
     ext.issueUrl = 'https://github.com/' + githubRepoName + '/issues'
@@ -211,7 +212,7 @@ dependencies {
     // For POJO classes and ConfigLoader
     implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
     implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: jacksonVersion
-    implementation group: 'org.json', name: 'json', version: '20170516'
+    implementation group: 'org.json', name: 'json', version: jsonVersion
 
     // The production code uses the SLF4J logging API at compile time
     implementation group: 'org.slf4j', name:'slf4j-api', version: slf4jVersion
