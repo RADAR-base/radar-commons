@@ -19,8 +19,11 @@ package org.radarcns.topic;
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Type;
 import org.apache.avro.specific.SpecificData;
+import org.apache.avro.specific.SpecificRecord;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
+import java.util.Objects;
 
 /** AvroTopic with schema. */
 public class AvroTopic<K, V> extends KafkaTopic {
@@ -97,6 +100,34 @@ public class AvroTopic<K, V> extends KafkaTopic {
         AvroTopic topic = (AvroTopic) o;
 
         return keyClass == topic.getKeyClass() && valueClass == topic.getValueClass();
+    }
+
+    /**
+     * Parse an AvroTopic from the values in this class.
+     */
+    @SuppressWarnings({"unchecked", "JavaReflectionMemberAccess"})
+    public static <K extends SpecificRecord, V extends SpecificRecord> AvroTopic<K, V> parse(
+            String topic, String keySchema, String valueSchema)
+            throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
+            IllegalAccessException {
+
+        Objects.requireNonNull(topic, "topic needs to be specified");
+        Objects.requireNonNull(keySchema, "key_schema needs to be specified");
+        Objects.requireNonNull(valueSchema, "value_schema needs to be specified");
+
+        Class<K> keyClass = (Class<K>) Class.forName(keySchema);
+        Schema keyAvroSchema = (Schema) keyClass
+                .getMethod("getClassSchema").invoke(null);
+        // check instantiation
+        SpecificData.newInstance(keyClass, keyAvroSchema);
+
+        Class<V> valueClass = (Class<V>) Class.forName(valueSchema);
+        Schema valueAvroSchema = (Schema) valueClass
+                .getMethod("getClassSchema").invoke(null);
+        // check instantiation
+        SpecificData.newInstance(valueClass, valueAvroSchema);
+
+        return new AvroTopic<>(topic, keyAvroSchema, valueAvroSchema, keyClass, valueClass);
     }
 
     @Override
