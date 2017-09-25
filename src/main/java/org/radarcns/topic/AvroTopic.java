@@ -25,7 +25,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Objects;
 
-/** AvroTopic with schema. */
+/** Kafka topic with schema. */
 public class AvroTopic<K, V> extends KafkaTopic {
     private final Schema valueSchema;
     private final Schema keySchema;
@@ -33,6 +33,14 @@ public class AvroTopic<K, V> extends KafkaTopic {
     private final Class<V> valueClass;
     private final Class<K> keyClass;
 
+    /**
+     * Kafka topic with Avro schema.
+     * @param name topic name
+     * @param keySchema Avro schema for keys
+     * @param valueSchema Avro schema for values
+     * @param keyClass Java class for keys
+     * @param valueClass Java class for values
+     */
     public AvroTopic(String name,
             Schema keySchema, Schema valueSchema,
             Class<K> keyClass, Class<V> valueClass) {
@@ -58,20 +66,24 @@ public class AvroTopic<K, V> extends KafkaTopic {
         }
     }
 
+    /** Avro schema used for keys. */
     public Schema getKeySchema() {
         return keySchema;
     }
 
+    /** Avro schema used for values. */
     public Schema getValueSchema() {
         return valueSchema;
     }
 
-    public Class<V> getValueClass() {
-        return valueClass;
-    }
-
+    /** Java class used for keys. */
     public Class<K> getKeyClass() {
         return keyClass;
+    }
+
+    /** Java class used for values. */
+    public Class<V> getValueClass() {
+        return valueClass;
     }
 
     /**
@@ -88,6 +100,43 @@ public class AvroTopic<K, V> extends KafkaTopic {
         return valueFieldTypes;
     }
 
+    /**
+     * Parse an AvroTopic.
+     *
+     * @throws IllegalArgumentException if the key_schema or value_schema properties are not valid
+     *                                  Avro SpecificRecord classes
+     */
+    @SuppressWarnings({"unchecked", "JavaReflectionMemberAccess"})
+    public static <K extends SpecificRecord, V extends SpecificRecord> AvroTopic<K, V> parse(
+            String topic, String keySchema, String valueSchema) {
+
+        try {
+            Objects.requireNonNull(topic, "topic needs to be specified");
+            Objects.requireNonNull(keySchema, "key_schema needs to be specified");
+            Objects.requireNonNull(valueSchema, "value_schema needs to be specified");
+
+            Class<K> keyClass = (Class<K>) Class.forName(keySchema);
+            Schema keyAvroSchema = (Schema) keyClass
+                    .getMethod("getClassSchema").invoke(null);
+            // check instantiation
+            SpecificData.newInstance(keyClass, keyAvroSchema);
+
+            Class<V> valueClass = (Class<V>) Class.forName(valueSchema);
+            Schema valueAvroSchema = (Schema) valueClass
+                    .getMethod("getClassSchema").invoke(null);
+            // check instantiation
+            SpecificData.newInstance(valueClass, valueAvroSchema);
+
+            return new AvroTopic<>(topic, keyAvroSchema, valueAvroSchema, keyClass, valueClass);
+        } catch (ClassNotFoundException
+                | NoSuchMethodException
+                | InvocationTargetException
+                | IllegalAccessException ex) {
+            throw new IllegalArgumentException("Topic " + topic
+                    + " schema cannot be instantiated", ex);
+        }
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -100,34 +149,6 @@ public class AvroTopic<K, V> extends KafkaTopic {
         AvroTopic topic = (AvroTopic) o;
 
         return keyClass == topic.getKeyClass() && valueClass == topic.getValueClass();
-    }
-
-    /**
-     * Parse an AvroTopic from the values in this class.
-     */
-    @SuppressWarnings({"unchecked", "JavaReflectionMemberAccess"})
-    public static <K extends SpecificRecord, V extends SpecificRecord> AvroTopic<K, V> parse(
-            String topic, String keySchema, String valueSchema)
-            throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
-            IllegalAccessException {
-
-        Objects.requireNonNull(topic, "topic needs to be specified");
-        Objects.requireNonNull(keySchema, "key_schema needs to be specified");
-        Objects.requireNonNull(valueSchema, "value_schema needs to be specified");
-
-        Class<K> keyClass = (Class<K>) Class.forName(keySchema);
-        Schema keyAvroSchema = (Schema) keyClass
-                .getMethod("getClassSchema").invoke(null);
-        // check instantiation
-        SpecificData.newInstance(keyClass, keyAvroSchema);
-
-        Class<V> valueClass = (Class<V>) Class.forName(valueSchema);
-        Schema valueAvroSchema = (Schema) valueClass
-                .getMethod("getClassSchema").invoke(null);
-        // check instantiation
-        SpecificData.newInstance(valueClass, valueAvroSchema);
-
-        return new AvroTopic<>(topic, keyAvroSchema, valueAvroSchema, keyClass, valueClass);
     }
 
     @Override

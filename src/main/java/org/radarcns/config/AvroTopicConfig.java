@@ -36,12 +36,20 @@ public class AvroTopicConfig {
 
     /**
      * Parse an AvroTopic from the values in this class.
+     *
+     * @throws IllegalArgumentException if the key_schema or value_schema properties are not valid
+     *                                  Avro SpecificRecord classes
      */
-    @SuppressWarnings({"unchecked", "JavaReflectionMemberAccess"})
-    public <K extends SpecificRecord, V extends SpecificRecord> AvroTopic<K, V> parseAvroTopic()
-            throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
-            IllegalAccessException {
-        return AvroTopic.parse(topic, keySchema, valueSchema);
+    public <K extends SpecificRecord, V extends SpecificRecord> AvroTopic<K, V> parseAvroTopic() {
+        try {
+            return AvroTopic.parse(topic, keySchema, valueSchema);
+        } catch (ClassNotFoundException
+                | NoSuchMethodException
+                | InvocationTargetException
+                | IllegalAccessException ex) {
+            throw new IllegalStateException("Topic " + topic
+                    + " schema cannot be instantiated", ex);
+        }
     }
 
     public String getTopic() {
