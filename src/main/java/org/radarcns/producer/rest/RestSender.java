@@ -16,7 +16,6 @@
 
 package org.radarcns.producer.rest;
 
-import com.fasterxml.jackson.core.JsonFactory;
 import okhttp3.Headers;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
@@ -72,7 +71,6 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
 
     private final AvroEncoder keyEncoder;
     private final AvroEncoder valueEncoder;
-    private final JsonFactory jsonFactory;
 
     private HttpUrl schemalessKeyUrl;
     private HttpUrl schemalessValueUrl;
@@ -101,7 +99,6 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         this.schemaRetriever = schemaRetriever;
         this.keyEncoder = keyEncoder;
         this.valueEncoder = valueEncoder;
-        this.jsonFactory = new JsonFactory();
         this.useCompression = useCompression;
         this.acceptType = KAFKA_REST_ACCEPT_ENCODING;
         this.contentType = KAFKA_REST_AVRO_ENCODING;
@@ -195,7 +192,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
             if (url == null) {
                 throw new MalformedURLException("Cannot parse " + rawUrl);
             }
-            requestData = new TopicRequestData<>(topic, keyEncoder, valueEncoder, jsonFactory);
+            requestData = new TopicRequestData<>(topic, keyEncoder, valueEncoder);
         }
 
         @Override

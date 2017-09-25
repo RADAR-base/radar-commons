@@ -16,15 +16,16 @@
 
 package org.radarcns.producer.rest;
 
-import com.fasterxml.jackson.core.JsonEncoding;
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.List;
+import org.json.JSONObject;
 import org.radarcns.data.AvroEncoder;
 import org.radarcns.data.Record;
 import org.radarcns.topic.AvroTopic;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.util.List;
 
 /**
  * Request data to submit records to the Kafka REST proxy.
@@ -32,7 +33,6 @@ import org.radarcns.topic.AvroTopic;
 class TopicRequestData<K, V> {
     private final AvroEncoder.AvroWriter<K> keyWriter;
     private final AvroEncoder.AvroWriter<V> valueWriter;
-    private final JsonFactory jsonFactory;
 
     private Integer keySchemaId;
     private Integer valueSchemaId;
@@ -41,40 +41,58 @@ class TopicRequestData<K, V> {
 
     private List<Record<K, V>> records;
 
-    TopicRequestData(AvroTopic<K, V> topic, AvroEncoder keyEncoder, AvroEncoder valueEncoder,
-            JsonFactory jsonFactory) throws IOException {
+    TopicRequestData(AvroTopic<K, V> topic, AvroEncoder keyEncoder, AvroEncoder valueEncoder)
+            throws IOException {
         keyWriter = keyEncoder.writer(topic.getKeySchema(), topic.getKeyClass());
         valueWriter = valueEncoder.writer(topic.getValueSchema(), topic.getValueClass());
-        this.jsonFactory = jsonFactory;
     }
 
+    /**
+     * Writes the current topic to a stream. This implementation does not use any JSON writers to
+     * write the data, but writes it directly to a stream. {@link JSONObject#quote(String, Writer)}
+     * is used to get the correct formatting. This makes the method as lean as possible.
+     * @param out OutputStream to write to. It is assumed to be buffered.
+     * @throws IOException if a superimposing stream could not be created
+     */
     void writeToStream(OutputStream out) throws IOException {
-        try (JsonGenerator writer = jsonFactory.createGenerator(out, JsonEncoding.UTF8)) {
-            writer.writeStartObject();
+        try (OutputStreamWriter writer = new OutputStreamWriter(out)) {
+            writer.append('{');
             if (keySchemaId != null) {
-                writer.writeNumberField("key_schema_id", keySchemaId);
+                writer.append("\"key_schema_id\":").append(keySchemaId.toString());
             } else {
-                writer.writeStringField("key_schema", keySchemaString);
+                writer.append("\"key_schema\":");
+                JSONObject.quote(keySchemaString, writer);
             }
-
             if (valueSchemaId != null) {
-                writer.writeNumberField("value_schema_id", valueSchemaId);
+                writer.append(",\"value_schema_id\":").append(valueSchemaId.toString());
             } else {
-                writer.writeStringField("value_schema", valueSchemaString);
+                writer.append(",\"value_schema\":");
+                JSONObject.quote(valueSchemaString, writer);
             }
+            writer.append(",\"records\":[");
 
-            writer.writeArrayFieldStart("records");
+            for (int i = 0; i < records.size(); i++) {
+                Record<K, V> record = records.get(i);
 
-            for (Record<K, V> record : records) {
-                writer.writeStartObject();
-                writer.writeFieldName("key");
-                writer.writeRawValue(new String(keyWriter.encode(record.key)));
-                writer.writeFieldName("value");
-                writer.writeRawValue(new String(valueWriter.encode(record.value)));
-                writer.writeEndObject();
+                if (i == 0) {
+                    writer.append("{\"key\":");
+                } else {
+                    writer.append(",{\"key\":");
+                }
+
+                // flush writer and write raw bytes to underlying stream
+                // flush so the data do not overlap.
+                writer.flush();
+                out.write(keyWriter.encode(record.key));
+
+                writer.append(",\"value\":");
+                // flush writer and write raw bytes to underlying stream
+                // flush so the data do not overlap.
+                writer.flush();
+                out.write(valueWriter.encode(record.value));
+                writer.append('}');
             }
-            writer.writeEndArray();
-            writer.writeEndObject();
+            writer.append("]}");
         }
     }
 
