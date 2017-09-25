@@ -24,6 +24,7 @@ import org.apache.avro.specific.SpecificRecord;
  * AvroTopic used by sensors. This has additional verification on the schemas that are used compared
  * to AvroTopic.
  */
+@SuppressWarnings("PMD.UseUtilityClass")
 public class SensorTopic<K, V> extends AvroTopic<K, V> {
     public SensorTopic(String name, Schema keySchema, Schema valueSchema,
             Class<K> keyClass, Class<V> valueClass) {

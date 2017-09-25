@@ -17,14 +17,14 @@
 package org.radarcns.mock.config;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.io.File;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Collections;
-import java.util.List;
 import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.config.AvroTopicConfig;
 import org.radarcns.key.MeasurementKey;
 import org.radarcns.topic.AvroTopic;
+
+import java.io.File;
+import java.util.Collections;
+import java.util.List;
 
 public class MockDataConfig extends AvroTopicConfig {
     @JsonProperty("file")
@@ -50,9 +50,7 @@ public class MockDataConfig extends AvroTopicConfig {
      * will be used as a key schema.
      */
     @Override
-    public <K extends SpecificRecord, V extends SpecificRecord> AvroTopic<K, V> parseAvroTopic()
-            throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
-            IllegalAccessException {
+    public <K extends SpecificRecord, V extends SpecificRecord> AvroTopic<K, V> parseAvroTopic() {
         if (getKeySchema() == null) {
             setKeySchema(MeasurementKey.class.getName());
         }
