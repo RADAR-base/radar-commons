@@ -16,13 +16,15 @@
 
 package org.radarcns.topic;
 
-import static org.junit.Assert.*;
-
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Type;
 import org.apache.avro.SchemaBuilder;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.Test;
+import org.radarcns.key.MeasurementKey;
+import org.radarcns.phone.PhoneAcceleration;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by joris on 05/07/2017.
@@ -117,5 +119,32 @@ public class SensorTopicTest {
         new SensorTopic<>("test",
                 keySchema, valueSchema,
                 GenericRecord.class, GenericRecord.class);
+    }
+
+    @Test
+    public void parseTopic() {
+        SensorTopic<MeasurementKey, PhoneAcceleration> topic = SensorTopic.parse("test",
+                MeasurementKey.class.getName(), PhoneAcceleration.class.getName());
+
+        SensorTopic<MeasurementKey, PhoneAcceleration> expected = new SensorTopic<>("test",
+                MeasurementKey.getClassSchema(), PhoneAcceleration.getClassSchema(),
+                MeasurementKey.class, PhoneAcceleration.class);
+
+        assertEquals(expected, topic);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void parseUnexistingKey() {
+        SensorTopic.parse("test",
+                "unexisting." + MeasurementKey.class.getName(),
+                PhoneAcceleration.class.getName());
+    }
+
+
+    @Test(expected = IllegalArgumentException.class)
+    public void parseUnexistingValue() {
+        SensorTopic.parse("test",
+                MeasurementKey.class.getName(),
+                "unexisting." + PhoneAcceleration.class.getName());
     }
 }
