@@ -166,7 +166,7 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
                     + schema.getTypes());
         }
 
-        if (fieldString.equals("null")) {
+        if (fieldString.isEmpty() || fieldString.equals("null")) {
             return null;
         } else {
             return parseValue(nonNullSchema, fieldString);
