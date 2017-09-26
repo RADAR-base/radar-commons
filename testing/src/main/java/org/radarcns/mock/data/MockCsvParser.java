@@ -139,9 +139,37 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
                 return fieldString;
             case ARRAY:
                 return parseArray(schema, fieldString);
+            case UNION:
+                return parseUnion(schema, fieldString);
             default:
                 throw new IllegalArgumentException("Cannot handle schemas of type "
                         + schema.getType());
+        }
+    }
+
+    private static Object parseUnion(Schema schema, String fieldString) {
+        if (schema.getTypes().size() != 2) {
+            throw new IllegalArgumentException(
+                    "Cannot handle UNION types with other than two internal types: "
+                    + schema.getTypes());
+        }
+        Schema schema0 = schema.getTypes().get(0);
+        Schema schema1 = schema.getTypes().get(1);
+
+        Schema nonNullSchema;
+        if (schema0.getType() == Schema.Type.NULL) {
+            nonNullSchema = schema1;
+        } else if (schema1.getType() == Schema.Type.NULL) {
+            nonNullSchema = schema0;
+        } else {
+            throw new IllegalArgumentException("Cannot handle non-nullable UNION types: "
+                    + schema.getTypes());
+        }
+
+        if (fieldString.equals("null")) {
+            return null;
+        } else {
+            return parseValue(nonNullSchema, fieldString);
         }
     }
 

@@ -19,7 +19,7 @@ package org.radarcns.mock.config;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.config.AvroTopicConfig;
-import org.radarcns.key.MeasurementKey;
+import org.radarcns.kafka.ObservationKey;
 import org.radarcns.topic.AvroTopic;
 
 import java.io.File;
@@ -46,13 +46,13 @@ public class MockDataConfig extends AvroTopicConfig {
     private double maximum = 1e5;
 
     /**
-     * Parse an AvroTopic from the values in this class. If keySchema is not set, MeasurementKey
+     * Parse an AvroTopic from the values in this class. If keySchema is not set, ObservationKey
      * will be used as a key schema.
      */
     @Override
     public <K extends SpecificRecord, V extends SpecificRecord> AvroTopic<K, V> parseAvroTopic() {
         if (getKeySchema() == null) {
-            setKeySchema(MeasurementKey.class.getName());
+            setKeySchema(ObservationKey.class.getName());
         }
         return super.parseAvroTopic();
     }

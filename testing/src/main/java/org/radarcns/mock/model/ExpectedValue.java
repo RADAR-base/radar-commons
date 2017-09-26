@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.avro.Schema;
 import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.data.Record;
-import org.radarcns.key.MeasurementKey;
+import org.radarcns.kafka.ObservationKey;
 
 /**
  * It computes the expected value for a test case.
@@ -35,7 +35,7 @@ public abstract class ExpectedValue<V> {
     private final int[] valuePos;
 
     private Long lastTimestamp;
-    private MeasurementKey lastKey;
+    private ObservationKey lastKey;
     private V lastValue;
     private final Map<Long, V> series;
 
@@ -97,7 +97,7 @@ public abstract class ExpectedValue<V> {
      * Add a new record to the series of expected values.
      * @param record record to add
      */
-    public void add(Record<MeasurementKey, SpecificRecord> record) {
+    public void add(Record<ObservationKey, SpecificRecord> record) {
         if (timeReceivedPos == -1) {
             throw new IllegalStateException("Cannot parse record without a schema.");
         }
@@ -116,7 +116,7 @@ public abstract class ExpectedValue<V> {
      * @param timeMillis time the record is received
      * @param values values to add
      */
-    public void add(MeasurementKey key, long timeMillis, Object... values) {
+    public void add(ObservationKey key, long timeMillis, Object... values) {
         this.lastKey = key;
         if (timeMillis >= lastTimestamp + DURATION || lastValue == null) {
             lastTimestamp = timeMillis - (timeMillis % DURATION);
@@ -126,7 +126,7 @@ public abstract class ExpectedValue<V> {
         addToValue(lastValue, values);
     }
 
-    public MeasurementKey getLastKey() {
+    public ObservationKey getLastKey() {
         return lastKey;
     }
 }

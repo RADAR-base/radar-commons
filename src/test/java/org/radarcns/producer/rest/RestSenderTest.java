@@ -32,8 +32,8 @@ import org.junit.Test;
 import org.radarcns.config.ServerConfig;
 import org.radarcns.data.Record;
 import org.radarcns.data.SpecificRecordEncoder;
-import org.radarcns.key.MeasurementKey;
-import org.radarcns.phone.PhoneLight;
+import org.radarcns.kafka.ObservationKey;
+import org.radarcns.passive.phone.PhoneLight;
 import org.radarcns.producer.KafkaTopicSender;
 import org.radarcns.topic.AvroTopic;
 
@@ -47,7 +47,7 @@ import static org.mockito.Mockito.*;
 
 public class RestSenderTest {
     private SchemaRetriever retriever;
-    private RestSender<MeasurementKey, SpecificRecord> sender;
+    private RestSender<ObservationKey, SpecificRecord> sender;
 
     @Rule
     public MockWebServer webServer = new MockWebServer();
@@ -58,7 +58,7 @@ public class RestSenderTest {
         SpecificRecordEncoder encoder = new SpecificRecordEncoder(false);
 
         ServerConfig config = new ServerConfig(webServer.url("/").url());
-        this.sender = new RestSender.Builder<MeasurementKey, SpecificRecord>()
+        this.sender = new RestSender.Builder<ObservationKey, SpecificRecord>()
                 .server(config)
                 .schemaRetriever(retriever)
                 .encoders(encoder, encoder)
@@ -68,18 +68,18 @@ public class RestSenderTest {
 
     @Test
     public void sender() throws Exception {
-        Schema keySchema = MeasurementKey.getClassSchema();
+        Schema keySchema = ObservationKey.getClassSchema();
         Schema valueSchema = PhoneLight.getClassSchema();
-        AvroTopic<MeasurementKey, PhoneLight> topic = new AvroTopic<>("test",
-                keySchema, valueSchema, MeasurementKey.class, PhoneLight.class);
+        AvroTopic<ObservationKey, PhoneLight> topic = new AvroTopic<>("test",
+                keySchema, valueSchema, ObservationKey.class, PhoneLight.class);
         Headers headers = new Headers.Builder()
                 .add("Cookie", "ab")
                 .add("Cookie", "bc")
                 .build();
         sender.setHeaders(headers);
-        KafkaTopicSender<MeasurementKey, PhoneLight> topicSender = sender.sender(topic);
+        KafkaTopicSender<ObservationKey, PhoneLight> topicSender = sender.sender(topic);
 
-        MeasurementKey key = new MeasurementKey("a", "b");
+        ObservationKey key = new ObservationKey("test","a", "b");
         PhoneLight value = new PhoneLight(0.1, 0.2, 0.3f);
         ParsedSchemaMetadata keySchemaMetadata = new ParsedSchemaMetadata(10, 2, keySchema);
         ParsedSchemaMetadata valueSchemaMetadata = new ParsedSchemaMetadata(10, 2, valueSchema);
@@ -118,13 +118,13 @@ public class RestSenderTest {
 
     @Test
     public void sendTwo() throws Exception {
-        Schema keySchema = MeasurementKey.getClassSchema();
+        Schema keySchema = ObservationKey.getClassSchema();
         Schema valueSchema = PhoneLight.getClassSchema();
-        AvroTopic<MeasurementKey, PhoneLight> topic = new AvroTopic<>("test",
-                keySchema, valueSchema, MeasurementKey.class, PhoneLight.class);
-        KafkaTopicSender<MeasurementKey, PhoneLight> topicSender = sender.sender(topic);
+        AvroTopic<ObservationKey, PhoneLight> topic = new AvroTopic<>("test",
+                keySchema, valueSchema, ObservationKey.class, PhoneLight.class);
+        KafkaTopicSender<ObservationKey, PhoneLight> topicSender = sender.sender(topic);
 
-        MeasurementKey key = new MeasurementKey("a", "b");
+        ObservationKey key = new ObservationKey("test", "a", "b");
         PhoneLight value = new PhoneLight(0.1, 0.2, 0.3f);
         ParsedSchemaMetadata keySchemaMetadata = new ParsedSchemaMetadata(10, 2, keySchema);
         ParsedSchemaMetadata valueSchemaMetadata = new ParsedSchemaMetadata(10, 2, valueSchema);
@@ -193,13 +193,13 @@ public class RestSenderTest {
         webServer.enqueue(new MockResponse()
                 .setHeader("Content-Type", "application/json; charset=utf-8")
                 .setBody("{\"offset\": 100}"));
-        Schema keySchema = MeasurementKey.getClassSchema();
+        Schema keySchema = ObservationKey.getClassSchema();
         Schema valueSchema = PhoneLight.getClassSchema();
-        AvroTopic<MeasurementKey, PhoneLight> topic = new AvroTopic<>("test",
-                keySchema, valueSchema, MeasurementKey.class, PhoneLight.class);
-        KafkaTopicSender<MeasurementKey, PhoneLight> topicSender = sender.sender(topic);
+        AvroTopic<ObservationKey, PhoneLight> topic = new AvroTopic<>("test",
+                keySchema, valueSchema, ObservationKey.class, PhoneLight.class);
+        KafkaTopicSender<ObservationKey, PhoneLight> topicSender = sender.sender(topic);
 
-        MeasurementKey key = new MeasurementKey("a", "b");
+        ObservationKey key = new ObservationKey("test", "a", "b");
         PhoneLight value = new PhoneLight(0.1, 0.2, 0.3f);
         ParsedSchemaMetadata keySchemaMetadata = new ParsedSchemaMetadata(10, 2, keySchema);
         ParsedSchemaMetadata valueSchemaMetadata = new ParsedSchemaMetadata(10, 2, valueSchema);

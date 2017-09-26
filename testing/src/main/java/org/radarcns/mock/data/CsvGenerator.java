@@ -19,7 +19,7 @@ package org.radarcns.mock.data;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import org.radarcns.key.MeasurementKey;
+import org.radarcns.kafka.ObservationKey;
 import org.radarcns.mock.config.MockDataConfig;
 import org.radarcns.util.CsvWriter;
 
@@ -41,7 +41,7 @@ public final class CsvGenerator {
         File file = config.getDataFile(root);
 
         try {
-            generate(new RecordGenerator<>(config, MeasurementKey.class), duration, file);
+            generate(new RecordGenerator<>(config, ObservationKey.class), duration, file);
         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException
                 | ClassNotFoundException ex) {
             throw new IOException("Failed to generate data", ex);
@@ -56,9 +56,9 @@ public final class CsvGenerator {
      * @param csvFile CSV file to write data to
      * @throws IOException if the CSV file cannot be written to
      */
-    public void generate(RecordGenerator<MeasurementKey> generator, long duration, File csvFile)
+    public void generate(RecordGenerator<ObservationKey> generator, long duration, File csvFile)
             throws IOException {
-        MeasurementKey key = new MeasurementKey("UserID_0", "SourceID_0");
+        ObservationKey key = new ObservationKey("test", "UserID_0", "SourceID_0");
 
         try (CsvWriter writer = new CsvWriter(csvFile, generator.getHeader())) {
             writer.writeRows(generator.iterateRawValues(key, duration));

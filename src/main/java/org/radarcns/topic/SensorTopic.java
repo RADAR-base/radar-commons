@@ -37,6 +37,9 @@ public class SensorTopic<K, V> extends AvroTopic<K, V> {
             throw new IllegalArgumentException("Sensors must send records as values");
         }
 
+        if (keySchema.getField("projectId") == null) {
+            throw new IllegalArgumentException("Key schema must have a project ID");
+        }
         if (keySchema.getField("userId") == null) {
             throw new IllegalArgumentException("Key schema must have a user ID");
         }

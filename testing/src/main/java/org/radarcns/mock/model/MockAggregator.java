@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.avro.Schema;
-import org.radarcns.key.MeasurementKey;
+import org.radarcns.kafka.ObservationKey;
 import org.radarcns.mock.config.MockDataConfig;
 import org.radarcns.mock.data.MockCsvParser;
 import org.slf4j.Logger;
@@ -63,7 +63,7 @@ public final class MockAggregator {
                 continue;
             }
 
-            try (MockCsvParser<MeasurementKey> parser = new MockCsvParser<>(config, root)) {
+            try (MockCsvParser<ObservationKey> parser = new MockCsvParser<>(config, root)) {
                 Schema valueSchema = config.parseAvroTopic().getValueSchema();
                 List<String> valueFields = config.getValueFields();
 

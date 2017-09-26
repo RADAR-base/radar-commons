@@ -34,13 +34,13 @@ import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.config.ServerConfig;
 import org.radarcns.config.YamlConfigLoader;
 import org.radarcns.data.SpecificRecordEncoder;
-import org.radarcns.empatica.EmpaticaE4Acceleration;
-import org.radarcns.empatica.EmpaticaE4BatteryLevel;
-import org.radarcns.empatica.EmpaticaE4BloodVolumePulse;
-import org.radarcns.empatica.EmpaticaE4ElectroDermalActivity;
-import org.radarcns.empatica.EmpaticaE4InterBeatInterval;
-import org.radarcns.empatica.EmpaticaE4Temperature;
-import org.radarcns.key.MeasurementKey;
+import org.radarcns.passive.empatica.EmpaticaE4Acceleration;
+import org.radarcns.passive.empatica.EmpaticaE4BatteryLevel;
+import org.radarcns.passive.empatica.EmpaticaE4BloodVolumePulse;
+import org.radarcns.passive.empatica.EmpaticaE4ElectroDermalActivity;
+import org.radarcns.passive.empatica.EmpaticaE4InterBeatInterval;
+import org.radarcns.passive.empatica.EmpaticaE4Temperature;
+import org.radarcns.kafka.ObservationKey;
 import org.radarcns.mock.config.BasicMockConfig;
 import org.radarcns.mock.config.MockDataConfig;
 import org.radarcns.mock.data.MockCsvParser;
@@ -64,9 +64,9 @@ public class MockProducer {
 
     private static final Logger logger = LoggerFactory.getLogger(MockProducer.class);
 
-    private final List<MockDevice<MeasurementKey>> devices;
+    private final List<MockDevice<ObservationKey>> devices;
     private final List<MockFileSender> files;
-    private final List<KafkaSender<MeasurementKey, SpecificRecord>> senders;
+    private final List<KafkaSender<ObservationKey, SpecificRecord>> senders;
     private final SchemaRetriever retriever;
 
     /**
@@ -89,7 +89,7 @@ public class MockProducer {
         int numDevices = mockConfig.getNumberOfDevices();
 
         retriever = new SchemaRetriever(mockConfig.getSchemaRegistry(), 10);
-        List<KafkaSender<MeasurementKey, SpecificRecord>> tmpSenders = null;
+        List<KafkaSender<ObservationKey, SpecificRecord>> tmpSenders = null;
 
         try {
             devices = new ArrayList<>(numDevices);
@@ -100,8 +100,8 @@ public class MockProducer {
                 dataConfigs = defaultDataConfig();
             }
 
-            List<RecordGenerator<MeasurementKey>> generators;
-            List<MockCsvParser<MeasurementKey>> mockFiles;
+            List<RecordGenerator<ObservationKey>> generators;
+            List<MockCsvParser<ObservationKey>> mockFiles;
             try {
                 generators = createGenerators(dataConfigs);
                 mockFiles = createMockFiles(dataConfigs, root);
@@ -117,7 +117,7 @@ public class MockProducer {
                 String sourceId = "SourceID_";
 
                 for (int i = 0; i < numDevices; i++) {
-                    MeasurementKey key = new MeasurementKey(userId + i, sourceId + i);
+                    ObservationKey key = new ObservationKey("test", userId + i, sourceId + i);
                     devices.add(new MockDevice<>(tmpSenders.get(i), key, generators));
                 }
             }
@@ -138,7 +138,7 @@ public class MockProducer {
         senders = tmpSenders;
     }
 
-    private List<KafkaSender<MeasurementKey, SpecificRecord>> createSenders(
+    private List<KafkaSender<ObservationKey, SpecificRecord>> createSenders(
             BasicMockConfig mockConfig, int numDevices) {
 
         if (mockConfig.isDirectProducer()) {
@@ -150,9 +150,9 @@ public class MockProducer {
     }
 
     /** Create senders that directly produce data to Kafka. */
-    private List<KafkaSender<MeasurementKey, SpecificRecord>> createDirectSenders(int numDevices,
+    private List<KafkaSender<ObservationKey, SpecificRecord>> createDirectSenders(int numDevices,
             SchemaRetriever retriever, String brokerPaths) {
-        List<KafkaSender<MeasurementKey, SpecificRecord>> result = new ArrayList<>(numDevices);
+        List<KafkaSender<ObservationKey, SpecificRecord>> result = new ArrayList<>(numDevices);
         for (int i = 0; i < numDevices; i++) {
             Properties properties = new Properties();
             properties.put(KEY_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
@@ -160,18 +160,18 @@ public class MockProducer {
             properties.put(SCHEMA_REGISTRY_CONFIG, retriever);
             properties.put(BOOTSTRAP_SERVERS_CONFIG, brokerPaths);
 
-            result.add(new DirectSender<MeasurementKey, SpecificRecord>(properties));
+            result.add(new DirectSender<ObservationKey, SpecificRecord>(properties));
         }
         return result;
     }
 
     /** Create senders that produce data to Kafka via the REST proxy. */
-    private List<KafkaSender<MeasurementKey, SpecificRecord>> createRestSenders(int numDevices,
+    private List<KafkaSender<ObservationKey, SpecificRecord>> createRestSenders(int numDevices,
             SchemaRetriever retriever, ServerConfig restProxy, boolean useCompression) {
-        List<KafkaSender<MeasurementKey, SpecificRecord>> result = new ArrayList<>(numDevices);
+        List<KafkaSender<ObservationKey, SpecificRecord>> result = new ArrayList<>(numDevices);
         ConnectionState sharedState = new ConnectionState(10, TimeUnit.SECONDS);
-        RestSender.Builder<MeasurementKey, SpecificRecord> restBuilder =
-                new RestSender.Builder<MeasurementKey, SpecificRecord>()
+        RestSender.Builder<ObservationKey, SpecificRecord> restBuilder =
+                new RestSender.Builder<ObservationKey, SpecificRecord>()
                         .server(restProxy)
                         .schemaRetriever(retriever)
                         .useCompression(useCompression)
@@ -181,7 +181,7 @@ public class MockProducer {
                         .connectionTimeout(10, TimeUnit.SECONDS);
 
         for (int i = 0; i < numDevices; i++) {
-            RestSender<MeasurementKey, SpecificRecord> firstSender = restBuilder
+            RestSender<ObservationKey, SpecificRecord> firstSender = restBuilder
                     .connectionPool(new ManagedConnectionPool())
                     .build();
 
@@ -214,7 +214,7 @@ public class MockProducer {
             device.join(5_000L);
         }
         logger.info("Closing channels");
-        for (KafkaSender<MeasurementKey, SpecificRecord> sender : senders) {
+        for (KafkaSender<ObservationKey, SpecificRecord> sender : senders) {
             sender.close();
         }
         retriever.close();
@@ -344,27 +344,27 @@ public class MockProducer {
         return Arrays.asList(acceleration, battery, bvp, eda, ibi, temperature);
     }
 
-    private List<RecordGenerator<MeasurementKey>> createGenerators(List<MockDataConfig> configs)
+    private List<RecordGenerator<ObservationKey>> createGenerators(List<MockDataConfig> configs)
             throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException,
             InvocationTargetException {
 
-        List<RecordGenerator<MeasurementKey>> result = new ArrayList<>(configs.size());
+        List<RecordGenerator<ObservationKey>> result = new ArrayList<>(configs.size());
 
         for (MockDataConfig config : configs) {
             if (config.getDataFile() == null) {
-                result.add(new RecordGenerator<>(config, MeasurementKey.class));
+                result.add(new RecordGenerator<>(config, ObservationKey.class));
             }
         }
 
         return result;
     }
 
-    private List<MockCsvParser<MeasurementKey>> createMockFiles(List<MockDataConfig> configs,
+    private List<MockCsvParser<ObservationKey>> createMockFiles(List<MockDataConfig> configs,
             File dataRoot)
             throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException,
             InvocationTargetException, IOException {
 
-        List<MockCsvParser<MeasurementKey>> result = new ArrayList<>(configs.size());
+        List<MockCsvParser<ObservationKey>> result = new ArrayList<>(configs.size());
 
         File parent = dataRoot;
         if (parent == null) {
@@ -373,7 +373,7 @@ public class MockProducer {
 
         for (MockDataConfig config : configs) {
             if (config.getDataFile() != null) {
-                result.add(new MockCsvParser<MeasurementKey>(config, parent));
+                result.add(new MockCsvParser<ObservationKey>(config, parent));
             }
         }
 

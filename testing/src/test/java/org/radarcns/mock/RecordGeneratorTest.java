@@ -23,8 +23,8 @@ import java.util.Iterator;
 import org.apache.avro.specific.SpecificRecord;
 import org.junit.Test;
 import org.radarcns.data.Record;
-import org.radarcns.empatica.EmpaticaE4Acceleration;
-import org.radarcns.key.MeasurementKey;
+import org.radarcns.passive.empatica.EmpaticaE4Acceleration;
+import org.radarcns.kafka.ObservationKey;
 import org.radarcns.mock.config.MockDataConfig;
 import org.radarcns.mock.data.RecordGenerator;
 
@@ -43,13 +43,13 @@ public class RecordGeneratorTest {
         config.setValueFields(Arrays.asList("x", "y", "z"));
         config.setValueSchema(EmpaticaE4Acceleration.class.getName());
 
-        RecordGenerator<MeasurementKey> generator = new RecordGenerator<>(config,
-                MeasurementKey.class);
-        Iterator<Record<MeasurementKey, SpecificRecord>> iter = generator
-                .iterateValues(new MeasurementKey("a", "b"), 0);
-        Record<MeasurementKey, SpecificRecord> record = iter.next();
+        RecordGenerator<ObservationKey> generator = new RecordGenerator<>(config,
+                ObservationKey.class);
+        Iterator<Record<ObservationKey, SpecificRecord>> iter = generator
+                .iterateValues(new ObservationKey("test", "a", "b"), 0);
+        Record<ObservationKey, SpecificRecord> record = iter.next();
         assertEquals(0, record.offset);
-        assertEquals(new MeasurementKey("a", "b"), record.key);
+        assertEquals(new ObservationKey("test", "a", "b"), record.key);
         float x = ((EmpaticaE4Acceleration)record.value).getX();
         assertTrue(x >= 0.1f && x < 9.9f);
         float y = ((EmpaticaE4Acceleration)record.value).getX();
@@ -60,7 +60,7 @@ public class RecordGeneratorTest {
         assertTrue(time > System.currentTimeMillis() / 1000d - 1d
                 && time <= System.currentTimeMillis() / 1000d);
 
-        Record<MeasurementKey, SpecificRecord> nextRecord = iter.next();
+        Record<ObservationKey, SpecificRecord> nextRecord = iter.next();
         assertEquals(1, nextRecord.offset);
         assertEquals(time + 0.1d, (Double)nextRecord.value.get(0), 1e-6);
     }
@@ -71,10 +71,11 @@ public class RecordGeneratorTest {
         config.setTopic("test");
         config.setValueSchema(EmpaticaE4Acceleration.class.getName());
 
-        RecordGenerator<MeasurementKey> generator = new RecordGenerator<>(config,
-                MeasurementKey.class);
+        RecordGenerator<ObservationKey> generator = new RecordGenerator<>(config,
+                ObservationKey.class);
         assertEquals(
-                Arrays.asList("userId", "sourceId", "time", "timeReceived", "x", "y", "z"),
+                Arrays.asList("projectId", "userId", "sourceId",
+                        "time", "timeReceived", "x", "y", "z"),
                 generator.getHeader());
     }
 }
