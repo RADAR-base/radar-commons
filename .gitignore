@@ -12,6 +12,7 @@ log/
 # Gradle
 .gradle/
 .gradletasknamecache
+local.properties
 
 # Build
 build/

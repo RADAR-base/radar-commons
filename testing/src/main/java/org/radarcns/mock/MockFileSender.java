@@ -19,7 +19,7 @@ package org.radarcns.mock;
 import java.io.IOException;
 import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.data.Record;
-import org.radarcns.key.MeasurementKey;
+import org.radarcns.kafka.ObservationKey;
 import org.radarcns.mock.data.MockCsvParser;
 import org.radarcns.producer.KafkaSender;
 import org.radarcns.producer.KafkaTopicSender;
@@ -33,7 +33,7 @@ public class MockFileSender {
     private final KafkaSender sender;
     private final MockCsvParser parser;
 
-    public MockFileSender(KafkaSender<MeasurementKey, SpecificRecord> sender,
+    public MockFileSender(KafkaSender<ObservationKey, SpecificRecord> sender,
             MockCsvParser parser) {
         this.parser = parser;
         this.sender = sender;

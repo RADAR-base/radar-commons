@@ -16,13 +16,16 @@
 
 package org.radarcns.topic;
 
-import static org.junit.Assert.*;
-
+import com.fasterxml.jackson.databind.annotation.JsonTypeResolver;
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Type;
 import org.apache.avro.SchemaBuilder;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.Test;
+import org.radarcns.kafka.ObservationKey;
+import org.radarcns.passive.phone.PhoneAcceleration;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by joris on 05/07/2017.
@@ -32,6 +35,7 @@ public class SensorTopicTest {
     @Test
     public void workingConstructor() {
         Schema keySchema = SchemaBuilder.record("key").fields()
+                .name("projectId").type(Schema.createUnion(Schema.create(Type.NULL), Schema.create(Type.STRING))).withDefault(null)
                 .name("userId").type(Schema.create(Type.STRING)).noDefault()
                 .name("sourceId").type(Schema.create(Type.STRING)).noDefault()
                 .endRecord();
@@ -117,5 +121,32 @@ public class SensorTopicTest {
         new SensorTopic<>("test",
                 keySchema, valueSchema,
                 GenericRecord.class, GenericRecord.class);
+    }
+
+    @Test
+    public void parseTopic() {
+        SensorTopic<ObservationKey, PhoneAcceleration> topic = SensorTopic.parse("test",
+                ObservationKey.class.getName(), PhoneAcceleration.class.getName());
+
+        SensorTopic<ObservationKey, PhoneAcceleration> expected = new SensorTopic<>("test",
+                ObservationKey.getClassSchema(), PhoneAcceleration.getClassSchema(),
+                ObservationKey.class, PhoneAcceleration.class);
+
+        assertEquals(expected, topic);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void parseUnexistingKey() {
+        SensorTopic.parse("test",
+                "unexisting." + ObservationKey.class.getName(),
+                PhoneAcceleration.class.getName());
+    }
+
+
+    @Test(expected = IllegalArgumentException.class)
+    public void parseUnexistingValue() {
+        SensorTopic.parse("test",
+                ObservationKey.class.getName(),
+                "unexisting." + PhoneAcceleration.class.getName());
     }
 }
