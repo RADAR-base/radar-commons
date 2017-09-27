@@ -54,6 +54,7 @@ allprojects {
     ext.hamcrestVersion = '1.3'
     ext.codacyVersion = '1.0.10'
     ext.radarSchemasVersion = '0.2-alpha.3-SNAPSHOT'
+    ext.jsonVersion = '20170516'
 
     ext.githubUrl = 'https://github.com/' + githubRepoName + '.git'
     ext.issueUrl = 'https://github.com/' + githubRepoName + '/issues'
