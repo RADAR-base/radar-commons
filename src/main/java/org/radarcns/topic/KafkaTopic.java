@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 /**
  * A topic that used by Apache Kafka.
  */
-public class KafkaTopic {
+public class KafkaTopic implements Comparable<KafkaTopic> {
     private final String name;
     private static final Pattern TOPIC_NAME_PATTERN = Pattern.compile("[a-zA-Z][a-zA-Z0-9_]*");
 
@@ -73,5 +73,10 @@ public class KafkaTopic {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "<" + name + ">";
+    }
+
+    @Override
+    public int compareTo(KafkaTopic o) {
+        return name.compareTo(o.name);
     }
 }
