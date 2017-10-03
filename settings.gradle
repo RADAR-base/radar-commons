@@ -16,5 +16,5 @@
 
 rootProject.name = 'radar-commons'
 
-include ':testing'
+include ':radar-commons-testing'
 
