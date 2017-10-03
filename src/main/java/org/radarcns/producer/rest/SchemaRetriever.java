@@ -19,8 +19,6 @@ package org.radarcns.producer.rest;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
 import okio.BufferedSink;
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Type;
@@ -101,20 +99,12 @@ public class SchemaRetriever implements Closeable {
                 .addHeader("Accept", "application/json")
                 .build();
 
-        try (Response response = restClient.request(request)) {
-            ResponseBody responseBody = response.body();
-            String responseString = responseBody != null ? responseBody.string() : "";
-            if (!response.isSuccessful() || responseBody == null) {
-                throw new IOException("Cannot retrieve metadata " + request.url()
-                        + " (HTTP " + response.code() + ": " + response.message()
-                        + ") -> " + responseString);
-            }
-            JSONObject node = new JSONObject(responseString);
-            int newVersion = version < 1 ? node.getInt("version") : version;
-            int schemaId = node.getInt("id");
-            Schema schema = parseSchema(node.getString("schema"));
-            return new ParsedSchemaMetadata(schemaId, newVersion, schema);
-        }
+        String response = restClient.requestString(request);
+        JSONObject node = new JSONObject(response);
+        int newVersion = version < 1 ? node.getInt("version") : version;
+        int schemaId = node.getInt("id");
+        Schema schema = parseSchema(node.getString("schema"));
+        return new ParsedSchemaMetadata(schemaId, newVersion, schema);
     }
 
     public ParsedSchemaMetadata getSchemaMetadata(String topic, boolean ofValue, int version)
@@ -153,18 +143,10 @@ public class SchemaRetriever implements Closeable {
                     .post(new SchemaRequestBody(metadata.getSchema()))
                     .build();
 
-            try (Response response = restClient.request(request)) {
-                ResponseBody responseBody = response.body();
-                String responseString = responseBody != null ? responseBody.string() : "";
-                if (!response.isSuccessful() || responseBody == null) {
-                    throw new IOException("Cannot post schema to " + request.url()
-                            + " (HTTP " + response.code() + ": " + response.message()
-                            + ") -> " + responseString);
-                }
-                JSONObject node = new JSONObject(responseString);
-                int schemaId = node.getInt("id");
-                metadata.setId(schemaId);
-            }
+            String response = restClient.requestString(request);
+            JSONObject node = new JSONObject(response);
+            int schemaId = node.getInt("id");
+            metadata.setId(schemaId);
         }
         cache.put(subject, metadata);
     }

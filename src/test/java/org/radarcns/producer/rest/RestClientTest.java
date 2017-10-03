@@ -56,7 +56,7 @@ public class RestClientTest {
     }
 
     @Test
-    public void requestString() throws Exception {
+    public void requestStringPath() throws Exception {
         server.enqueue(new MockResponse().setBody("{\"id\":10,\"version\":2,\"schema\":\"\\\"string\\\"\"}"));
         try (Response response = client.request("myPath")) {
             assertTrue(response.isSuccessful());
@@ -65,6 +65,22 @@ public class RestClientTest {
         RecordedRequest recordedRequest = server.takeRequest();
         assertEquals("GET", recordedRequest.getMethod());
         assertEquals("/base/myPath", recordedRequest.getPath());
+    }
+
+    @Test
+    public void requestString() throws Exception {
+        server.enqueue(new MockResponse().setBody("{\"id\":10,\"version\":2,\"schema\":\"\\\"string\\\"\"}"));
+        String response = client.requestString(client.requestBuilder("myPath").build());
+        assertEquals("{\"id\":10,\"version\":2,\"schema\":\"\\\"string\\\"\"}", response);
+        RecordedRequest recordedRequest = server.takeRequest();
+        assertEquals("GET", recordedRequest.getMethod());
+        assertEquals("/base/myPath", recordedRequest.getPath());
+    }
+
+    @Test(expected = RestException.class)
+    public void requestStringEmpty() throws Exception {
+        server.enqueue(new MockResponse().setResponseCode(500));
+        client.requestString(client.requestBuilder("myPath").build());
     }
 
     @Test
