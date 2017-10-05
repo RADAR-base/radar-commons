@@ -448,6 +448,12 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
             return this;
         }
 
+        public Builder<K, V> headers(Headers headers) {
+            additionalHeaders = headers.newBuilder();
+            return this;
+        }
+
+        @Deprecated
         public Builder<K, V> headers(List<Map.Entry<String, String>> headers) {
             additionalHeaders = new Headers.Builder();
             for (Entry<String, String> header : headers) {
