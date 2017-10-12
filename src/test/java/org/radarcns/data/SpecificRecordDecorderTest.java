@@ -20,8 +20,8 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import org.junit.Test;
-import org.radarcns.empatica.EmpaticaE4BloodVolumePulse;
-import org.radarcns.key.MeasurementKey;
+import org.radarcns.passive.empatica.EmpaticaE4BloodVolumePulse;
+import org.radarcns.kafka.ObservationKey;
 import org.radarcns.topic.AvroTopic;
 
 /**
@@ -30,13 +30,14 @@ import org.radarcns.topic.AvroTopic;
 public class SpecificRecordDecorderTest {
 
     @Test
-    public void decordJson() throws IOException {
+    public void decodeJson() throws IOException {
         SpecificRecordDecoder decoder = new SpecificRecordDecoder(false);
-        AvroTopic<MeasurementKey, EmpaticaE4BloodVolumePulse> topic = new AvroTopic<>("keeeeys", MeasurementKey.getClassSchema(), EmpaticaE4BloodVolumePulse.getClassSchema(), MeasurementKey.class, EmpaticaE4BloodVolumePulse.class);
-        AvroDecoder.AvroReader<MeasurementKey> keyDecoder = decoder.reader(topic.getKeySchema(), topic.getKeyClass());
+        AvroTopic<ObservationKey, EmpaticaE4BloodVolumePulse> topic = new AvroTopic<>("keeeeys", ObservationKey.getClassSchema(), EmpaticaE4BloodVolumePulse.getClassSchema(), ObservationKey.class, EmpaticaE4BloodVolumePulse.class);
+        AvroDecoder.AvroReader<ObservationKey> keyDecoder = decoder.reader(topic.getKeySchema(), topic.getKeyClass());
         AvroDecoder.AvroReader<EmpaticaE4BloodVolumePulse> valueDecoder = decoder.reader(topic.getValueSchema(), topic.getValueClass());
 
-        MeasurementKey key = keyDecoder.decode("{\"userId\":\"a\",\"sourceId\":\"b\"}".getBytes());
+        ObservationKey key = keyDecoder.decode("{\"projectId\":{\"string\":\"test\"},\"userId\":\"a\",\"sourceId\":\"b\"}".getBytes());
+        assertEquals(key.get("projectId"), "test");
         assertEquals(key.get("userId"), "a");
         assertEquals(key.get("sourceId"), "b");
 
@@ -47,15 +48,20 @@ public class SpecificRecordDecorderTest {
     }
 
     @Test
-    public void decordBinary() throws IOException {
+    public void decodeBinary() throws IOException {
 
         SpecificRecordDecoder decoder = new SpecificRecordDecoder(true);
-        AvroTopic<MeasurementKey, EmpaticaE4BloodVolumePulse> topic = new AvroTopic<>("keeeeys", MeasurementKey.getClassSchema(), EmpaticaE4BloodVolumePulse.getClassSchema(), MeasurementKey.class, EmpaticaE4BloodVolumePulse.class);
-        AvroDecoder.AvroReader<MeasurementKey> keyDecoder = decoder.reader(topic.getKeySchema(), topic.getKeyClass());
+        AvroTopic<ObservationKey, EmpaticaE4BloodVolumePulse> topic = new AvroTopic<>("keeeeys", ObservationKey.getClassSchema(), EmpaticaE4BloodVolumePulse.getClassSchema(), ObservationKey.class, EmpaticaE4BloodVolumePulse.class);
+        AvroDecoder.AvroReader<ObservationKey> keyDecoder = decoder.reader(topic.getKeySchema(), topic.getKeyClass());
         AvroDecoder.AvroReader<EmpaticaE4BloodVolumePulse> valueDecoder = decoder.reader(topic.getValueSchema(), topic.getValueClass());
 
-        byte[] inputKey = {2, 97, 2, 98};
-        MeasurementKey key = keyDecoder.decode( inputKey);
+        // note that positive numbers are multiplied by two in avro binary encoding, due to the
+        // zig-zag encoding schema used.
+        // See http://avro.apache.org/docs/1.8.1/spec.html#binary_encoding
+        // type index 1, length 4, char t, char e, char s, char t, length 1, char a, length 1, char b
+        byte[] inputKey = {2, 8, 116, 101, 115, 116, 2, 97, 2, 98};
+        ObservationKey key = keyDecoder.decode( inputKey);
+        assertEquals(key.get("projectId"), "test");
         assertEquals(key.get("userId"), "a");
         assertEquals(key.get("sourceId"), "b");
 

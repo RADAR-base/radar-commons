@@ -24,8 +24,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.radarcns.mock.config.MockDataConfig;
-import org.radarcns.phone.PhoneAcceleration;
-import org.radarcns.phone.PhoneLight;
+import org.radarcns.passive.phone.PhoneAcceleration;
+import org.radarcns.passive.phone.PhoneLight;
 
 public class MockRecordValidatorTest {
     @Rule
@@ -35,6 +35,10 @@ public class MockRecordValidatorTest {
     public ExpectedException exception = ExpectedException.none();
 
     private MockDataConfig makeConfig() throws IOException {
+        return makeConfig(folder);
+    }
+
+    public static MockDataConfig makeConfig(TemporaryFolder folder) throws IOException {
         MockDataConfig config = new MockDataConfig();
         config.setDataFile(folder.newFile().getAbsolutePath());
         config.setValueSchema(PhoneLight.class.getName());
@@ -70,9 +74,9 @@ public class MockRecordValidatorTest {
         MockDataConfig config = makeConfig();
 
         try (FileWriter writer = new FileWriter(config.getDataFile(folder.getRoot()))) {
-            writer.append("userId,sourceId,time,timeReceived,light\n");
-            writer.append("a,b,1,1,1\n");
-            writer.append("a,b,1,2,1\n");
+            writer.append("projectId,userId,sourceId,time,timeReceived,light\n");
+            writer.append("test,a,b,1,1,1\n");
+            writer.append("test,a,b,1,2,1\n");
         }
 
         new MockRecordValidator(config, 2_000L, folder.getRoot()).validate();
@@ -83,9 +87,9 @@ public class MockRecordValidatorTest {
         MockDataConfig config = makeConfig();
 
         try (FileWriter writer = new FileWriter(config.getDataFile(folder.getRoot()))) {
-            writer.append("userId,sourceId,time,timeReceived,light\n");
-            writer.append("a,b,1,1,1\n");
-            writer.append("a,c,1,2,1\n");
+            writer.append("projectId,userId,sourceId,time,timeReceived,light\n");
+            writer.append("test,a,b,1,1,1\n");
+            writer.append("test,a,c,1,2,1\n");
         }
 
         exception.expect(IllegalArgumentException.class);
@@ -97,9 +101,9 @@ public class MockRecordValidatorTest {
         MockDataConfig config = makeConfig();
 
         try (FileWriter writer = new FileWriter(config.getDataFile(folder.getRoot()))) {
-            writer.append("userId,sourceId,time,timeReceived,light\n");
-            writer.append("a,b,1,1,1\n");
-            writer.append("a,b,1,0,1\n");
+            writer.append("projectId,userId,sourceId,time,timeReceived,light\n");
+            writer.append("test,a,b,1,1,1\n");
+            writer.append("test,a,b,1,0,1\n");
         }
 
         exception.expect(IllegalArgumentException.class);
@@ -112,9 +116,9 @@ public class MockRecordValidatorTest {
         MockDataConfig config = makeConfig();
 
         try (FileWriter writer = new FileWriter(config.getDataFile(folder.getRoot()))) {
-            writer.append("userId,time,timeReceived,light\n");
-            writer.append("a,1,1,1\n");
-            writer.append("a,1,2,1\n");
+            writer.append("projectId,userId,time,timeReceived,light\n");
+            writer.append("test,a,1,1,1\n");
+            writer.append("test,a,1,2,1\n");
         }
 
         exception.expect(NullPointerException.class);
@@ -126,9 +130,9 @@ public class MockRecordValidatorTest {
         MockDataConfig config = makeConfig();
 
         try (FileWriter writer = new FileWriter(config.getDataFile(folder.getRoot()))) {
-            writer.append("userId,sourceId,time,light\n");
-            writer.append("a,b,1,1\n");
-            writer.append("a,b,1,2\n");
+            writer.append("projectId,userId,sourceId,time,light\n");
+            writer.append("test,a,b,1,1\n");
+            writer.append("test,a,b,1,2\n");
         }
 
         exception.expect(NullPointerException.class);
@@ -140,9 +144,9 @@ public class MockRecordValidatorTest {
         MockDataConfig config = makeConfig();
 
         try (FileWriter writer = new FileWriter(config.getDataFile(folder.getRoot()))) {
-            writer.append("userId,sourceId,time,timeReceived,light\n");
-            writer.append("a,b,1,1\n");
-            writer.append("a,b,1,2,1\n");
+            writer.append("projectId,userId,sourceId,time,timeReceived,light\n");
+            writer.append("test,a,b,1,1\n");
+            writer.append("test,a,b,1,2,1\n");
         }
 
         exception.expect(IllegalArgumentException.class);
@@ -154,9 +158,9 @@ public class MockRecordValidatorTest {
         MockDataConfig config = makeConfig();
 
         try (FileWriter writer = new FileWriter(config.getDataFile(folder.getRoot()))) {
-            writer.append("userId,sourceId,time,timeReceived,light\n");
-            writer.append("a,b,1,1,a\n");
-            writer.append("a,b,1,2,b\n");
+            writer.append("projectId,userId,sourceId,time,timeReceived,light\n");
+            writer.append("test,a,b,1,1,a\n");
+            writer.append("test,a,b,1,2,b\n");
         }
 
         exception.expect(NumberFormatException.class);
@@ -170,9 +174,9 @@ public class MockRecordValidatorTest {
         config.setValueFields(Arrays.asList("x", "y", "z"));
 
         try (FileWriter writer = new FileWriter(config.getDataFile(folder.getRoot()))) {
-            writer.append("userId,sourceId,time,timeReceived,x,y,z\n");
-            writer.append("a,b,1,1,1,1,1\n");
-            writer.append("a,b,1,2,1,1,1\n");
+            writer.append("projectId,userId,sourceId,time,timeReceived,x,y,z\n");
+            writer.append("test,a,b,1,1,1,1,1\n");
+            writer.append("test,a,b,1,2,1,1,1\n");
         }
 
         new MockRecordValidator(config, 2_000L, folder.getRoot()).validate();

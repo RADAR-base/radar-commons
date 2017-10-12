@@ -32,6 +32,10 @@ ext.description = 'RADAR Common testing library mocking code and utilities.'
 targetCompatibility = '1.7'
 sourceCompatibility = '1.7'
 
+repositories {
+    maven { url 'https://oss.jfrog.org/artifactory/oss-snapshot-local' }
+}
+
 dependencies {
     api rootProject
     api group: 'org.apache.avro', name: 'avro', version: avroVersion
@@ -136,4 +140,21 @@ bintray {
             released = new Date()
         }
     }
+}
+
+
+artifactory {
+    contextUrl = 'https://oss.jfrog.org/artifactory'
+    publish {
+        repository {
+            repoKey = 'oss-snapshot-local'
+            username = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
+            password = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
+            maven = true
+        }
+    }
+}
+
+artifactoryPublish {
+    publications('RadarCommonsTestingPublication')
 }

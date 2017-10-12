@@ -69,7 +69,7 @@ public class RecordGenerator<K extends SpecificRecord> {
         topic = (AvroTopic<K, SpecificRecord>) config.parseAvroTopic();
         if (!topic.getKeyClass().equals(keyClass)) {
             throw new IllegalArgumentException(
-                    "RecordGenerator only generates MeasurementKey keys, not "
+                    "RecordGenerator only generates ObservationKey keys, not "
                             + topic.getKeyClass() + " in topic " + topic);
         }
         if (!SpecificRecord.class.isAssignableFrom(topic.getValueClass())) {
@@ -78,7 +78,7 @@ public class RecordGenerator<K extends SpecificRecord> {
                             + topic.getValueClass() + " in topic " + topic);
         }
         header = new ArrayList<>();
-        header.addAll(Arrays.asList("userId", "sourceId"));
+        header.addAll(Arrays.asList("projectId", "userId", "sourceId"));
 
         // cache key and value fields
         Schema valueSchema = topic.getValueSchema();

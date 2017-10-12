@@ -16,6 +16,19 @@
 
 package org.radarcns.producer.rest;
 
+import okhttp3.OkHttpClient;
+import okhttp3.OkHttpClient.Builder;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
+import org.radarcns.config.ServerConfig;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -25,17 +38,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-import okhttp3.OkHttpClient;
-import okhttp3.OkHttpClient.Builder;
-import okhttp3.Request;
-import okhttp3.Response;
-import org.radarcns.config.ServerConfig;
 
 /** REST client using OkHttp3. This class is not thread-safe. */
 public class RestClient implements Closeable {
@@ -192,6 +194,32 @@ public class RestClient implements Closeable {
      */
     public Response request(String relativePath) throws IOException {
         return request(requestBuilder(relativePath).build());
+    }
+
+    /**
+     * Make a blocking request and return the body.
+     * @param request request to make.
+     * @return response body string.
+     * @throws RestException if no body was returned or an HTTP status code indicating error was
+     *                       returned.
+     * @throws IOException if the request cannot be completed or the response cannot be read.
+     *
+     */
+    public String requestString(Request request) throws IOException {
+        try (Response response = request(request)) {
+            ResponseBody body = response.body();
+
+            String bodyString = null;
+
+            if (body != null) {
+                bodyString = body.string();
+            }
+            if (!response.isSuccessful() || bodyString == null) {
+                throw new RestException(response.code(), bodyString);
+            }
+
+            return bodyString;
+        }
     }
 
     /**

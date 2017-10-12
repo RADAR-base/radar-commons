@@ -16,11 +16,9 @@
 
 plugins {
     // Get bintray version
-    id "com.jfrog.bintray" version "1.7.3"
-    id "com.jfrog.artifactory" version "4.4.18"
+    id 'com.jfrog.bintray' version '1.7.3'
+    id 'com.jfrog.artifactory' version '4.4.18'
 }
-
-apply plugin: "com.jfrog.artifactory"
 
 allprojects {
     // Apply the plugins
@@ -32,29 +30,30 @@ allprojects {
     apply plugin: 'com.jfrog.bintray'
     apply plugin: 'maven-publish'
     apply plugin: 'jacoco'
+    apply plugin: 'com.jfrog.artifactory'
 
     //---------------------------------------------------------------------------//
     // Configuration                                                             //
     //---------------------------------------------------------------------------//
 
-    version = '0.5'
+    version = '0.6-alpha.1'
     group = 'org.radarcns'
     ext.githubRepoName = 'RADAR-CNS/RADAR-Commons'
 
     ext.slf4jVersion = '1.7.21'
-    ext.kafkaVersion = '0.10.2.1'
-    ext.avroVersion = '1.8.1'
-    ext.confluentVersion = '3.1.2'
+    ext.kafkaVersion = '0.11.0.1'
+    ext.avroVersion = '1.8.2'
+    ext.confluentVersion = '3.3.0'
     ext.log4jVersion = '2.7'
     ext.jacksonVersion = '2.8.5'
-    ext.okhttpVersion = '3.6.0'
-    ext.okioVersion = '1.11.0'
+    ext.okhttpVersion = '3.8.0'
     ext.junitVersion = '4.12'
     ext.mockitoVersion = '2.2.29'
     ext.mathVersion = '3.0'
     ext.hamcrestVersion = '1.3'
     ext.codacyVersion = '1.0.10'
-    ext.radarSchemasVersion = '0.1'
+    ext.radarSchemasVersion = '0.2-alpha.3-SNAPSHOT'
+    ext.jsonVersion = '20170516'
 
     ext.githubUrl = 'https://github.com/' + githubRepoName + '.git'
     ext.issueUrl = 'https://github.com/' + githubRepoName + '/issues'
@@ -67,6 +66,9 @@ allprojects {
         jcenter()
         maven { url 'http://packages.confluent.io/maven/' }
         maven { url 'http://dl.bintray.com/typesafe/maven-releases' }
+        flatDir {
+            dirs "${project.rootDir}/libs"
+        }
     }
 
     ext.pomConfig = {
@@ -191,14 +193,24 @@ configurations {
     codacy
 }
 
+configurations.compile {
+    resolutionStrategy.cacheChangingModulesFor 0, 'SECONDS'
+}
+
 // In this section you declare where to find the dependencies of your project
 repositories {
     maven { url 'https://jitpack.io' }
+    maven { url 'https://oss.jfrog.org/artifactory/oss-snapshot-local' }
 }
 
 // In this section you declare the dependencies for your production and test code
 dependencies {
-    api group: 'org.apache.avro', name: 'avro', version: avroVersion
+    api (group: 'org.apache.avro', name: 'avro', version: avroVersion) {
+        exclude group: 'org.xerial.snappy', module: 'snappy-java'
+        exclude group: 'com.thoughtworks.paranamer', module: 'paranamer'
+        exclude group: 'org.apache.commons', module: 'commons-compress'
+        exclude group: 'org.tukaani', module: 'xz'
+    }
 
     // to implement producers and consumers
     api group: 'org.apache.kafka', name: 'kafka-clients', version: kafkaVersion
@@ -207,9 +219,7 @@ dependencies {
     // For POJO classes and ConfigLoader
     implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
     implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: jacksonVersion
-
-    // The REST data is serialized with okio
-    implementation group: 'com.squareup.okio', name: 'okio', version: okioVersion
+    implementation group: 'org.json', name: 'json', version: jsonVersion
 
     // The production code uses the SLF4J logging API at compile time
     implementation group: 'org.slf4j', name:'slf4j-api', version: slf4jVersion
@@ -352,10 +362,6 @@ artifactory {
 
 artifactoryPublish {
     publications('RadarCommonsPublication')
-    publishBuildInfo = true   //Publish build-info to Artifactory (true by default)
-    publishArtifacts = true   //Publish artifacts to Artifactory (true by default)
-    publishPom = true   //Publish generated POM files to Artifactory (true by default).
-    publishIvy = false //Publish generated Ivy descriptor files to Artifactory (true by default).
 }
 
 task wrapper(type: Wrapper) {

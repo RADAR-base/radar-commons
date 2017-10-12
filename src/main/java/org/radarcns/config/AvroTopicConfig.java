@@ -17,13 +17,10 @@
 package org.radarcns.config;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.lang.reflect.InvocationTargetException;
-import java.util.List;
-import java.util.Objects;
-import org.apache.avro.Schema;
-import org.apache.avro.specific.SpecificData;
 import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.topic.AvroTopic;
+
+import java.util.List;
 
 /**
  * Specifies an Avro topic
@@ -38,29 +35,17 @@ public class AvroTopicConfig {
 
     /**
      * Parse an AvroTopic from the values in this class.
+     *
+     * @throws IllegalStateException if the key_schema or value_schema properties are not valid
+     *                                  Avro SpecificRecord classes
      */
-    @SuppressWarnings("unchecked")
-    public <K extends SpecificRecord, V extends SpecificRecord> AvroTopic<K, V> parseAvroTopic()
-            throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
-            IllegalAccessException {
-
-        Objects.requireNonNull(this.topic, "topic needs to be specified");
-        Objects.requireNonNull(this.keySchema, "key_schema needs to be specified");
-        Objects.requireNonNull(this.valueSchema, "value_schema needs to be specified");
-
-        Class<K> keyClass = (Class<K>) Class.forName(this.keySchema);
-        Schema keyAvroSchema = (Schema) keyClass
-                .getMethod("getClassSchema").invoke(null);
-        // check instantiation
-        SpecificData.newInstance(keyClass, keyAvroSchema);
-
-        Class<V> valueClass = (Class<V>) Class.forName(this.valueSchema);
-        Schema valueAvroSchema = (Schema) valueClass
-                .getMethod("getClassSchema").invoke(null);
-        // check instantiation
-        SpecificData.newInstance(valueClass, valueAvroSchema);
-
-        return new AvroTopic<>(topic, keyAvroSchema, valueAvroSchema, keyClass, valueClass);
+    public <K extends SpecificRecord, V extends SpecificRecord> AvroTopic<K, V> parseAvroTopic() {
+        try {
+            return AvroTopic.parse(topic, keySchema, valueSchema);
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalStateException("Topic " + topic
+                    + " schema cannot be instantiated", ex);
+        }
     }
 
     public String getTopic() {

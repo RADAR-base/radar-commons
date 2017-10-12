@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.data.Record;
-import org.radarcns.key.MeasurementKey;
+import org.radarcns.kafka.ObservationKey;
 import org.radarcns.mock.config.MockDataConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +53,7 @@ public class MockRecordValidator {
      * @throws IllegalArgumentException if the CSV file does not respect the constraints.
      */
     public void validate() {
-        try (MockCsvParser<MeasurementKey> parser = new MockCsvParser<>(config, root)) {
+        try (MockCsvParser<ObservationKey> parser = new MockCsvParser<>(config, root)) {
             if (!parser.hasNext()) {
                 throw new IllegalArgumentException("CSV file is empty");
             }
@@ -61,11 +61,11 @@ public class MockRecordValidator {
             timePos = config.parseAvroTopic().getValueSchema()
                     .getField("timeReceived").pos();
 
-            Record<MeasurementKey, SpecificRecord> last = null;
+            Record<ObservationKey, SpecificRecord> last = null;
             long line = 1L;
 
             while (parser.hasNext()) {
-                Record<MeasurementKey, SpecificRecord> record = parser.next();
+                Record<ObservationKey, SpecificRecord> record = parser.next();
                 checkRecord(record, last, line++);
                 last = record;
             }
@@ -91,8 +91,8 @@ public class MockRecordValidator {
         }
     }
 
-    private void checkRecord(Record<MeasurementKey, SpecificRecord> record,
-            Record<MeasurementKey, SpecificRecord> last, long line) {
+    private void checkRecord(Record<ObservationKey, SpecificRecord> record,
+            Record<ObservationKey, SpecificRecord> last, long line) {
         double previousTime = time;
         time = (Double) record.value.get(timePos);
 

@@ -33,7 +33,7 @@ import org.apache.avro.Schema.Type;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.Test;
-import org.radarcns.key.MeasurementKey;
+import org.radarcns.kafka.ObservationKey;
 import org.radarcns.producer.rest.SchemaRetriever;
 import org.radarcns.producer.rest.ParsedSchemaMetadata;
 
@@ -44,7 +44,7 @@ public class KafkaAvroSerializerTest {
         testSerialization("this", Schema.create(Type.STRING));
         testSerialization(10, Schema.create(Type.INT));
 
-        MeasurementKey key = new MeasurementKey("a", "b");
+        ObservationKey key = new ObservationKey("test", "a", "b");
         testSerialization(key, key.getSchema());
 
         Schema genericSchema = Schema.createRecord(Arrays.asList(

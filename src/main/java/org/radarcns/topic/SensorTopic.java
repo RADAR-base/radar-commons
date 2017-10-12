@@ -18,11 +18,13 @@ package org.radarcns.topic;
 
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Type;
+import org.apache.avro.specific.SpecificRecord;
 
 /**
  * AvroTopic used by sensors. This has additional verification on the schemas that are used compared
  * to AvroTopic.
  */
+@SuppressWarnings("PMD.UseUtilityClass")
 public class SensorTopic<K, V> extends AvroTopic<K, V> {
     public SensorTopic(String name, Schema keySchema, Schema valueSchema,
             Class<K> keyClass, Class<V> valueClass) {
@@ -35,6 +37,9 @@ public class SensorTopic<K, V> extends AvroTopic<K, V> {
             throw new IllegalArgumentException("Sensors must send records as values");
         }
 
+        if (keySchema.getField("projectId") == null) {
+            throw new IllegalArgumentException("Key schema must have a project ID");
+        }
         if (keySchema.getField("userId") == null) {
             throw new IllegalArgumentException("Key schema must have a user ID");
         }
@@ -47,5 +52,19 @@ public class SensorTopic<K, V> extends AvroTopic<K, V> {
         if (valueSchema.getField("timeReceived") == null) {
             throw new IllegalArgumentException("Schema must have timeReceived as a field");
         }
+    }
+
+    /**
+     * Parse a SensorTopic.
+     *
+     * @throws IllegalArgumentException if the key_schema or value_schema properties are not valid
+     *                                  Avro SpecificRecord classes
+     */
+    public static <K extends SpecificRecord, V extends SpecificRecord> SensorTopic<K, V> parse(
+            String topic, String keySchema, String valueSchema) {
+        AvroTopic<K, V> parseAvro = AvroTopic.parse(topic, keySchema, valueSchema);
+        return new SensorTopic<>(parseAvro.getName(),
+                parseAvro.getKeySchema(), parseAvro.getValueSchema(),
+                parseAvro.getKeyClass(), parseAvro.getValueClass());
     }
 }
