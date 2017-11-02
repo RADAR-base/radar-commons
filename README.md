@@ -1,5 +1,5 @@
 # RADAR-Commons
-[![Build Status](https://travis-ci.org/RADAR-CNS/RADAR-Commons.svg?branch=master)](https://travis-ci.org/RADAR-CNS/RADAR-Commons)
+[![Build Status](https://travis-ci.org/RADAR-CNS/radar-commons.svg?branch=master)](https://travis-ci.org/RADAR-CNS/radar-commons)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/9fe7a419c83e4798af671e468c7e91cf)](https://www.codacy.com/app/RADAR-CNS/RADAR-Commons?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=RADAR-CNS/RADAR-Commons&amp;utm_campaign=Badge_Grade)
 
 Common utilities library containing basic schemas, streaming features, testing bridges and utils.
@@ -14,7 +14,7 @@ repositories {
 }
 
 dependencies {
-    compile group: 'org.radarcns', name: 'radar-commons', version: '0.6-alpha.1'
+    compile group: 'org.radarcns', name: 'radar-commons', version: '0.6'
 }
 ```
 
@@ -26,7 +26,7 @@ repositories {
 }
 
 dependencies {
-    testCompile group: 'org.radarcns', name: 'radar-commons-testing', version: '0.6-alpha.1'
+    testCompile group: 'org.radarcns', name: 'radar-commons-testing', version: '0.6'
 }
 ```
 
@@ -51,7 +51,7 @@ configurations.all {
 }
 
 dependencies {
-    compile group: 'org.radarcns', name: 'radar-commons', version: '0.6-SNAPSHOT', changing: true
+    compile group: 'org.radarcns', name: 'radar-commons', version: '0.6.1-SNAPSHOT', changing: true
 }
 ```
 
