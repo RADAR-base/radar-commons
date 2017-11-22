@@ -61,13 +61,13 @@ class TopicRequestData<K, V> {
                 writer.append("\"key_schema_id\":").append(keySchemaId.toString());
             } else {
                 writer.append("\"key_schema\":");
-                JSONObject.quote(keySchemaString, writer);
+                writer.append(JSONObject.quote(keySchemaString));
             }
             if (valueSchemaId != null) {
                 writer.append(",\"value_schema_id\":").append(valueSchemaId.toString());
             } else {
                 writer.append(",\"value_schema\":");
-                JSONObject.quote(valueSchemaString, writer);
+                writer.append(JSONObject.quote(valueSchemaString));
             }
             writer.append(",\"records\":[");
 
