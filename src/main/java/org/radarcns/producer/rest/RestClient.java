@@ -16,6 +16,8 @@
 
 package org.radarcns.producer.rest;
 
+import okhttp3.Callback;
+import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.OkHttpClient.Builder;
 import okhttp3.Request;
@@ -32,7 +34,6 @@ import javax.net.ssl.X509TrustManager;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
@@ -186,6 +187,17 @@ public class RestClient implements Closeable {
     }
 
     /**
+     * Make an asynchronous request.
+     * @param request request, possibly built with {@link #requestBuilder(String)}
+     * @param callback callback to activate once the request is done.
+     */
+    public void request(Request request, Callback callback) {
+        Objects.requireNonNull(request);
+        Objects.requireNonNull(callback);
+        httpClient.newCall(request).enqueue(callback);
+    }
+
+    /**
      * Make a request to given relative path. This does not set any request properties except the
      * URL.
      * @param relativePath relative path to request
@@ -207,13 +219,8 @@ public class RestClient implements Closeable {
      */
     public String requestString(Request request) throws IOException {
         try (Response response = request(request)) {
-            ResponseBody body = response.body();
+            String bodyString = responseBody(response);
 
-            String bodyString = null;
-
-            if (body != null) {
-                bodyString = body.string();
-            }
             if (!response.isSuccessful() || bodyString == null) {
                 throw new RestException(response.code(), bodyString);
             }
@@ -223,7 +230,7 @@ public class RestClient implements Closeable {
     }
 
     /**
-     * Create a OkHttp3 request builder with {@link Request.Builder#url(URL)} set.
+     * Create a OkHttp3 request builder with {@link Request.Builder#url(HttpUrl)} set.
      * Call{@link Request.Builder#build()} to make the actual request with
      * {@link #request(Request)}.
      *
@@ -241,12 +248,16 @@ public class RestClient implements Closeable {
      * @return URL
      * @throws MalformedURLException if the path is malformed
      */
-    public URL getRelativeUrl(String path) throws MalformedURLException {
+    public HttpUrl getRelativeUrl(String path) throws MalformedURLException {
         String strippedPath = path;
         while (!strippedPath.isEmpty() && strippedPath.charAt(0) == '/') {
             strippedPath = strippedPath.substring(1);
         }
-        return new URL(getConfig().getUrl(), strippedPath);
+        HttpUrl.Builder builder = getConfig().getHttpUrl().newBuilder(strippedPath);
+        if (builder == null) {
+            throw new MalformedURLException();
+        }
+        return builder.build();
     }
 
     @Override
@@ -284,5 +295,13 @@ public class RestClient implements Closeable {
         if (connectionPool != null) {
             connectionPool.release();
         }
+    }
+
+    public static String responseBody(Response response) throws IOException {
+        ResponseBody body = response.body();
+        if (body == null) {
+            return null;
+        }
+        return body.string();
     }
 }

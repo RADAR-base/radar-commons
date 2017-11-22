@@ -18,6 +18,8 @@ package org.radarcns.config;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import okhttp3.HttpUrl;
+
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.Proxy;
@@ -95,10 +97,34 @@ public class ServerConfig {
      * Get the server as a URL.
      *
      * @return URL to the server.
-     * @throws MalformedURLException if protocol is not set or the host name is invalid.
+     * @throws IllegalStateException if the URL is invalid
      */
-    public URL getUrl() throws MalformedURLException {
-        return new URL(protocol, host, port, path == null ? "" : path);
+    public URL getUrl() {
+        try {
+            return new URL(protocol, host, port, path == null ? "" : path);
+        } catch (MalformedURLException ex) {
+            throw new IllegalStateException("Already parsed a URL but it turned out invalid", ex);
+        }
+    }
+
+    /**
+     * Get the server as an HttpUrl.
+     * @return HttpUrl to the server
+     * @throws IllegalStateException if the URL is invalid
+     */
+    public HttpUrl getHttpUrl() {
+        HttpUrl.Builder urlBuilder = new HttpUrl.Builder()
+                .scheme(protocol)
+                .host(host);
+
+        if (port != -1) {
+            urlBuilder.port(port);
+        }
+        if (path != null) {
+            urlBuilder.encodedPath(path);
+        }
+
+        return urlBuilder.build();
     }
 
     /**
@@ -185,11 +211,15 @@ public class ServerConfig {
             throw new IllegalArgumentException("Cannot set server path with query string");
         } else {
             this.path = path.trim();
-            if (!this.path.isEmpty() && this.path.charAt(0) != '/') {
-                this.path = '/' + this.path;
-            }
-            if (!this.path.isEmpty() && this.path.charAt(this.path.length() - 1) != '/') {
-                this.path += '/';
+            if (this.path.isEmpty()) {
+                this.path = "/";
+            } else {
+                if (this.path.charAt(0) != '/') {
+                    this.path = '/' + this.path;
+                }
+                if (this.path.charAt(this.path.length() - 1) != '/') {
+                    this.path += '/';
+                }
             }
         }
     }
@@ -218,12 +248,7 @@ public class ServerConfig {
 
     @Override
     public int hashCode() {
-        int result = host != null ? host.hashCode() : 0;
-        result = 31 * result + port;
-        result = 31 * result + (protocol != null ? protocol.hashCode() : 0);
-        result = 31 * result + (proxyHost != null ? proxyHost.hashCode() : 0);
-        result = 31 * result + proxyPort;
-        return result;
+        return Objects.hash(protocol, host, port);
     }
 
     public boolean isUnsafe() {
