@@ -92,10 +92,10 @@ public class RestClientTest {
 
     @Test
     public void getRelativeUrl() throws Exception {
-        URL url = client.getRelativeUrl("myPath");
-        assertEquals(server.getHostName(), url.getHost());
-        assertEquals(server.getPort(), url.getPort());
-        assertEquals("http", url.getProtocol());
-        assertEquals("/base/myPath", url.getFile());
+        HttpUrl url = client.getRelativeUrl("myPath");
+        assertEquals(server.getHostName(), url.host());
+        assertEquals(server.getPort(), url.port());
+        assertEquals("http", url.scheme());
+        assertEquals("/base/myPath", url.encodedPath());
     }
 }

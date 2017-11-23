@@ -37,13 +37,15 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+
+import static org.radarcns.producer.rest.RestClient.responseBody;
+import static org.radarcns.producer.rest.TopicRequestBody.topicRequestContent;
 
 /**
  * RestSender sends records to the Kafka REST Proxy. It does so using an Avro JSON encoding. A new
@@ -130,8 +132,8 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
 
     private void setRestClient(RestClient newClient) {
         try {
-            schemalessKeyUrl = HttpUrl.get(newClient.getRelativeUrl("topics/schemaless-key"));
-            schemalessValueUrl = HttpUrl.get(newClient.getRelativeUrl("topics/schemaless-value"));
+            schemalessKeyUrl = newClient.getRelativeUrl("topics/schemaless-key");
+            schemalessValueUrl = newClient.getRelativeUrl("topics/schemaless-value");
             isConnectedRequest = newClient.requestBuilder("").head();
         } catch (MalformedURLException ex) {
             throw new IllegalArgumentException("Schemaless topics do not have a valid URL", ex);
@@ -187,11 +189,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
 
         private RestTopicSender(AvroTopic<L, W> topic) throws IOException {
             this.topic = topic;
-            URL rawUrl = getRestClient().getRelativeUrl("topics/" + topic.getName());
-            url = HttpUrl.get(rawUrl);
-            if (url == null) {
-                throw new MalformedURLException("Cannot parse " + rawUrl);
-            }
+            url = getRestClient().getRelativeUrl("topics/" + topic.getName());
             requestData = new TopicRequestData<>(topic, keyEncoder, valueEncoder);
         }
 
@@ -223,7 +221,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                     state.didConnect();
                     if (logger.isDebugEnabled()) {
                         logger.debug("Added message to topic {} -> {}",
-                                topic, response.body().string());
+                                topic, responseBody(response));
                     }
                     lastOffsetSent = records.get(records.size() - 1).offset;
                 } else if (response.code() == 401) {
@@ -239,23 +237,10 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                     }
                     doResend = true;
                 } else {
-                    state.didDisconnect();
-                    String content = response.body().string();
-                    String requestContent = ((TopicRequestBody)request.body()).content();
-                    requestContent = requestContent.substring(0,
-                            Math.min(requestContent.length(), LOG_CONTENT_LENGTH));
-                    logger.error("FAILED to transmit message: {} -> {}...",
-                            content, requestContent);
-                    throw new IOException("Failed to submit (HTTP status code " + response.code()
-                            + "): " + content);
+                    logFailure(request, response, null);
                 }
             } catch (IOException ex) {
-                state.didDisconnect();
-                String requestContent = ((TopicRequestBody)request.body()).content();
-                requestContent = requestContent.substring(0,
-                        Math.min(requestContent.length(), LOG_CONTENT_LENGTH));
-                logger.error("FAILED to transmit message:\n{}...", requestContent);
-                throw ex;
+                logFailure(request, null, ex);
             } finally {
                 requestData.reset();
             }
@@ -263,6 +248,23 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
             if (doResend) {
                 send(records);
             }
+        }
+
+        @SuppressWarnings("ConstantConditions")
+        private void logFailure(Request request, Response response, Exception ex)
+                throws IOException {
+            state.didDisconnect();
+            String content = response == null ? null : responseBody(response);
+            int code = response == null ? -1 : response.code();
+            String requestContent = topicRequestContent(request);
+            if (requestContent != null) {
+                requestContent = requestContent.substring(0,
+                        Math.min(requestContent.length(), LOG_CONTENT_LENGTH));
+            }
+            logger.error("FAILED to transmit message: {} -> {}...",
+                    content, requestContent);
+            throw new IOException("Failed to submit (HTTP status code " + code
+                    + "): " + content, ex);
         }
 
         private Request buildRequest(List<Record<L, W>> records) throws IOException {
@@ -371,8 +373,9 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                 return true;
             } else {
                 state.didDisconnect();
+                String bodyString = responseBody(response);
                 logger.warn("Failed to make heartbeat request to {} (HTTP status code {}): {}",
-                        httpClient, response.code(), response.body().string());
+                        httpClient, response.code(), bodyString);
                 return false;
             }
         } catch (IOException ex) {

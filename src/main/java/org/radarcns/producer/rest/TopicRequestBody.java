@@ -20,6 +20,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import okhttp3.MediaType;
+import okhttp3.Request;
 import okhttp3.RequestBody;
 import okio.BufferedSink;
 
@@ -52,5 +53,13 @@ class TopicRequestBody extends RequestBody {
             data.writeToStream(out);
             return out.toString();
         }
+    }
+
+    public static String topicRequestContent(Request request) throws IOException {
+        TopicRequestBody body = (TopicRequestBody) request.body();
+        if (body == null) {
+            return null;
+        }
+        return body.content();
     }
 }
