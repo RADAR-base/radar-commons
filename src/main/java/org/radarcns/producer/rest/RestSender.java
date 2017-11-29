@@ -226,6 +226,8 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                     lastOffsetSent = records.get(records.size() - 1).offset;
                 } else if (response.code() == 401) {
                     throw new AuthenticationException("Cannot authenticate");
+                } else if (response.code() == 403 || response.code() == 422) {
+                    throw new AuthenticationException("Data does not match authentication");
                 } else if (response.code() == 415
                         && request.header("Accept").equals(KAFKA_REST_ACCEPT_ENCODING)) {
                     state.didConnect();
