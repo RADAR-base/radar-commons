@@ -14,7 +14,7 @@ repositories {
 }
 
 dependencies {
-    compile group: 'org.radarcns', name: 'radar-commons', version: '0.6.1'
+    compile group: 'org.radarcns', name: 'radar-commons', version: '0.6.2'
 }
 ```
 
@@ -26,7 +26,7 @@ repositories {
 }
 
 dependencies {
-    testCompile group: 'org.radarcns', name: 'radar-commons-testing', version: '0.6.1'
+    testCompile group: 'org.radarcns', name: 'radar-commons-testing', version: '0.6.2'
 }
 ```
 
@@ -51,7 +51,7 @@ configurations.all {
 }
 
 dependencies {
-    compile group: 'org.radarcns', name: 'radar-commons', version: '0.6.2-SNAPSHOT', changing: true
+    compile group: 'org.radarcns', name: 'radar-commons', version: '0.6.3-SNAPSHOT', changing: true
 }
 ```
 
