@@ -70,12 +70,17 @@ public class ThreadedKafkaSender<K, V> implements KafkaSender<K, V> {
             public void run() {
                 opsRequests.add(1);
 
-                boolean success = sendHeartbeat();
-                if (success) {
-                    state.didConnect();
-                } else {
-                    logger.error("Failed to send message");
-                    state.didDisconnect();
+                try {
+                    boolean success = sendHeartbeat();
+                    if (success) {
+                        state.didConnect();
+                    } else {
+                        logger.error("Failed to send message");
+                        state.didDisconnect();
+                    }
+                } catch (AuthenticationException ex) {
+                    logger.error("Unauthorized");
+                    state.wasUnauthorized();
                 }
 
                 if (opsSent.hasAverage() && opsRequests.hasAverage()) {
@@ -196,6 +201,10 @@ public class ThreadedKafkaSender<K, V> implements KafkaSender<K, V> {
 
                 if (exception == null) {
                     state.didConnect();
+                } else if (exception instanceof AuthenticationException) {
+                    logger.error("Authentication failed");
+                    state.wasUnauthorized();
+                    break;
                 } else {
                     logger.error("Failed to send message");
                     state.didDisconnect();
@@ -207,7 +216,7 @@ public class ThreadedKafkaSender<K, V> implements KafkaSender<K, V> {
         }
     }
 
-    private boolean sendHeartbeat() {
+    private boolean sendHeartbeat() throws AuthenticationException {
         boolean success = false;
         for (int i = 0; !success && i < RETRIES; i++) {
             success = wrappedSender.resetConnection();
@@ -216,12 +225,14 @@ public class ThreadedKafkaSender<K, V> implements KafkaSender<K, V> {
     }
 
     @Override
-    public synchronized boolean isConnected() {
+    public synchronized boolean isConnected() throws AuthenticationException {
         switch (state.getState()) {
             case CONNECTED:
                 return true;
             case DISCONNECTED:
                 return false;
+            case UNAUTHORIZED:
+                throw new AuthenticationException("Authorization invalid");
             case UNKNOWN:
                 state.didDisconnect();
                 return false;
@@ -231,15 +242,22 @@ public class ThreadedKafkaSender<K, V> implements KafkaSender<K, V> {
     }
 
     @Override
-    public boolean resetConnection() {
+    public boolean resetConnection() throws AuthenticationException {
         if (isConnected()) {
             return true;
-        } else if (wrappedSender.resetConnection()) {
-            state.didConnect();
-            return true;
-        } else {
-            state.didDisconnect();
-            return false;
+        }
+
+        try {
+            if (wrappedSender.resetConnection()) {
+                state.didConnect();
+                return true;
+            } else {
+                state.didDisconnect();
+                return false;
+            }
+        } catch (AuthenticationException ex) {
+            state.wasUnauthorized();
+            throw ex;
         }
     }
 

@@ -34,6 +34,7 @@ import org.radarcns.data.Record;
 import org.radarcns.data.SpecificRecordEncoder;
 import org.radarcns.kafka.ObservationKey;
 import org.radarcns.passive.phone.PhoneLight;
+import org.radarcns.producer.AuthenticationException;
 import org.radarcns.producer.KafkaTopicSender;
 import org.radarcns.topic.AvroTopic;
 
@@ -185,6 +186,38 @@ public class RestSenderTest {
         request = webServer.takeRequest();
         assertEquals("/", request.getPath());
         assertEquals("HEAD", request.getMethod());
+    }
+
+    @Test
+    public void resetConnectionUnauthorized() throws Exception {
+        webServer.enqueue(new MockResponse().setResponseCode(401));
+        try {
+            sender.isConnected();
+            fail("Authentication exception expected");
+        } catch (AuthenticationException ex) {
+            // success
+        }
+        try {
+            sender.isConnected();
+            fail("Authentication exception expected");
+        } catch (AuthenticationException ex) {
+            // success
+        }
+        webServer.enqueue(new MockResponse().setResponseCode(401));
+        try {
+            sender.resetConnection();
+            fail("Authentication exception expected");
+        } catch (AuthenticationException ex) {
+            assertEquals(2, webServer.getRequestCount());
+            // success
+        }
+        webServer.enqueue(new MockResponse().setResponseCode(200));
+        try {
+            assertTrue(sender.resetConnection());
+        } catch (AuthenticationException ex) {
+            assertEquals(3, webServer.getRequestCount());
+            fail("Unexpected authentication failure");
+        }
     }
 
     @Test

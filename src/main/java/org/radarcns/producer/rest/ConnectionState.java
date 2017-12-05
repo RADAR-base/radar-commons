@@ -34,7 +34,7 @@ public final class ConnectionState {
 
     /** State symbols of the connection. */
     public enum State {
-        CONNECTED, DISCONNECTED, UNKNOWN
+        CONNECTED, DISCONNECTED, UNKNOWN, UNAUTHORIZED
     }
 
     private long timeout;
@@ -70,6 +70,14 @@ public final class ConnectionState {
     /** For a sender to indicate that a connection attempt failed. */
     public synchronized void didDisconnect() {
         state = State.DISCONNECTED;
+    }
+
+    public synchronized void wasUnauthorized() {
+        state = State.UNAUTHORIZED;
+    }
+
+    public synchronized void reset() {
+        state = State.UNKNOWN;
     }
 
     /**

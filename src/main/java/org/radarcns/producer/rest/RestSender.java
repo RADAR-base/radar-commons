@@ -139,6 +139,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
             throw new IllegalArgumentException("Schemaless topics do not have a valid URL", ex);
         }
         httpClient = newClient;
+        state.reset();
     }
 
     public final synchronized void setSchemaRetriever(SchemaRetriever retriever) {
@@ -179,6 +180,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
 
     public synchronized void setHeaders(Headers additionalHeaders) {
         this.additionalHeaders = additionalHeaders;
+        this.state.reset();
     }
 
     private class RestTopicSender<L extends K, W extends V> implements KafkaTopicSender<L, W> {
@@ -365,35 +367,42 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
     }
 
     @Override
-    public boolean resetConnection() {
+    public boolean resetConnection() throws AuthenticationException {
         if (state.getState() == State.CONNECTED) {
             return true;
         }
         try (Response response = httpClient.request(getIsConnectedRequest())) {
             if (response.isSuccessful()) {
                 state.didConnect();
-                return true;
+            } else if (response.code() == 401) {
+                state.wasUnauthorized();
             } else {
                 state.didDisconnect();
                 String bodyString = responseBody(response);
                 logger.warn("Failed to make heartbeat request to {} (HTTP status code {}): {}",
                         httpClient, response.code(), bodyString);
-                return false;
             }
         } catch (IOException ex) {
             // no stack trace is needed
             state.didDisconnect();
             logger.warn("Failed to make heartbeat request to {}: {}", httpClient, ex.toString());
-            return false;
         }
+
+        if (state.getState() == State.UNAUTHORIZED) {
+            throw new AuthenticationException("HEAD request unauthorized");
+        }
+
+        return state.getState() == State.CONNECTED;
     }
 
-    public boolean isConnected() {
+    public boolean isConnected() throws AuthenticationException {
         switch (state.getState()) {
             case CONNECTED:
                 return true;
             case DISCONNECTED:
                 return false;
+            case UNAUTHORIZED:
+                throw new AuthenticationException("Unauthorized");
             case UNKNOWN:
                 return resetConnection();
             default:
