@@ -36,7 +36,7 @@ allprojects {
     // Configuration                                                             //
     //---------------------------------------------------------------------------//
 
-    version = '0.6.2'
+    version = '0.6.3'
     group = 'org.radarcns'
     ext.githubRepoName = 'RADAR-CNS/RADAR-Commons'
 
@@ -234,6 +234,7 @@ dependencies {
     testImplementation group: 'org.mockito', name: 'mockito-core', version: mockitoVersion
     testImplementation group: 'org.hamcrest', name: 'hamcrest-all', version: hamcrestVersion
     testImplementation group: 'com.squareup.okhttp3', name: 'mockwebserver', version: okhttpVersion
+    testRuntime group: 'org.slf4j', name: 'slf4j-simple', version: slf4jVersion
 
     codacy group: 'com.github.codacy', name: 'codacy-coverage-reporter', version: codacyVersion
 }

@@ -51,12 +51,12 @@ public class BatchedKafkaSender<K, V> implements KafkaSender<K, V> {
     }
 
     @Override
-    public boolean isConnected() {
+    public boolean isConnected() throws AuthenticationException {
         return wrappedSender.isConnected();
     }
 
     @Override
-    public boolean resetConnection() {
+    public boolean resetConnection() throws AuthenticationException {
         return wrappedSender.resetConnection();
     }
 

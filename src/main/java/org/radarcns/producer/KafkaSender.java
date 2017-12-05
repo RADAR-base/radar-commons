@@ -33,10 +33,10 @@ public interface KafkaSender<K, V> extends Closeable {
      * If the sender is no longer connected, try to reconnect.
      * @return whether the connection has been restored.
      */
-    boolean resetConnection();
+    boolean resetConnection() throws AuthenticationException;
 
     /**
      * Whether the sender is connected to the Kafka system.
      */
-    boolean isConnected();
+    boolean isConnected() throws AuthenticationException;
 }
