@@ -31,9 +31,7 @@ import java.util.Iterator;
 class TopicRequestData {
     private static final Charset UTF_8 = Charset.forName("UTF-8");
     private static final byte[] KEY_SCHEMA_ID = "\"key_schema_id\":".getBytes(UTF_8);
-    private static final byte[] KEY_SCHEMA = "\"key_schema\":".getBytes(UTF_8);
     private static final byte[] VALUE_SCHEMA_ID = ",\"value_schema_id\":".getBytes(UTF_8);
-    private static final byte[] VALUE_SCHEMA = ",\"value_schema\":".getBytes(UTF_8);
     private static final byte[] RECORDS = ",\"records\":[".getBytes(UTF_8);
     private static final byte[] KEY = "{\"key\":".getBytes(UTF_8);
     private static final byte[] VALUE = ",\"value\":".getBytes(UTF_8);
@@ -43,8 +41,6 @@ class TopicRequestData {
 
     private Integer keySchemaId;
     private Integer valueSchemaId;
-    private String keySchemaString;
-    private String valueSchemaString;
 
     private RecordData<?, ?> records;
 
@@ -61,20 +57,10 @@ class TopicRequestData {
      */
     void writeToStream(OutputStream out) throws IOException {
         out.write('{');
-        if (keySchemaId != null) {
-            out.write(KEY_SCHEMA_ID);
-            out.write(keySchemaId.toString().getBytes(UTF_8));
-        } else {
-            out.write(KEY_SCHEMA);
-            out.write(JSONObject.quote(keySchemaString).getBytes(UTF_8));
-        }
-        if (valueSchemaId != null) {
-            out.write(VALUE_SCHEMA_ID);
-            out.write(valueSchemaId.toString().getBytes(UTF_8));
-        } else {
-            out.write(VALUE_SCHEMA);
-            out.write(JSONObject.quote(valueSchemaString).getBytes(UTF_8));
-        }
+        out.write(KEY_SCHEMA_ID);
+        out.write(keySchemaId.toString().getBytes(UTF_8));
+        out.write(VALUE_SCHEMA_ID);
+        out.write(valueSchemaId.toString().getBytes(UTF_8));
 
         out.write(RECORDS);
 
@@ -98,9 +84,7 @@ class TopicRequestData {
 
     void reset() {
         keySchemaId = null;
-        keySchemaString = null;
         valueSchemaId = null;
-        valueSchemaString = null;
         records = null;
     }
 
@@ -112,24 +96,8 @@ class TopicRequestData {
         this.valueSchemaId = valueSchemaId;
     }
 
-    void setKeySchemaString(String keySchemaString) {
-        this.keySchemaString = keySchemaString;
-    }
-
-    void setValueSchemaString(String valueSchemaString) {
-        this.valueSchemaString = valueSchemaString;
-    }
-
     void setRecords(RecordData<?, ?> records) {
         this.records = records;
-    }
-
-    Integer getKeySchemaId() {
-        return keySchemaId;
-    }
-
-    Integer getValueSchemaId() {
-        return valueSchemaId;
     }
 
     private void copyStream(InputStream in, OutputStream out) throws IOException {

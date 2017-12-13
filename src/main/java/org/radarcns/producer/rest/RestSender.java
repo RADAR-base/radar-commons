@@ -17,15 +17,10 @@
 package org.radarcns.producer.rest;
 
 import okhttp3.Headers;
-import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.Response;
-import org.apache.avro.Schema;
 import org.radarcns.config.ServerConfig;
-import org.radarcns.data.AvroRecordData;
-import org.radarcns.data.Record;
-import org.radarcns.data.RecordData;
 import org.radarcns.producer.AuthenticationException;
 import org.radarcns.producer.KafkaSender;
 import org.radarcns.producer.KafkaTopicSender;
@@ -36,22 +31,18 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.util.Collections;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static org.radarcns.producer.rest.RestClient.responseBody;
-import static org.radarcns.producer.rest.TopicRequestBody.topicRequestContent;
 
 /**
  * RestSender sends records to the Kafka REST Proxy. It does so using an Avro JSON encoding. A new
  * sender must be constructed with {@link #sender(AvroTopic)} per AvroTopic. This implementation is
  * blocking and unbuffered, so flush, clear and close do not do anything.
  */
-@SuppressWarnings("PMD.GodClass")
 public class RestSender implements KafkaSender {
     private static final Logger logger = LoggerFactory.getLogger(RestSender.class);
-    private static final int LOG_CONTENT_LENGTH = 1024;
 
     public static final String KAFKA_REST_ACCEPT_ENCODING =
             "application/vnd.kafka.v2+json, application/vnd.kafka+json, application/json";
@@ -61,17 +52,12 @@ public class RestSender implements KafkaSender {
             MediaType.parse("application/vnd.kafka.avro.v2+json; charset=utf-8");
     public static final MediaType KAFKA_REST_AVRO_LEGACY_ENCODING =
             MediaType.parse("application/vnd.kafka.avro.v1+json; charset=utf-8");
+    private RequestProperties requestProperties;
 
-    private HttpUrl schemalessKeyUrl;
-    private HttpUrl schemalessValueUrl;
     private Request.Builder isConnectedRequest;
     private SchemaRetriever schemaRetriever;
     private RestClient httpClient;
-    private String acceptType;
-    private MediaType contentType;
-    private boolean useCompression;
     private final ConnectionState state;
-    private Headers additionalHeaders;
 
     /**
      * Construct a RestSender.
@@ -84,11 +70,9 @@ public class RestSender implements KafkaSender {
     private RestSender(RestClient httpClient, SchemaRetriever schemaRetriever,
             boolean useCompression, ConnectionState sharedState, Headers additionalHeaders) {
         this.schemaRetriever = schemaRetriever;
-        this.useCompression = useCompression;
-        this.acceptType = KAFKA_REST_ACCEPT_ENCODING;
-        this.contentType = KAFKA_REST_AVRO_ENCODING;
+        this.requestProperties = new RequestProperties(KAFKA_REST_ACCEPT_ENCODING,
+                KAFKA_REST_AVRO_ENCODING, useCompression, additionalHeaders);
         this.state = sharedState;
-        this.additionalHeaders = additionalHeaders;
         setRestClient(httpClient);
     }
 
@@ -115,8 +99,6 @@ public class RestSender implements KafkaSender {
 
     private void setRestClient(RestClient newClient) {
         try {
-            schemalessKeyUrl = newClient.getRelativeUrl("topics/schemaless-key");
-            schemalessValueUrl = newClient.getRelativeUrl("topics/schemaless-value");
             isConnectedRequest = newClient.requestBuilder("").head();
         } catch (MalformedURLException ex) {
             throw new IllegalArgumentException("Schemaless topics do not have a valid URL", ex);
@@ -129,212 +111,40 @@ public class RestSender implements KafkaSender {
         this.schemaRetriever = retriever;
     }
 
-    private synchronized RestClient getRestClient() {
+    public synchronized RestClient getRestClient() {
         return httpClient;
     }
 
-    private synchronized SchemaRetriever getSchemaRetriever() {
+    public synchronized SchemaRetriever getSchemaRetriever() {
         return this.schemaRetriever;
     }
 
-    private synchronized HttpUrl getSchemalessValueUrl() {
-        return schemalessValueUrl;
-    }
-
-    private synchronized HttpUrl getSchemalessKeyUrl() {
-        return schemalessKeyUrl;
-    }
-
     private synchronized Request getIsConnectedRequest() {
-        return isConnectedRequest.headers(additionalHeaders).build();
+        return isConnectedRequest.headers(requestProperties.headers).build();
     }
 
     public synchronized void setCompression(boolean useCompression) {
-        this.useCompression = useCompression;
-    }
-
-    private synchronized boolean hasCompression() {
-        return this.useCompression;
+        this.requestProperties = new RequestProperties(requestProperties.acceptType,
+                requestProperties.contentType, useCompression, requestProperties.headers);
     }
 
     public synchronized Headers getHeaders() {
-        return additionalHeaders;
+        return requestProperties.headers;
     }
 
     public synchronized void setHeaders(Headers additionalHeaders) {
-        this.additionalHeaders = additionalHeaders;
+        this.requestProperties = new RequestProperties(requestProperties.acceptType,
+                requestProperties.contentType, requestProperties.useCompression, additionalHeaders);
         this.state.reset();
     }
 
     @Override
-    public <K, V> KafkaTopicSender<K, V> sender(AvroTopic<K, V> topic) throws IOException {
-        return new RestTopicSender<>(topic);
+    public <K, V> KafkaTopicSender<K, V> sender(AvroTopic<K, V> topic) {
+        return new RestTopicSender<>(topic, this, state);
     }
 
-    private class RestTopicSender<K, V> implements KafkaTopicSender<K, V> {
-        private final AvroTopic<K, V> topic;
-        private final HttpUrl url;
-        private final TopicRequestData requestData;
-
-        private RestTopicSender(AvroTopic<K, V> topic) throws IOException {
-            this.topic = topic;
-            url = getRestClient().getRelativeUrl("topics/" + topic.getName());
-            requestData = new TopicRequestData();
-        }
-
-        @Override
-        public void send(K key, V value) throws IOException {
-            send(new AvroRecordData<>(topic, Collections.singleton(new Record<>(key, value))));
-        }
-
-        /**
-         * Actually make a REST request to the Kafka REST server and Schema Registry.
-         *
-         * @param records values to send
-         * @throws IOException if records could not be sent
-         */
-        @Override
-        public void send(RecordData<K, V> records) throws IOException {
-            if (records.isEmpty()) {
-                return;
-            }
-
-            Request request = buildRequest(records);
-
-            boolean doResend = false;
-            try (Response response = getRestClient().request(request)) {
-                // Evaluate the result
-                if (response.isSuccessful()) {
-                    state.didConnect();
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Added message to topic {} -> {}",
-                                topic, responseBody(response));
-                    }
-                } else if (response.code() == 401) {
-                    throw new AuthenticationException("Cannot authenticate");
-                } else if (response.code() == 403 || response.code() == 422) {
-                    throw new AuthenticationException("Data does not match authentication");
-                } else if (response.code() == 415
-                        && request.header("Accept").equals(KAFKA_REST_ACCEPT_ENCODING)) {
-                    state.didConnect();
-                    logger.warn("Latest Avro encoding is not supported. Switching to legacy "
-                            + "encoding.");
-                    synchronized (RestSender.this) {
-                        contentType = KAFKA_REST_AVRO_LEGACY_ENCODING;
-                        acceptType = KAFKA_REST_ACCEPT_LEGACY_ENCODING;
-                    }
-                    doResend = true;
-                } else {
-                    logFailure(request, response, null);
-                }
-            } catch (IOException ex) {
-                logFailure(request, null, ex);
-            } finally {
-                requestData.reset();
-            }
-
-            if (doResend) {
-                send(records);
-            }
-        }
-
-        @Override
-        public void clear() {
-            // nothing
-        }
-
-        @Override
-        public void flush() throws IOException {
-            // nothing
-        }
-
-        @SuppressWarnings("ConstantConditions")
-        private void logFailure(Request request, Response response, Exception ex)
-                throws IOException {
-            state.didDisconnect();
-            String content = response == null ? null : responseBody(response);
-            int code = response == null ? -1 : response.code();
-            String requestContent = topicRequestContent(request);
-            if (requestContent != null) {
-                requestContent = requestContent.substring(0,
-                        Math.min(requestContent.length(), LOG_CONTENT_LENGTH));
-            }
-            logger.error("FAILED to transmit message: {} -> {}...",
-                    content, requestContent);
-            throw new IOException("Failed to submit (HTTP status code " + code
-                    + "): " + content, ex);
-        }
-
-        private Request buildRequest(RecordData<K, V> records) throws IOException {
-            HttpUrl sendToUrl = updateRequestData(records);
-
-            MediaType currentContentType;
-            String currentAcceptType;
-            Headers currentHeaders;
-
-            synchronized (RestSender.this) {
-                currentContentType = contentType;
-                currentAcceptType = acceptType;
-                currentHeaders = additionalHeaders;
-            }
-
-            TopicRequestBody requestBody;
-            Request.Builder requestBuilder = new Request.Builder()
-                    .url(sendToUrl)
-                    .headers(currentHeaders)
-                    .addHeader("Accept", currentAcceptType);
-
-            if (hasCompression()) {
-                requestBody = new GzipTopicRequestBody(requestData, currentContentType);
-                requestBuilder.addHeader("Content-Encoding", "gzip");
-            } else {
-                requestBody = new TopicRequestBody(requestData, currentContentType);
-            }
-
-            return requestBuilder.post(requestBody).build();
-        }
-
-        private HttpUrl updateRequestData(RecordData<K, V> records) {
-            // Get schema IDs
-            Schema valueSchema = topic.getValueSchema();
-            String sendTopic = topic.getName();
-
-            HttpUrl sendToUrl = url;
-
-            try {
-                ParsedSchemaMetadata metadata = getSchemaRetriever()
-                        .getOrSetSchemaMetadata(sendTopic, false, topic.getKeySchema(), -1);
-                requestData.setKeySchemaId(metadata.getId());
-            } catch (IOException ex) {
-                logger.error("Failed to get schema for key {} of topic {}",
-                        topic.getKeyClass().getName(), topic, ex);
-                sendToUrl = getSchemalessKeyUrl();
-            }
-            if (requestData.getKeySchemaId() == null) {
-                requestData.setKeySchemaString(topic.getKeySchema().toString());
-            }
-
-            try {
-                ParsedSchemaMetadata metadata = getSchemaRetriever().getOrSetSchemaMetadata(
-                        sendTopic, true, valueSchema, -1);
-                requestData.setValueSchemaId(metadata.getId());
-            } catch (IOException ex) {
-                logger.error("Failed to get schema for value {} of topic {}",
-                        topic.getValueClass().getName(), topic, ex);
-                sendToUrl = getSchemalessValueUrl();
-            }
-            if (requestData.getValueSchemaId() == null) {
-                requestData.setValueSchemaString(topic.getValueSchema().toString());
-            }
-            requestData.setRecords(records);
-
-            return sendToUrl;
-        }
-
-        @Override
-        public void close() {
-            // noop
-        }
+    public synchronized RequestProperties getRequestProperties() {
+        return requestProperties;
     }
 
     @Override
@@ -384,6 +194,12 @@ public class RestSender implements KafkaSender {
     @Override
     public void close() {
         httpClient.close();
+    }
+
+    public synchronized void useLegacyEncoding() {
+        this.requestProperties = new RequestProperties(KAFKA_REST_ACCEPT_LEGACY_ENCODING,
+                KAFKA_REST_AVRO_LEGACY_ENCODING, requestProperties.useCompression,
+                requestProperties.headers);
     }
 
     public static class Builder {
@@ -457,6 +273,21 @@ public class RestSender implements KafkaSender {
 
             return new RestSender(new RestClient(kafkaConfig, timeout, usePool),
                     retriever, compression, useState, additionalHeaders.build());
+        }
+    }
+
+    public static final class RequestProperties {
+        public final String acceptType;
+        public final MediaType contentType;
+        public final boolean useCompression;
+        public final Headers headers;
+
+        RequestProperties(String acceptType, MediaType contentType, boolean useCompression,
+                Headers headers) {
+            this.acceptType = acceptType;
+            this.contentType = contentType;
+            this.useCompression = useCompression;
+            this.headers = headers;
         }
     }
 }
