@@ -23,14 +23,23 @@ import org.radarcns.topic.AvroTopic;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
+import java.nio.charset.Charset;
 import java.util.List;
 
 /**
  * Request data to submit records to the Kafka REST proxy.
  */
 class TopicRequestData<K, V> {
+    private static final Charset UTF_8 = Charset.forName("UTF-8");
+    private static final byte[] KEY_SCHEMA_ID = "\"key_schema_id\":".getBytes(UTF_8);
+    private static final byte[] KEY_SCHEMA = "\"key_schema\":".getBytes(UTF_8);
+    private static final byte[] VALUE_SCHEMA_ID = ",\"value_schema_id\":".getBytes(UTF_8);
+    private static final byte[] VALUE_SCHEMA = ",\"value_schema\":".getBytes(UTF_8);
+    private static final byte[] RECORDS = ",\"records\":[".getBytes(UTF_8);
+    private static final byte[] KEY = "{\"key\":".getBytes(UTF_8);
+    private static final byte[] VALUE = ",\"value\":".getBytes(UTF_8);
+    private static final byte[] END = "]}".getBytes(UTF_8);
+
     private final AvroEncoder.AvroWriter<K> keyWriter;
     private final AvroEncoder.AvroWriter<V> valueWriter;
 
@@ -49,51 +58,44 @@ class TopicRequestData<K, V> {
 
     /**
      * Writes the current topic to a stream. This implementation does not use any JSON writers to
-     * write the data, but writes it directly to a stream. {@link JSONObject#quote(String, Writer)}
+     * write the data, but writes it directly to a stream. {@link JSONObject#quote(String)}
      * is used to get the correct formatting. This makes the method as lean as possible.
      * @param out OutputStream to write to. It is assumed to be buffered.
      * @throws IOException if a superimposing stream could not be created
      */
     void writeToStream(OutputStream out) throws IOException {
-        try (OutputStreamWriter writer = new OutputStreamWriter(out)) {
-            writer.append('{');
-            if (keySchemaId != null) {
-                writer.append("\"key_schema_id\":").append(keySchemaId.toString());
-            } else {
-                writer.append("\"key_schema\":");
-                writer.append(JSONObject.quote(keySchemaString));
-            }
-            if (valueSchemaId != null) {
-                writer.append(",\"value_schema_id\":").append(valueSchemaId.toString());
-            } else {
-                writer.append(",\"value_schema\":");
-                writer.append(JSONObject.quote(valueSchemaString));
-            }
-            writer.append(",\"records\":[");
-
-            for (int i = 0; i < records.size(); i++) {
-                Record<K, V> record = records.get(i);
-
-                if (i == 0) {
-                    writer.append("{\"key\":");
-                } else {
-                    writer.append(",{\"key\":");
-                }
-
-                // flush writer and write raw bytes to underlying stream
-                // flush so the data do not overlap.
-                writer.flush();
-                out.write(keyWriter.encode(record.key));
-
-                writer.append(",\"value\":");
-                // flush writer and write raw bytes to underlying stream
-                // flush so the data do not overlap.
-                writer.flush();
-                out.write(valueWriter.encode(record.value));
-                writer.append('}');
-            }
-            writer.append("]}");
+        out.write('{');
+        if (keySchemaId != null) {
+            out.write(KEY_SCHEMA_ID);
+            out.write(keySchemaId.toString().getBytes(UTF_8));
+        } else {
+            out.write(KEY_SCHEMA);
+            out.write(JSONObject.quote(keySchemaString).getBytes(UTF_8));
         }
+        if (valueSchemaId != null) {
+            out.write(VALUE_SCHEMA_ID);
+            out.write(valueSchemaId.toString().getBytes(UTF_8));
+        } else {
+            out.write(VALUE_SCHEMA);
+            out.write(JSONObject.quote(valueSchemaString).getBytes(UTF_8));
+        }
+
+        out.write(RECORDS);
+
+        for (int i = 0; i < records.size(); i++) {
+            Record<K, V> record = records.get(i);
+
+            if (i > 0) {
+                out.write(',');
+            }
+            out.write(KEY);
+            out.write(keyWriter.encode(record.key));
+
+            out.write(VALUE);
+            out.write(valueWriter.encode(record.value));
+            out.write('}');
+        }
+        out.write(END);
     }
 
     void reset() {
