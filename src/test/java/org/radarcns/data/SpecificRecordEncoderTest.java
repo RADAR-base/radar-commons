@@ -106,5 +106,6 @@ public class SpecificRecordEncoderTest extends TestCase {
             now += 0.001;
         }
         logger.info("Binary length: {}. Normal length: {}", binaryLength, normalLength);
+        assertTrue(binaryLength < normalLength);
     }
 }

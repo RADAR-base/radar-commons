@@ -40,7 +40,6 @@ import org.radarcns.topic.AvroTopic;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.zip.GZIPInputStream;
 
 import static org.junit.Assert.assertEquals;
@@ -100,8 +99,7 @@ public class RestSenderTest {
                 .setHeader("Content-Type", "application/json; charset=utf-8")
                 .setBody("{\"offset\": 100}"));
 
-        topicSender.send(new AvroRecordData<>(topic,
-                Collections.singleton(new Record<>(key, value))));
+        topicSender.send(key, value);
 
         verify(retriever, times(1))
                 .getOrSetSchemaMetadata("test", false, keySchema, -1);
@@ -249,8 +247,7 @@ public class RestSenderTest {
                 .getOrSetSchemaMetadata("test", true, valueSchema, -1))
                 .thenReturn(valueSchemaMetadata);
 
-        topicSender.send(new AvroRecordData<>(topic,
-                Collections.singleton(new Record<>(key, value))));
+        topicSender.send(key, value);
 
         RecordedRequest request = webServer.takeRequest();
         assertEquals("gzip", request.getHeader("Content-Encoding"));
