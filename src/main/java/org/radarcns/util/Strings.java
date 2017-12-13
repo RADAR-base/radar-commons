@@ -16,6 +16,7 @@
 
 package org.radarcns.util;
 
+import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.regex.Pattern;
@@ -24,6 +25,7 @@ import java.util.regex.Pattern;
  * String utilities.
  */
 public final class Strings {
+    private static final Charset UTF_8 = Charset.forName("UTF-8");
 
     private Strings() {
         // utility class
@@ -63,6 +65,10 @@ public final class Strings {
             }
         }
         return false;
+    }
+
+    public static byte[] utf8(String value) {
+        return value.getBytes(UTF_8);
     }
 
     /** Whether given value is null or empty. */

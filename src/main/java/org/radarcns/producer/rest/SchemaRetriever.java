@@ -36,6 +36,8 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import static org.radarcns.util.Strings.utf8;
+
 /** Retriever of an Avro Schema.
  *
  * Internally, only {@link JSONObject} is used to manage JSON data, to keep the class as lean as
@@ -47,6 +49,7 @@ public class SchemaRetriever implements Closeable {
             "application/vnd.schemaregistry.v1+json; charset=utf-8");
     private static final Schema NULL_SCHEMA = Schema.create(Type.NULL);
     private static final Map<Class<?>, Schema> PRIMITIVE_SCHEMAS = new HashMap<>();
+    private static final byte[] SCHEMA = utf8("{\"schema\":");
 
     static {
         PRIMITIVE_SCHEMAS.put(Long.class, Schema.create(Type.LONG));
@@ -85,7 +88,7 @@ public class SchemaRetriever implements Closeable {
         return topic + (ofValue ? "-value" : "-key");
     }
 
-    /** Retrieve schema metadata */
+    /** Retrieve schema metadata from server. */
     protected ParsedSchemaMetadata retrieveSchemaMetadata(String subject, int version)
             throws IOException {
         String path = "/subjects/" + subject + "/versions/";
@@ -107,6 +110,7 @@ public class SchemaRetriever implements Closeable {
         return new ParsedSchemaMetadata(schemaId, newVersion, schema);
     }
 
+    /** Get schema metadata. Cached schema metadata will be used if present. */
     public ParsedSchemaMetadata getSchemaMetadata(String topic, boolean ofValue, int version)
             throws IOException {
         String subject = subject(topic, ofValue);
@@ -192,9 +196,9 @@ public class SchemaRetriever implements Closeable {
 
         @Override
         public void writeTo(BufferedSink sink) throws IOException {
-            sink.writeUtf8("{\"schema\":");
+            sink.write(SCHEMA);
             sink.writeUtf8(JSONObject.quote(schema.toString()));
-            sink.writeUtf8("}");
+            sink.writeByte('}');
         }
     }
 

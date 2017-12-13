@@ -22,25 +22,25 @@ import org.radarcns.data.RecordData;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
 import java.util.Iterator;
+
+import static org.radarcns.util.Strings.utf8;
 
 /**
  * Request data to submit records to the Kafka REST proxy.
  */
 class TopicRequestData {
-    private static final Charset UTF_8 = Charset.forName("UTF-8");
-    private static final byte[] KEY_SCHEMA_ID = "\"key_schema_id\":".getBytes(UTF_8);
-    private static final byte[] VALUE_SCHEMA_ID = ",\"value_schema_id\":".getBytes(UTF_8);
-    private static final byte[] RECORDS = ",\"records\":[".getBytes(UTF_8);
-    private static final byte[] KEY = "{\"key\":".getBytes(UTF_8);
-    private static final byte[] VALUE = ",\"value\":".getBytes(UTF_8);
-    private static final byte[] END = "]}".getBytes(UTF_8);
+    private static final byte[] KEY_SCHEMA_ID = utf8("\"key_schema_id\":");
+    private static final byte[] VALUE_SCHEMA_ID = utf8(",\"value_schema_id\":");
+    private static final byte[] RECORDS = utf8(",\"records\":[");
+    private static final byte[] KEY = utf8("{\"key\":");
+    private static final byte[] VALUE = utf8(",\"value\":");
+    private static final byte[] END = utf8("]}");
 
     private final byte[] buffer;
 
-    private Integer keySchemaId;
-    private Integer valueSchemaId;
+    private int keySchemaId;
+    private int valueSchemaId;
 
     private RecordData<?, ?> records;
 
@@ -58,9 +58,9 @@ class TopicRequestData {
     void writeToStream(OutputStream out) throws IOException {
         out.write('{');
         out.write(KEY_SCHEMA_ID);
-        out.write(keySchemaId.toString().getBytes(UTF_8));
+        out.write(utf8(String.valueOf(keySchemaId)));
         out.write(VALUE_SCHEMA_ID);
-        out.write(valueSchemaId.toString().getBytes(UTF_8));
+        out.write(utf8(String.valueOf(valueSchemaId)));
 
         out.write(RECORDS);
 
@@ -83,16 +83,14 @@ class TopicRequestData {
     }
 
     void reset() {
-        keySchemaId = null;
-        valueSchemaId = null;
         records = null;
     }
 
-    void setKeySchemaId(Integer keySchemaId) {
+    void setKeySchemaId(int keySchemaId) {
         this.keySchemaId = keySchemaId;
     }
 
-    void setValueSchemaId(Integer valueSchemaId) {
+    void setValueSchemaId(int valueSchemaId) {
         this.valueSchemaId = valueSchemaId;
     }
 
