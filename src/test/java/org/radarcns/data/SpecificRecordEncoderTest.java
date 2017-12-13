@@ -18,14 +18,23 @@ package org.radarcns.data;
 
 import junit.framework.TestCase;
 
+import org.radarcns.passive.empatica.EmpaticaE4Acceleration;
 import org.radarcns.passive.empatica.EmpaticaE4BloodVolumePulse;
 import org.radarcns.kafka.ObservationKey;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
+
+import org.radarcns.passive.phone.PhoneAcceleration;
 import org.radarcns.topic.AvroTopic;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SpecificRecordEncoderTest extends TestCase {
+    private static final Logger logger = LoggerFactory.getLogger(SpecificRecordEncoderTest.class);
+
     public void testJson() throws IOException {
         SpecificRecordEncoder encoder = new SpecificRecordEncoder(false);
         AvroTopic<ObservationKey, EmpaticaE4BloodVolumePulse> topic = new AvroTopic<>("keeeeys", ObservationKey.getClassSchema(), EmpaticaE4BloodVolumePulse.getClassSchema(), ObservationKey.class, EmpaticaE4BloodVolumePulse.class);
@@ -66,5 +75,36 @@ public class SpecificRecordEncoderTest extends TestCase {
         for(byte b: a)
             sb.append(String.format("%02x", b & 0xff));
         return sb.toString();
+    }
+
+    public void testSize() throws IOException {
+        int n = 100;
+
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        AvroTopic<ObservationKey, PhoneAcceleration> topic = new AvroTopic<>("testie", ObservationKey.getClassSchema(), PhoneAcceleration.getClassSchema(), ObservationKey.class, PhoneAcceleration.class);
+        ObservationKey key = new ObservationKey("my project", UUID.randomUUID().toString(), UUID.randomUUID().toString());
+        double now = System.currentTimeMillis() / 1000d;
+
+        SpecificRecordEncoder binEncoder = new SpecificRecordEncoder(true);
+        AvroEncoder.AvroWriter<ObservationKey> binKeyEncoder = binEncoder.writer(topic.getKeySchema(), topic.getKeyClass());
+        AvroEncoder.AvroWriter<PhoneAcceleration> binValueEncoder = binEncoder.writer(topic.getValueSchema(), topic.getValueClass());
+
+        int binaryLength = n * binKeyEncoder.encode(key).length;
+        for (int i = 0; i < 100; i++) {
+            binaryLength += binValueEncoder.encode(new PhoneAcceleration(now, now, random.nextFloat(), random.nextFloat(), random.nextFloat())).length;
+            now += 0.001;
+        }
+
+        SpecificRecordEncoder encoder = new SpecificRecordEncoder(false);
+        AvroEncoder.AvroWriter<ObservationKey> keyEncoder = encoder.writer(topic.getKeySchema(), topic.getKeyClass());
+        AvroEncoder.AvroWriter<PhoneAcceleration> valueEncoder = encoder.writer(topic.getValueSchema(), topic.getValueClass());
+
+        int normalLength = n * (keyEncoder.encode(key).length + "{\"key\":".length());
+        for (int i = 0; i < 100; i++) {
+            normalLength += ",\"value\":},".length();
+            normalLength += valueEncoder.encode(new PhoneAcceleration(now, now, random.nextFloat(), random.nextFloat(), random.nextFloat())).length;
+            now += 0.001;
+        }
+        logger.info("Binary length: {}. Normal length: {}", binaryLength, normalLength);
     }
 }

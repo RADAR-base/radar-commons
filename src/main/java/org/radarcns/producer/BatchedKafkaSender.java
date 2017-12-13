@@ -16,7 +16,9 @@
 
 package org.radarcns.producer;
 
+import org.radarcns.data.AvroRecordData;
 import org.radarcns.data.Record;
+import org.radarcns.data.RecordData;
 import org.radarcns.topic.AvroTopic;
 
 import java.io.IOException;
@@ -29,23 +31,20 @@ import java.util.List;
  * flush or close are not called within this given age, the data will also not be sent. Calling
  * {@link #close()} will not flush or close the KafkaTopicSender that were created. That must be
  * done separately.
- *
- * @param <K> base key class
- * @param <V> base value class
  */
-public class BatchedKafkaSender<K, V> implements KafkaSender<K, V> {
-    private final KafkaSender<K, V> wrappedSender;
+public class BatchedKafkaSender implements KafkaSender {
+    private final KafkaSender wrappedSender;
     private final int ageMillis;
     private final int maxBatchSize;
 
-    public BatchedKafkaSender(KafkaSender<K, V> sender, int ageMillis, int maxBatchSize) {
+    public BatchedKafkaSender(KafkaSender sender, int ageMillis, int maxBatchSize) {
         this.wrappedSender = sender;
         this.ageMillis = ageMillis;
         this.maxBatchSize = maxBatchSize;
     }
 
     @Override
-    public <L extends K, W extends V> KafkaTopicSender<L, W> sender(final AvroTopic<L, W> topic)
+    public <K, V> KafkaTopicSender<K, V> sender(final AvroTopic<K, V> topic)
             throws IOException {
         return new BatchedKafkaTopicSender<>(topic);
     }
@@ -65,53 +64,49 @@ public class BatchedKafkaSender<K, V> implements KafkaSender<K, V> {
         wrappedSender.close();
     }
 
-    private class BatchedKafkaTopicSender<L extends K, W extends V> implements
-            KafkaTopicSender<L, W> {
-        private final List<Record<L, W>> cache;
-        private final KafkaTopicSender<L, W> topicSender;
+    private class BatchedKafkaTopicSender<K, V> implements
+            KafkaTopicSender<K, V> {
+        private final List<Record<K, V>> cache;
+        private final KafkaTopicSender<K, V> topicSender;
+        private final AvroTopic<K, V> topic;
 
-        private BatchedKafkaTopicSender(AvroTopic<L, W> topic) throws IOException {
+        private BatchedKafkaTopicSender(AvroTopic<K, V> topic) throws IOException {
             cache = new ArrayList<>();
+            this.topic = topic;
             topicSender = wrappedSender.sender(topic);
         }
 
         @Override
-        public void send(long offset, L key, W value) throws IOException {
+        public void send(K key, V value) throws IOException {
             if (!isConnected()) {
                 throw new IOException("Cannot send records to unconnected producer.");
             }
-            cache.add(new Record<>(offset, key, value));
-
-            if (exceedsBuffer(cache)) {
-                topicSender.send(cache);
-                cache.clear();
-            }
+            trySend(new Record<>(key, value));
         }
 
         @Override
-        public void send(List<Record<L, W>> records) throws IOException {
+        public void send(RecordData<K, V> records) throws IOException {
             if (records.isEmpty()) {
                 return;
             }
-            if (cache.isEmpty()) {
-                if (exceedsBuffer(records)) {
-                    topicSender.send(records);
-                } else {
-                    cache.addAll(records);
-                }
-            } else {
-                cache.addAll(records);
-
-                if (exceedsBuffer(cache)) {
-                    topicSender.send(cache);
-                    cache.clear();
-                }
+            for (Record<K, V> record : records) {
+                trySend(record);
             }
         }
 
-        @Override
-        public long getLastSentOffset() {
-            return topicSender.getLastSentOffset();
+        private void trySend(Record<K, V> record) throws IOException {
+            boolean doSend;
+            if (record == null) {
+                doSend = !cache.isEmpty();
+            } else {
+                cache.add(record);
+                doSend = exceedsBuffer(cache);
+            }
+
+            if (doSend) {
+                topicSender.send(new AvroRecordData<>(topic, cache));
+                cache.clear();
+            }
         }
 
         @Override
@@ -122,10 +117,7 @@ public class BatchedKafkaSender<K, V> implements KafkaSender<K, V> {
 
         @Override
         public void flush() throws IOException {
-            if (!cache.isEmpty()) {
-                topicSender.send(cache);
-                cache.clear();
-            }
+            trySend(null);
             topicSender.flush();
         }
 
@@ -138,7 +130,7 @@ public class BatchedKafkaSender<K, V> implements KafkaSender<K, V> {
             }
         }
 
-        private boolean exceedsBuffer(List<Record<L, W>> records) {
+        private boolean exceedsBuffer(List<Record<K, V>> records) {
             return records.size() >= maxBatchSize
                     || System.currentTimeMillis() - records.get(0).milliTimeAdded >= ageMillis;
         }

@@ -23,13 +23,12 @@ import okhttp3.Request;
 import okhttp3.Response;
 import org.apache.avro.Schema;
 import org.radarcns.config.ServerConfig;
-import org.radarcns.data.AvroEncoder;
+import org.radarcns.data.AvroRecordData;
 import org.radarcns.data.Record;
+import org.radarcns.data.RecordData;
 import org.radarcns.producer.AuthenticationException;
-import org.radarcns.producer.BatchedKafkaSender;
 import org.radarcns.producer.KafkaSender;
 import org.radarcns.producer.KafkaTopicSender;
-import org.radarcns.producer.ThreadedKafkaSender;
 import org.radarcns.producer.rest.ConnectionState.State;
 import org.radarcns.topic.AvroTopic;
 import org.slf4j.Logger;
@@ -37,10 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Collections;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -50,15 +46,10 @@ import static org.radarcns.producer.rest.TopicRequestBody.topicRequestContent;
 /**
  * RestSender sends records to the Kafka REST Proxy. It does so using an Avro JSON encoding. A new
  * sender must be constructed with {@link #sender(AvroTopic)} per AvroTopic. This implementation is
- * blocking and unbuffered, so flush, clear and close do not do anything. To get a non-blocking
- * sender, wrap this in a {@link ThreadedKafkaSender}, for a buffered sender, wrap it in a
- * {@link BatchedKafkaSender}.
- *
- * @param <K> base key class
- * @param <V> base value class
+ * blocking and unbuffered, so flush, clear and close do not do anything.
  */
 @SuppressWarnings("PMD.GodClass")
-public class RestSender<K, V> implements KafkaSender<K, V> {
+public class RestSender implements KafkaSender {
     private static final Logger logger = LoggerFactory.getLogger(RestSender.class);
     private static final int LOG_CONTENT_LENGTH = 1024;
 
@@ -70,9 +61,6 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
             MediaType.parse("application/vnd.kafka.avro.v2+json; charset=utf-8");
     public static final MediaType KAFKA_REST_AVRO_LEGACY_ENCODING =
             MediaType.parse("application/vnd.kafka.avro.v1+json; charset=utf-8");
-
-    private final AvroEncoder keyEncoder;
-    private final AvroEncoder valueEncoder;
 
     private HttpUrl schemalessKeyUrl;
     private HttpUrl schemalessValueUrl;
@@ -89,18 +77,13 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
      * Construct a RestSender.
      * @param httpClient client to send requests with
      * @param schemaRetriever non-null Retriever of avro schemas
-     * @param keyEncoder non-null Avro encoder for keys
-     * @param valueEncoder non-null Avro encoder for values
      * @param useCompression use compression to send data
      * @param sharedState shared connection state
      * @param additionalHeaders headers to add to requests
      */
     private RestSender(RestClient httpClient, SchemaRetriever schemaRetriever,
-            AvroEncoder keyEncoder, AvroEncoder valueEncoder, boolean useCompression,
-            ConnectionState sharedState, Headers additionalHeaders) {
+            boolean useCompression, ConnectionState sharedState, Headers additionalHeaders) {
         this.schemaRetriever = schemaRetriever;
-        this.keyEncoder = keyEncoder;
-        this.valueEncoder = valueEncoder;
         this.useCompression = useCompression;
         this.acceptType = KAFKA_REST_ACCEPT_ENCODING;
         this.contentType = KAFKA_REST_AVRO_ENCODING;
@@ -183,23 +166,25 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         this.state.reset();
     }
 
-    private class RestTopicSender<L extends K, W extends V> implements KafkaTopicSender<L, W> {
-        private long lastOffsetSent = -1L;
-        private final AvroTopic<L, W> topic;
-        private final HttpUrl url;
-        private final TopicRequestData<L, W> requestData;
+    @Override
+    public <K, V> KafkaTopicSender<K, V> sender(AvroTopic<K, V> topic) throws IOException {
+        return new RestTopicSender<>(topic);
+    }
 
-        private RestTopicSender(AvroTopic<L, W> topic) throws IOException {
+    private class RestTopicSender<K, V> implements KafkaTopicSender<K, V> {
+        private final AvroTopic<K, V> topic;
+        private final HttpUrl url;
+        private final TopicRequestData requestData;
+
+        private RestTopicSender(AvroTopic<K, V> topic) throws IOException {
             this.topic = topic;
             url = getRestClient().getRelativeUrl("topics/" + topic.getName());
-            requestData = new TopicRequestData<>(topic, keyEncoder, valueEncoder);
+            requestData = new TopicRequestData();
         }
 
         @Override
-        public void send(long offset, L key, W value) throws IOException {
-            List<Record<L, W>> records = new ArrayList<>(1);
-            records.add(new Record<>(offset, key, value));
-            send(records);
+        public void send(K key, V value) throws IOException {
+            send(new AvroRecordData<>(topic, Collections.singleton(new Record<>(key, value))));
         }
 
         /**
@@ -209,7 +194,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
          * @throws IOException if records could not be sent
          */
         @Override
-        public void send(List<Record<L, W>> records) throws IOException {
+        public void send(RecordData<K, V> records) throws IOException {
             if (records.isEmpty()) {
                 return;
             }
@@ -225,7 +210,6 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                         logger.debug("Added message to topic {} -> {}",
                                 topic, responseBody(response));
                     }
-                    lastOffsetSent = records.get(records.size() - 1).offset;
                 } else if (response.code() == 401) {
                     throw new AuthenticationException("Cannot authenticate");
                 } else if (response.code() == 403 || response.code() == 422) {
@@ -254,6 +238,16 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
             }
         }
 
+        @Override
+        public void clear() {
+            // nothing
+        }
+
+        @Override
+        public void flush() throws IOException {
+            // nothing
+        }
+
         @SuppressWarnings("ConstantConditions")
         private void logFailure(Request request, Response response, Exception ex)
                 throws IOException {
@@ -271,7 +265,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                     + "): " + content, ex);
         }
 
-        private Request buildRequest(List<Record<L, W>> records) throws IOException {
+        private Request buildRequest(RecordData<K, V> records) throws IOException {
             HttpUrl sendToUrl = updateRequestData(records);
 
             MediaType currentContentType;
@@ -300,7 +294,7 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
             return requestBuilder.post(requestBody).build();
         }
 
-        private HttpUrl updateRequestData(List<Record<L, W>> records) {
+        private HttpUrl updateRequestData(RecordData<K, V> records) {
             // Get schema IDs
             Schema valueSchema = topic.getValueSchema();
             String sendTopic = topic.getName();
@@ -338,32 +332,9 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         }
 
         @Override
-        public long getLastSentOffset() {
-            return lastOffsetSent;
-        }
-
-
-        @Override
-        public void clear() {
-            // noop
-        }
-
-        @Override
-        public void flush() {
-            // noop
-        }
-
-        @Override
         public void close() {
             // noop
         }
-
-    }
-
-    @Override
-    public <L extends K, W extends V> KafkaTopicSender<L, W> sender(AvroTopic<L, W> topic)
-            throws IOException {
-        return new RestTopicSender<>(topic);
     }
 
     @Override
@@ -415,77 +386,58 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
         httpClient.close();
     }
 
-    public static class Builder<K, V> {
+    public static class Builder {
         private ServerConfig kafkaConfig;
         private SchemaRetriever retriever;
-        private AvroEncoder keyEncoder;
-        private AvroEncoder valueEncoder;
         private boolean compression = false;
         private long timeout = 10;
         private ConnectionState state;
         private ManagedConnectionPool pool;
         private Headers.Builder additionalHeaders = new Headers.Builder();
 
-        public Builder<K, V> server(ServerConfig kafkaConfig) {
+        public Builder server(ServerConfig kafkaConfig) {
             this.kafkaConfig = kafkaConfig;
             return this;
         }
 
-        public Builder<K, V> schemaRetriever(SchemaRetriever schemaRetriever) {
+        public Builder schemaRetriever(SchemaRetriever schemaRetriever) {
             this.retriever = schemaRetriever;
             return this;
         }
 
-        public Builder<K, V> encoders(AvroEncoder keyEncoder, AvroEncoder valueEncoder) {
-            this.keyEncoder = keyEncoder;
-            this.valueEncoder = valueEncoder;
-            return this;
-        }
-
-        public Builder<K, V> useCompression(boolean compression) {
+        public Builder useCompression(boolean compression) {
             this.compression = compression;
             return this;
         }
 
-        public Builder<K, V> connectionState(ConnectionState state) {
+        public Builder connectionState(ConnectionState state) {
             this.state = state;
             return this;
         }
 
-        public Builder<K, V> connectionTimeout(long timeout, TimeUnit unit) {
+        public Builder connectionTimeout(long timeout, TimeUnit unit) {
             this.timeout = TimeUnit.SECONDS.convert(timeout, unit);
             return this;
         }
 
-        public Builder<K, V> connectionPool(ManagedConnectionPool pool) {
+        public Builder connectionPool(ManagedConnectionPool pool) {
             this.pool = pool;
             return this;
         }
 
-        public Builder<K, V> headers(Headers headers) {
+        public Builder headers(Headers headers) {
             additionalHeaders = headers.newBuilder();
             return this;
         }
 
-        @Deprecated
-        public Builder<K, V> headers(List<Map.Entry<String, String>> headers) {
-            additionalHeaders = new Headers.Builder();
-            for (Entry<String, String> header : headers) {
-                additionalHeaders.add(header.getKey(), header.getValue());
-            }
-            return this;
-        }
-
-        public Builder<K, V> addHeader(String header, String value) {
+        public Builder addHeader(String header, String value) {
             additionalHeaders.add(header, value);
             return this;
         }
 
-        public RestSender<K, V> build() {
+        public RestSender build() {
             Objects.requireNonNull(kafkaConfig);
             Objects.requireNonNull(retriever);
-            Objects.requireNonNull(keyEncoder);
-            Objects.requireNonNull(valueEncoder);
             if (timeout <= 0) {
                 throw new IllegalStateException("Connection timeout must be strictly positive");
             }
@@ -503,9 +455,8 @@ public class RestSender<K, V> implements KafkaSender<K, V> {
                 usePool = ManagedConnectionPool.GLOBAL_POOL;
             }
 
-            return new RestSender<>(new RestClient(kafkaConfig, timeout, usePool),
-                    retriever, keyEncoder, valueEncoder, compression, useState,
-                    additionalHeaders.build());
+            return new RestSender(new RestClient(kafkaConfig, timeout, usePool),
+                    retriever, compression, useState, additionalHeaders.build());
         }
     }
 }

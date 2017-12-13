@@ -17,19 +17,18 @@
 package org.radarcns.producer.rest;
 
 import org.json.JSONObject;
-import org.radarcns.data.AvroEncoder;
-import org.radarcns.data.Record;
-import org.radarcns.topic.AvroTopic;
+import org.radarcns.data.RecordData;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.List;
+import java.util.Iterator;
 
 /**
  * Request data to submit records to the Kafka REST proxy.
  */
-class TopicRequestData<K, V> {
+class TopicRequestData {
     private static final Charset UTF_8 = Charset.forName("UTF-8");
     private static final byte[] KEY_SCHEMA_ID = "\"key_schema_id\":".getBytes(UTF_8);
     private static final byte[] KEY_SCHEMA = "\"key_schema\":".getBytes(UTF_8);
@@ -40,20 +39,17 @@ class TopicRequestData<K, V> {
     private static final byte[] VALUE = ",\"value\":".getBytes(UTF_8);
     private static final byte[] END = "]}".getBytes(UTF_8);
 
-    private final AvroEncoder.AvroWriter<K> keyWriter;
-    private final AvroEncoder.AvroWriter<V> valueWriter;
+    private final byte[] buffer;
 
     private Integer keySchemaId;
     private Integer valueSchemaId;
     private String keySchemaString;
     private String valueSchemaString;
 
-    private List<Record<K, V>> records;
+    private RecordData<?, ?> records;
 
-    TopicRequestData(AvroTopic<K, V> topic, AvroEncoder keyEncoder, AvroEncoder valueEncoder)
-            throws IOException {
-        keyWriter = keyEncoder.writer(topic.getKeySchema(), topic.getKeyClass());
-        valueWriter = valueEncoder.writer(topic.getValueSchema(), topic.getValueClass());
+    TopicRequestData() {
+        buffer = new byte[1024];
     }
 
     /**
@@ -82,17 +78,19 @@ class TopicRequestData<K, V> {
 
         out.write(RECORDS);
 
-        for (int i = 0; i < records.size(); i++) {
-            Record<K, V> record = records.get(i);
-
-            if (i > 0) {
+        boolean first = true;
+        Iterator<InputStream> iterator = records.rawIterator();
+        while (iterator.hasNext()) {
+            if (first) {
+                first = false;
+            } else {
                 out.write(',');
             }
             out.write(KEY);
-            out.write(keyWriter.encode(record.key));
+            copyStream(iterator.next(), out);
 
             out.write(VALUE);
-            out.write(valueWriter.encode(record.value));
+            copyStream(iterator.next(), out);
             out.write('}');
         }
         out.write(END);
@@ -122,7 +120,7 @@ class TopicRequestData<K, V> {
         this.valueSchemaString = valueSchemaString;
     }
 
-    void setRecords(List<Record<K, V>> records) {
+    void setRecords(RecordData<?, ?> records) {
         this.records = records;
     }
 
@@ -132,5 +130,13 @@ class TopicRequestData<K, V> {
 
     Integer getValueSchemaId() {
         return valueSchemaId;
+    }
+
+    private void copyStream(InputStream in, OutputStream out) throws IOException {
+        int len = in.read(buffer);
+        while (len != -1) {
+            out.write(buffer, 0, len);
+            len = in.read(buffer);
+        }
     }
 }

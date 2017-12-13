@@ -25,13 +25,11 @@ package org.radarcns.data;
  * @param <V> value type
  */
 public class Record<K, V> {
-    public final long offset;
     public final K key;
     public final V value;
     public final long milliTimeAdded;
 
-    public Record(long offset, K key, V value) {
-        this.offset = offset;
+    public Record(K key, V value) {
         this.key = key;
         this.value = value;
         this.milliTimeAdded = System.currentTimeMillis();
