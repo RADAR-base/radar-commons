@@ -48,7 +48,6 @@ public class RecordGeneratorTest {
         Iterator<Record<ObservationKey, SpecificRecord>> iter = generator
                 .iterateValues(new ObservationKey("test", "a", "b"), 0);
         Record<ObservationKey, SpecificRecord> record = iter.next();
-        assertEquals(0, record.offset);
         assertEquals(new ObservationKey("test", "a", "b"), record.key);
         float x = ((EmpaticaE4Acceleration)record.value).getX();
         assertTrue(x >= 0.1f && x < 9.9f);
@@ -61,7 +60,6 @@ public class RecordGeneratorTest {
                 && time <= System.currentTimeMillis() / 1000d);
 
         Record<ObservationKey, SpecificRecord> nextRecord = iter.next();
-        assertEquals(1, nextRecord.offset);
         assertEquals(time + 0.1d, (Double)nextRecord.value.get(0), 1e-6);
     }
 

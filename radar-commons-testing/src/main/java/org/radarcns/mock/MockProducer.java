@@ -16,10 +16,29 @@
 
 package org.radarcns.mock;
 
-import static org.apache.kafka.clients.producer.ProducerConfig.BOOTSTRAP_SERVERS_CONFIG;
-import static org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG;
-import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG;
-import static org.radarcns.util.serde.AbstractKafkaAvroSerde.SCHEMA_REGISTRY_CONFIG;
+import org.radarcns.config.ServerConfig;
+import org.radarcns.config.YamlConfigLoader;
+import org.radarcns.kafka.ObservationKey;
+import org.radarcns.mock.config.BasicMockConfig;
+import org.radarcns.mock.config.MockDataConfig;
+import org.radarcns.mock.data.MockCsvParser;
+import org.radarcns.mock.data.RecordGenerator;
+import org.radarcns.passive.empatica.EmpaticaE4Acceleration;
+import org.radarcns.passive.empatica.EmpaticaE4BatteryLevel;
+import org.radarcns.passive.empatica.EmpaticaE4BloodVolumePulse;
+import org.radarcns.passive.empatica.EmpaticaE4ElectroDermalActivity;
+import org.radarcns.passive.empatica.EmpaticaE4InterBeatInterval;
+import org.radarcns.passive.empatica.EmpaticaE4Temperature;
+import org.radarcns.producer.BatchedKafkaSender;
+import org.radarcns.producer.KafkaSender;
+import org.radarcns.producer.direct.DirectSender;
+import org.radarcns.producer.rest.ConnectionState;
+import org.radarcns.producer.rest.ManagedConnectionPool;
+import org.radarcns.producer.rest.RestSender;
+import org.radarcns.producer.rest.SchemaRetriever;
+import org.radarcns.util.serde.KafkaAvroSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,31 +49,11 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.avro.specific.SpecificRecord;
-import org.radarcns.config.ServerConfig;
-import org.radarcns.config.YamlConfigLoader;
-import org.radarcns.data.SpecificRecordEncoder;
-import org.radarcns.passive.empatica.EmpaticaE4Acceleration;
-import org.radarcns.passive.empatica.EmpaticaE4BatteryLevel;
-import org.radarcns.passive.empatica.EmpaticaE4BloodVolumePulse;
-import org.radarcns.passive.empatica.EmpaticaE4ElectroDermalActivity;
-import org.radarcns.passive.empatica.EmpaticaE4InterBeatInterval;
-import org.radarcns.passive.empatica.EmpaticaE4Temperature;
-import org.radarcns.kafka.ObservationKey;
-import org.radarcns.mock.config.BasicMockConfig;
-import org.radarcns.mock.config.MockDataConfig;
-import org.radarcns.mock.data.MockCsvParser;
-import org.radarcns.mock.data.RecordGenerator;
-import org.radarcns.producer.KafkaSender;
-import org.radarcns.producer.rest.SchemaRetriever;
-import org.radarcns.producer.direct.DirectSender;
-import org.radarcns.producer.BatchedKafkaSender;
-import org.radarcns.producer.rest.ConnectionState;
-import org.radarcns.producer.rest.ManagedConnectionPool;
-import org.radarcns.producer.rest.RestSender;
-import org.radarcns.util.serde.KafkaAvroSerializer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static org.apache.kafka.clients.producer.ProducerConfig.BOOTSTRAP_SERVERS_CONFIG;
+import static org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG;
+import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG;
+import static org.radarcns.util.serde.AbstractKafkaAvroSerde.SCHEMA_REGISTRY_CONFIG;
 
 /**
  * A Mock Producer class that can be used to stream data. It can use MockFileSender and MockDevice
@@ -66,7 +65,7 @@ public class MockProducer {
 
     private final List<MockDevice<ObservationKey>> devices;
     private final List<MockFileSender> files;
-    private final List<KafkaSender<ObservationKey, SpecificRecord>> senders;
+    private final List<KafkaSender> senders;
     private final SchemaRetriever retriever;
 
     /**
@@ -89,7 +88,7 @@ public class MockProducer {
         int numDevices = mockConfig.getNumberOfDevices();
 
         retriever = new SchemaRetriever(mockConfig.getSchemaRegistry(), 10);
-        List<KafkaSender<ObservationKey, SpecificRecord>> tmpSenders = null;
+        List<KafkaSender> tmpSenders = null;
 
         try {
             devices = new ArrayList<>(numDevices);
@@ -127,7 +126,7 @@ public class MockProducer {
             }
         } catch (Exception ex) {
             if (tmpSenders != null) {
-                for (KafkaSender<?, ?> sender : tmpSenders) {
+                for (KafkaSender sender : tmpSenders) {
                     sender.close();
                 }
             }
@@ -138,7 +137,7 @@ public class MockProducer {
         senders = tmpSenders;
     }
 
-    private List<KafkaSender<ObservationKey, SpecificRecord>> createSenders(
+    private List<KafkaSender> createSenders(
             BasicMockConfig mockConfig, int numDevices) {
 
         if (mockConfig.isDirectProducer()) {
@@ -150,9 +149,9 @@ public class MockProducer {
     }
 
     /** Create senders that directly produce data to Kafka. */
-    private List<KafkaSender<ObservationKey, SpecificRecord>> createDirectSenders(int numDevices,
+    private List<KafkaSender> createDirectSenders(int numDevices,
             SchemaRetriever retriever, String brokerPaths) {
-        List<KafkaSender<ObservationKey, SpecificRecord>> result = new ArrayList<>(numDevices);
+        List<KafkaSender> result = new ArrayList<>(numDevices);
         for (int i = 0; i < numDevices; i++) {
             Properties properties = new Properties();
             properties.put(KEY_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
@@ -160,32 +159,29 @@ public class MockProducer {
             properties.put(SCHEMA_REGISTRY_CONFIG, retriever);
             properties.put(BOOTSTRAP_SERVERS_CONFIG, brokerPaths);
 
-            result.add(new DirectSender<ObservationKey, SpecificRecord>(properties));
+            result.add(new DirectSender(properties));
         }
         return result;
     }
 
     /** Create senders that produce data to Kafka via the REST proxy. */
-    private List<KafkaSender<ObservationKey, SpecificRecord>> createRestSenders(int numDevices,
+    private List<KafkaSender> createRestSenders(int numDevices,
             SchemaRetriever retriever, ServerConfig restProxy, boolean useCompression) {
-        List<KafkaSender<ObservationKey, SpecificRecord>> result = new ArrayList<>(numDevices);
+        List<KafkaSender> result = new ArrayList<>(numDevices);
         ConnectionState sharedState = new ConnectionState(10, TimeUnit.SECONDS);
-        RestSender.Builder<ObservationKey, SpecificRecord> restBuilder =
-                new RestSender.Builder<ObservationKey, SpecificRecord>()
+        RestSender.Builder restBuilder =
+                new RestSender.Builder()
                         .server(restProxy)
                         .schemaRetriever(retriever)
                         .useCompression(useCompression)
-                        .encoders(new SpecificRecordEncoder(false),
-                                new SpecificRecordEncoder(false))
                         .connectionState(sharedState)
                         .connectionTimeout(10, TimeUnit.SECONDS);
 
         for (int i = 0; i < numDevices; i++) {
-            RestSender<ObservationKey, SpecificRecord> firstSender = restBuilder
+            RestSender firstSender = restBuilder
                     .connectionPool(new ManagedConnectionPool())
                     .build();
-
-            result.add(new BatchedKafkaSender<>(firstSender, 1_000, 1000));
+            result.add(new BatchedKafkaSender(firstSender, 1000, 1000));
         }
         return result;
     }
@@ -214,7 +210,7 @@ public class MockProducer {
             device.join(5_000L);
         }
         logger.info("Closing channels");
-        for (KafkaSender<ObservationKey, SpecificRecord> sender : senders) {
+        for (KafkaSender sender : senders) {
             sender.close();
         }
         retriever.close();

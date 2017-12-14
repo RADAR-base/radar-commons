@@ -50,7 +50,6 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
     private final BufferedReader bufferedReader;
     private final FileReader fileReader;
     private List<String> currentLine;
-    private long offset;
 
     /**
      * Base constructor.
@@ -62,7 +61,7 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
             throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
             IllegalAccessException, IOException {
         //noinspection unchecked
-        topic = (AvroTopic<K, SpecificRecord>) config.parseAvroTopic();
+        topic = config.parseAvroTopic();
 
         fileReader = new FileReader(config.getDataFile(root));
         bufferedReader = new BufferedReader(fileReader);
@@ -73,7 +72,6 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
             headerMap.put(header.get(i), i);
         }
         currentLine = csvReader.parseLine();
-        offset = 0;
     }
 
     public AvroTopic getTopic() {
@@ -99,7 +97,7 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
 
         currentLine = csvReader.parseLine();
 
-        return new Record<>(offset++, key, value);
+        return new Record<>(key, value);
     }
 
     /**

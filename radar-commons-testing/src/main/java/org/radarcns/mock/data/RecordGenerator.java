@@ -65,8 +65,7 @@ public class RecordGenerator<K extends SpecificRecord> {
         this.config = config;
 
         // doing type checking below.
-        //noinspection unchecked
-        topic = (AvroTopic<K, SpecificRecord>) config.parseAvroTopic();
+        topic = config.parseAvroTopic();
         if (!topic.getKeyClass().equals(keyClass)) {
             throw new IllegalArgumentException(
                     "RecordGenerator only generates ObservationKey keys, not "
@@ -147,7 +146,7 @@ public class RecordGenerator<K extends SpecificRecord> {
      * @return list containing simulated values
      */
     public Iterator<Record<K, SpecificRecord>> iterateValues(final K key, final long duration) {
-        return new RecordIterator<>(duration, key);
+        return new RecordIterator(duration, key);
     }
 
     /**
@@ -212,17 +211,14 @@ public class RecordGenerator<K extends SpecificRecord> {
         return topic;
     }
 
-    private class RecordIterator<K extends SpecificRecord> implements
-            Iterator<Record<K, SpecificRecord>> {
+    private class RecordIterator implements Iterator<Record<K, SpecificRecord>> {
         private final Metronome timestamps;
         private final K key;
-        private long offset;
 
         public RecordIterator(long duration, K key) {
             this.key = key;
             timestamps = new Metronome(duration * config.getFrequency() / 1000L,
                     config.getFrequency());
-            offset = 0;
         }
 
         @Override
@@ -268,7 +264,7 @@ public class RecordGenerator<K extends SpecificRecord> {
                 value.put(f.pos(), f.defaultVal());
             }
 
-            return new Record<>(offset++, key, value);
+            return new Record<>(key, value);
         }
 
         @Override
