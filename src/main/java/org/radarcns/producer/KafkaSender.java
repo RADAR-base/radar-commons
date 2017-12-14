@@ -16,18 +16,18 @@
 
 package org.radarcns.producer;
 
+import org.radarcns.topic.AvroTopic;
+
 import java.io.Closeable;
 import java.io.IOException;
-import org.radarcns.topic.AvroTopic;
 
 /**
  * Thread-safe sender. Calling {@link #close()} must be done after all {@link KafkaTopicSender}
  * senders created with {@link #sender(AvroTopic)} have been called.
  */
-public interface KafkaSender<K, V> extends Closeable {
+public interface KafkaSender extends Closeable {
     /** Get a non thread-safe sender instance. */
-    <L extends K, W extends V> KafkaTopicSender<L, W> sender(AvroTopic<L, W> topic)
-            throws IOException;
+    <K, V> KafkaTopicSender<K, V> sender(AvroTopic<K, V> topic) throws IOException;
 
     /**
      * If the sender is no longer connected, try to reconnect.

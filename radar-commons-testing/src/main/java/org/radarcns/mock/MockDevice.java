@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
 public class MockDevice<K extends SpecificRecord> extends Thread {
     private static final Logger logger = LoggerFactory.getLogger(MockDevice.class);
     private final int baseFrequency;
-    private final KafkaSender<K, SpecificRecord> sender;
+    private final KafkaSender sender;
     private final AtomicBoolean stopping;
     private final List<RecordGenerator<K>> generators;
     private final K key;
@@ -52,8 +52,7 @@ public class MockDevice<K extends SpecificRecord> extends Thread {
      * @param key key to send all messages with
      * @param generators data generators that produce the data we send
      */
-    public MockDevice(KafkaSender<K, SpecificRecord> sender, K key,
-            List<RecordGenerator<K>> generators) {
+    public MockDevice(KafkaSender sender, K key, List<RecordGenerator<K>> generators) {
         this.generators = generators;
         this.key = key;
         baseFrequency = computeBaseFrequency(generators);
@@ -86,7 +85,7 @@ public class MockDevice<K extends SpecificRecord> extends Thread {
                         int frequency = generators.get(i).getConfig().getFrequency();
                         if (frequency > 0 && beat % (baseFrequency / frequency) == 0) {
                             Record<K, SpecificRecord> record = recordIterators.get(i).next();
-                            topicSenders.get(i).send(record.offset, record.key, record.value);
+                            topicSenders.get(i).send(record.key, record.value);
                         }
                     }
                 }

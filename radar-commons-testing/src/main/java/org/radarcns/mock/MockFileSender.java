@@ -16,13 +16,15 @@
 
 package org.radarcns.mock;
 
-import java.io.IOException;
-import org.apache.avro.specific.SpecificRecord;
+import org.radarcns.data.AvroRecordData;
 import org.radarcns.data.Record;
-import org.radarcns.kafka.ObservationKey;
 import org.radarcns.mock.data.MockCsvParser;
 import org.radarcns.producer.KafkaSender;
 import org.radarcns.producer.KafkaTopicSender;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 
 /**
  * Send mock data from a CSV file.
@@ -33,8 +35,7 @@ public class MockFileSender {
     private final KafkaSender sender;
     private final MockCsvParser parser;
 
-    public MockFileSender(KafkaSender<ObservationKey, SpecificRecord> sender,
-            MockCsvParser parser) {
+    public MockFileSender(KafkaSender sender, MockCsvParser parser) {
         this.parser = parser;
         this.sender = sender;
     }
@@ -46,10 +47,11 @@ public class MockFileSender {
     @SuppressWarnings("unchecked")
     public void send() throws IOException {
         try (KafkaTopicSender topicSender = sender.sender(parser.getTopic())) {
+            Collection<Record> records = new ArrayList<>();
             while (parser.hasNext()) {
-                Record<SpecificRecord, SpecificRecord> record = parser.next();
-                topicSender.send(record.offset, record.key, record.value);
+                records.add(parser.next());
             }
+            topicSender.send(new AvroRecordData(parser.getTopic(), records));
         }
     }
 }
