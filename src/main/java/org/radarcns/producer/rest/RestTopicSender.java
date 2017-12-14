@@ -99,6 +99,9 @@ class RestTopicSender<K, V> implements KafkaTopicSender<K, V> {
             } else {
                 logFailure(request, response, null);
             }
+        } catch (AuthenticationException ex) {
+            state.wasUnauthorized();
+            throw ex;
         } catch (IOException ex) {
             logFailure(request, null, ex);
         } finally {
