@@ -85,10 +85,8 @@ class RestTopicSender<K, V> implements KafkaTopicSender<K, V> {
                     logger.debug("Added message to topic {} -> {}",
                             topic, responseBody(response));
                 }
-            } else if (response.code() == 401) {
-                throw new AuthenticationException("Cannot authenticate");
-            } else if (response.code() == 403 || response.code() == 422) {
-                throw new AuthenticationException("Data does not match authentication");
+            } else if (response.code() == 401 || response.code() == 403 || response.code() == 422) {
+                state.wasUnauthorized();
             } else if (response.code() == 415
                     && Objects.equals(request.header("Accept"), KAFKA_REST_ACCEPT_ENCODING)) {
                 state.didConnect();
@@ -99,13 +97,14 @@ class RestTopicSender<K, V> implements KafkaTopicSender<K, V> {
             } else {
                 logFailure(request, response, null);
             }
-        } catch (AuthenticationException ex) {
-            state.wasUnauthorized();
-            throw ex;
         } catch (IOException ex) {
             logFailure(request, null, ex);
         } finally {
             requestData.reset();
+        }
+
+        if (state.getState() == ConnectionState.State.UNAUTHORIZED) {
+            throw new AuthenticationException("Request unauthorized");
         }
 
         if (doResend) {
@@ -144,19 +143,14 @@ class RestTopicSender<K, V> implements KafkaTopicSender<K, V> {
             ParsedSchemaMetadata metadata = retriever.getOrSetSchemaMetadata(
                     sendTopic, false, topic.getKeySchema(), -1);
             requestData.setKeySchemaId(metadata.getId());
-        } catch (IOException ex) {
-            throw new IOException("Failed to get schema for key "
-                    + topic.getKeyClass().getName() + " of topic " + topic, ex);
-        }
 
-        try {
-            ParsedSchemaMetadata metadata = retriever.getOrSetSchemaMetadata(
+            metadata = retriever.getOrSetSchemaMetadata(
                     sendTopic, true, topic.getValueSchema(), -1);
             requestData.setValueSchemaId(metadata.getId());
         } catch (IOException ex) {
-            throw new IOException("Failed to get schema for value "
-                    + topic.getValueClass().getName() + " of topic " + topic, ex);
+            throw new IOException("Failed to get schemas for topic " + topic, ex);
         }
+
         requestData.setRecords(records);
 
         return restClient.getRelativeUrl("topics/" + sendTopic);
