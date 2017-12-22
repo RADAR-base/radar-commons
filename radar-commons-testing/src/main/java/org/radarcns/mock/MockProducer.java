@@ -198,16 +198,15 @@ public class MockProducer {
 
     /** Stop sending data and clean up all resources. */
     public void shutdown() throws IOException, InterruptedException {
-        if (devices.isEmpty()) {
-            return;
-        }
-        logger.info("Shutting down mock devices");
-        for (MockDevice device : devices) {
-            device.shutdown();
-        }
-        logger.info("Waiting for mock devices to finish...");
-        for (MockDevice device : devices) {
-            device.join(5_000L);
+        if (!devices.isEmpty()) {
+            logger.info("Shutting down mock devices");
+            for (MockDevice device : devices) {
+                device.shutdown();
+            }
+            logger.info("Waiting for mock devices to finish...");
+            for (MockDevice device : devices) {
+                device.join(5_000L);
+            }
         }
         logger.info("Closing channels");
         for (KafkaSender sender : senders) {
