@@ -44,7 +44,7 @@ public class NumericAggregateCollectorTest {
         assertEquals(10.0d, valueCollector.getMax(), 0.0d);
         assertEquals(10.0d, valueCollector.getSum(), 0.0d);
         assertEquals(10.0d, valueCollector.getMean(), 0.0d);
-        assertEquals(0.0d, valueCollector.getIqr(), 0.0d);
+        assertEquals(0.0d, valueCollector.getInterQuartileRange(), 0.0d);
         assertEquals(1, valueCollector.getCount(),0);
 
         valueCollector.add(15.100d);
@@ -52,11 +52,11 @@ public class NumericAggregateCollectorTest {
         assertEquals(15.100d, valueCollector.getMax(), 0.0d);
         assertEquals(25.100d, valueCollector.getSum(), 0.0d);
         assertEquals(12.550d, valueCollector.getMean(), 0.0d);
-        assertEquals(5.1, valueCollector.getIqr(), 0.0d);
+        assertEquals(5.1, valueCollector.getInterQuartileRange(), 0.0d);
         assertEquals(2, valueCollector.getCount(),0);
 
         valueCollector.add(28.100d);
-        assertEquals(18.1d, valueCollector.getIqr(), 0.0d);
+        assertEquals(18.1d, valueCollector.getInterQuartileRange(), 0.0d);
 
     }
 
@@ -67,7 +67,7 @@ public class NumericAggregateCollectorTest {
         assertEquals(10.0234d, valueCollector.getMax(), 0.0d);
         assertEquals(10.0234d, valueCollector.getSum(), 0.0d);
         assertEquals(10.0234d, valueCollector.getMean(), 0.0d);
-        assertEquals(0.0d, valueCollector.getIqr(), 0.0d);
+        assertEquals(0.0d, valueCollector.getInterQuartileRange(), 0.0d);
         assertEquals(1, valueCollector.getCount(),0);
 
         valueCollector.add(15.0d);
@@ -75,11 +75,11 @@ public class NumericAggregateCollectorTest {
         assertEquals(15.0d, valueCollector.getMax(), 0.0d);
         assertEquals(25.0234d, valueCollector.getSum(), 0.0d);
         assertEquals(12.5117d, valueCollector.getMean(), 0.0d);
-        assertEquals(4.9766d, valueCollector.getIqr(), 0.0d);
+        assertEquals(4.9766d, valueCollector.getInterQuartileRange(), 0.0d);
         assertEquals(2, valueCollector.getCount(),0);
 
         valueCollector.add(28.100d);
-        assertEquals(18.0766d, valueCollector.getIqr(), 0.0d);
+        assertEquals(18.0766d, valueCollector.getInterQuartileRange(), 0.0d);
 
     }
 

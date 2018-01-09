@@ -18,6 +18,8 @@ package org.radarcns.stream.collector;
 
 import static org.radarcns.util.Serialization.floatToDouble;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,20 +35,44 @@ public class NumericAggregateCollector implements RecordCollector {
     private final String name;
     private final int pos;
     private final Type fieldType;
-    private double min = Double.MAX_VALUE;
-    private double max = Double.MIN_VALUE;
-    private BigDecimal sum = BigDecimal.ZERO;
-    private int count = 0;
-    private double mean = 0;
-    private final Double[] quartile = new Double[3];
+    private double min;
+    private double max;
+    private BigDecimal sum;
+    private int count;
+    private final Double[] quartile;
 
-    private final List<Double> history = new ArrayList<>();
+    private final List<Double> history;
+
+    @JsonCreator
+    public NumericAggregateCollector(
+            @JsonProperty("name") String name, @JsonProperty("pos") int pos,
+            @JsonProperty("fieldType") Type fieldType, @JsonProperty("min") double min,
+            @JsonProperty("max") double max, @JsonProperty("sum") BigDecimal sum,
+            @JsonProperty("count") int count, @JsonProperty("quartile") Double[] quartile,
+            @JsonProperty("history") List<Double> history) {
+        this.name = name;
+        this.pos = pos;
+        this.fieldType = fieldType;
+        this.min = min;
+        this.max = max;
+        this.sum = sum;
+        this.count = count;
+        this.quartile = quartile;
+        this.history = new ArrayList<>(history);
+    }
 
     public NumericAggregateCollector(String fieldName) {
         this(fieldName, null);
     }
 
     public NumericAggregateCollector(String fieldName, Schema schema) {
+        min = Double.MAX_VALUE;
+        max = Double.MIN_VALUE;
+        sum = BigDecimal.ZERO;
+        count = 0;
+        this.quartile = new Double[3];
+        this.history = new ArrayList<>();
+
         this.name = fieldName;
         if (schema == null) {
             this.pos = -1;
@@ -90,7 +116,7 @@ public class NumericAggregateCollector implements RecordCollector {
             return this;
         }
         if (fieldType == Type.FLOAT) {
-            return add(value.floatValue());
+            return add(Double.parseDouble(value.toString()));
         } else {
             return add(value.doubleValue());
         }
@@ -138,8 +164,6 @@ public class NumericAggregateCollector implements RecordCollector {
         count++;
         // use BigDecimal to avoid loss of precision
         sum = sum.add(BigDecimal.valueOf(value));
-
-        mean = sum.doubleValue() / count;
     }
 
     /**
@@ -204,14 +228,14 @@ public class NumericAggregateCollector implements RecordCollector {
     }
 
     public double getMean() {
-        return mean;
+        return sum.doubleValue() / count;
     }
 
     public List<Double> getQuartile() {
         return  Arrays.asList(quartile);
     }
 
-    public double getIqr() {
+    public double getInterQuartileRange() {
         return BigDecimal.valueOf(quartile[2])
                 .subtract(BigDecimal.valueOf(quartile[0])).doubleValue();
     }

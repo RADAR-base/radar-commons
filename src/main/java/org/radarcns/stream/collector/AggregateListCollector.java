@@ -16,6 +16,8 @@
 
 package org.radarcns.stream.collector;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.avro.Schema;
@@ -26,6 +28,12 @@ import org.apache.avro.specific.SpecificRecord;
  */
 public class AggregateListCollector implements RecordCollector {
     private final NumericAggregateCollector[] collectors;
+
+    @JsonCreator
+    public AggregateListCollector(
+            @JsonProperty("collectors") NumericAggregateCollector[] collectors) {
+        this.collectors = collectors;
+    }
 
     /** Array collector without schema. Double entries can be added, but entire records cannot. */
     public AggregateListCollector(String[] fieldNames) {
