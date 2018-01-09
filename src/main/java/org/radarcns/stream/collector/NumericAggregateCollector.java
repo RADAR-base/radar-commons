@@ -23,20 +23,80 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import org.apache.avro.Schema;
+import org.apache.avro.Schema.Field;
+import org.apache.avro.Schema.Type;
+import org.apache.avro.specific.SpecificRecord;
 
 /** Java class to aggregate data using Kafka Streams. Double is the base type. */
-public class DoubleValueCollector {
+public class NumericAggregateCollector implements RecordCollector {
+    private final String name;
+    private final int pos;
+    private final Type fieldType;
     private double min = Double.MAX_VALUE;
     private double max = Double.MIN_VALUE;
     private BigDecimal sum = BigDecimal.ZERO;
     private int count = 0;
-    private double avg = 0;
+    private double mean = 0;
     private final Double[] quartile = new Double[3];
-    private double iqr = 0;
 
     private final List<Double> history = new ArrayList<>();
 
-    public DoubleValueCollector add(float value) {
+    public NumericAggregateCollector(String fieldName) {
+        this(fieldName, null);
+    }
+
+    public NumericAggregateCollector(String fieldName, Schema schema) {
+        this.name = fieldName;
+        if (schema == null) {
+            this.pos = -1;
+            this.fieldType = null;
+        } else {
+            Field field = schema.getField(fieldName);
+            if (field == null) {
+                throw new IllegalArgumentException(
+                        "Field " + fieldName + " does not exist in schema " + schema.getFullName());
+            }
+            this.pos = field.pos();
+
+            Type apparentType = field.schema().getType();
+            if (apparentType == Type.UNION) {
+                for (Schema subSchema : field.schema().getTypes()) {
+                    if (subSchema.getType() != Type.NULL) {
+                        apparentType = subSchema.getType();
+                        break;
+                    }
+                }
+            }
+            fieldType = apparentType;
+
+            if (fieldType != Type.DOUBLE
+                    && fieldType != Type.FLOAT
+                    && fieldType != Type.INT
+                    && fieldType != Type.LONG) {
+                throw new IllegalArgumentException("Field " + fieldName + " is not a number type.");
+            }
+        }
+    }
+
+    @Override
+    public NumericAggregateCollector add(SpecificRecord record) {
+        if (pos == -1) {
+            throw new IllegalStateException(
+                    "Cannot add record without specifying a schema in the constructor.");
+        }
+        Number value = (Number)record.get(pos);
+        if (value == null) {
+            return this;
+        }
+        if (fieldType == Type.FLOAT) {
+            return add(value.floatValue());
+        } else {
+            return add(value.doubleValue());
+        }
+    }
+
+    public NumericAggregateCollector add(float value) {
         return this.add(floatToDouble(value));
     }
 
@@ -44,10 +104,10 @@ public class DoubleValueCollector {
      * Add a sample to the collection.
      * @param value new sample that has to be analysed
      */
-    public DoubleValueCollector add(double value) {
+    public NumericAggregateCollector add(double value) {
         updateMin(value);
         updateMax(value);
-        updateAvg(value);
+        updateMean(value);
         updateQuartile(value);
 
         return this;
@@ -74,19 +134,24 @@ public class DoubleValueCollector {
     /**
      * @param value new sample that update average value
      */
-    private void updateAvg(double value) {
+    private void updateMean(double value) {
         count++;
+        // use BigDecimal to avoid loss of precision
         sum = sum.add(BigDecimal.valueOf(value));
 
-        avg = sum.doubleValue() / count;
+        mean = sum.doubleValue() / count;
     }
 
     /**
      * @param value new sample that update quartiles value
      */
     private void updateQuartile(double value) {
-        history.add(value);
-        Collections.sort(history);
+        int index = Collections.binarySearch(history, value);
+        if (index >= 0) {
+            history.add(index, value);
+        } else {
+            history.add(-index - 1, value);
+        }
 
         int length = history.size();
 
@@ -107,21 +172,18 @@ public class DoubleValueCollector {
                 }
             }
         }
-
-        iqr = BigDecimal.valueOf(quartile[2]).subtract(
-                BigDecimal.valueOf(quartile[0])).doubleValue();
     }
 
     @Override
     public String toString() {
         return "DoubleValueCollector{"
-                + "min=" + getMin()
+                + "name=" + getName()
+                + ", min=" + getMin()
                 + ", max=" + getMax()
                 + ", sum=" + getSum()
                 + ", count=" + getCount()
-                + ", avg=" + getAvg()
+                + ", mean=" + getMean()
                 + ", quartile=" + getQuartile()
-                + ", iqr=" + getIqr()
                 + ", history=" + history + '}';
     }
 
@@ -137,12 +199,12 @@ public class DoubleValueCollector {
         return sum.doubleValue();
     }
 
-    public double getCount() {
+    public int getCount() {
         return count;
     }
 
-    public double getAvg() {
-        return avg;
+    public double getMean() {
+        return mean;
     }
 
     public List<Double> getQuartile() {
@@ -150,6 +212,11 @@ public class DoubleValueCollector {
     }
 
     public double getIqr() {
-        return iqr;
+        return BigDecimal.valueOf(quartile[2])
+                .subtract(BigDecimal.valueOf(quartile[0])).doubleValue();
+    }
+
+    public String getName() {
+        return name;
     }
 }

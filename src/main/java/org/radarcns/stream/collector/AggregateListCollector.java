@@ -18,24 +18,41 @@ package org.radarcns.stream.collector;
 
 import java.util.Arrays;
 import java.util.List;
+import org.apache.avro.Schema;
+import org.apache.avro.specific.SpecificRecord;
 
 /**
  * Java class to aggregate data using Kafka Streams. Double Array is the base type.
  */
-public class DoubleArrayCollector {
-    private DoubleValueCollector[] collectors;
+public class AggregateListCollector implements RecordCollector {
+    private final NumericAggregateCollector[] collectors;
+
+    /** Array collector without schema. Double entries can be added, but entire records cannot. */
+    public AggregateListCollector(String[] fieldNames) {
+        this(fieldNames, null);
+    }
+
+    /** Array collector with schema. Double entries or entire records can be added. */
+    public AggregateListCollector(String[] fieldNames, Schema schema) {
+        collectors = new NumericAggregateCollector[fieldNames.length];
+        for (int i = 0; i < collectors.length; i++) {
+            collectors[i] = new NumericAggregateCollector(fieldNames[i], schema);
+        }
+    }
+
+    @Override
+    public AggregateListCollector add(SpecificRecord record) {
+        for (NumericAggregateCollector collector : collectors) {
+            collector.add(record);
+        }
+        return this;
+    }
 
     /**
      * Add a sample to the collection.
      * @param value new sample that has to be analysed
      */
-    public DoubleArrayCollector add(double[] value) {
-        if (collectors == null) {
-            collectors = new DoubleValueCollector[value.length];
-            for (int i = 0; i < value.length; i++) {
-                collectors[i] = new DoubleValueCollector();
-            }
-        }
+    public AggregateListCollector add(double[] value) {
         if (collectors.length != value.length) {
             throw new IllegalArgumentException(
                     "The length of current input differs from the length of the value used to "
@@ -53,7 +70,7 @@ public class DoubleArrayCollector {
         return Arrays.toString(collectors);
     }
 
-    public List<DoubleValueCollector> getCollectors() {
+    public List<NumericAggregateCollector> getCollectors() {
         return Arrays.asList(collectors);
     }
 }

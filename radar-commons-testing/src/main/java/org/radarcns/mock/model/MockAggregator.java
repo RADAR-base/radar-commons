@@ -18,7 +18,6 @@ package org.radarcns.mock.model;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -79,8 +78,7 @@ public final class MockAggregator {
                 }
 
                 expectedValue.put(config, value);
-            } catch (NoSuchMethodException | IllegalAccessException | ClassNotFoundException
-                    | InvocationTargetException ex) {
+            } catch (ReflectiveOperationException ex) {
                 throw new IllegalArgumentException("Could not read topic", ex);
             }
         }

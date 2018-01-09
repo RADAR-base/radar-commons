@@ -18,14 +18,14 @@ package org.radarcns.mock.model;
 
 import java.util.List;
 import org.apache.avro.Schema;
-import org.radarcns.stream.collector.DoubleArrayCollector;
+import org.radarcns.stream.collector.AggregateListCollector;
 
 /**
  * {@code ExpectedValue} represented as {@code Double[]}.
  *
  * {@link ExpectedValue}
  */
-public class ExpectedArrayValue extends ExpectedValue<DoubleArrayCollector> {
+public class ExpectedArrayValue extends ExpectedValue<AggregateListCollector> {
     /**
      * Constructor.
      */
@@ -33,21 +33,8 @@ public class ExpectedArrayValue extends ExpectedValue<DoubleArrayCollector> {
         super(valueSchema, valueFields);
     }
 
-    public ExpectedArrayValue() {
-        super();
-    }
-
     @Override
-    protected DoubleArrayCollector createValue() {
-        return new DoubleArrayCollector();
-    }
-
-    @Override
-    protected void addToValue(DoubleArrayCollector collector, Object[] rawValues) {
-        double[] values = new double[rawValues.length];
-        for (int i = 0; i < values.length; i++) {
-            values[i] = Double.parseDouble(rawValues[i].toString());
-        }
-        collector.add(values);
+    protected AggregateListCollector createCollector() {
+        return new AggregateListCollector(fieldNames, schema);
     }
 }
