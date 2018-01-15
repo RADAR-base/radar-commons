@@ -24,7 +24,8 @@ import org.apache.avro.Schema;
 import org.apache.avro.specific.SpecificRecord;
 
 /**
- * Java class to aggregate data using Kafka Streams. Double Array is the base type.
+ * Java class to aggregate multiple fields of data using Kafka Streams. It can be used for example
+ * on acceleration or gyroscope observations that have multiple axes.
  */
 public class AggregateListCollector implements RecordCollector {
     private final NumericAggregateCollector[] collectors;
@@ -40,7 +41,10 @@ public class AggregateListCollector implements RecordCollector {
         this(fieldNames, null);
     }
 
-    /** Array collector with schema. Double entries or entire records can be added. */
+    /**
+     * Aggregate list collector with single record schema. Double entries or records can be added.
+     * This assumes that all fields in the aggregate list are extracted from a single record schema.
+     */
     public AggregateListCollector(String[] fieldNames, Schema schema) {
         collectors = new NumericAggregateCollector[fieldNames.length];
         for (int i = 0; i < collectors.length; i++) {
