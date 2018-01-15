@@ -35,26 +35,18 @@ public class NumericAggregateCollector implements RecordCollector {
     private final String name;
     private final int pos;
     private final Type fieldType;
-    private double min;
-    private double max;
     private BigDecimal sum;
-    private int count;
     private final List<Double> history;
 
     @JsonCreator
     public NumericAggregateCollector(
             @JsonProperty("name") String name, @JsonProperty("pos") int pos,
-            @JsonProperty("fieldType") Type fieldType, @JsonProperty("min") double min,
-            @JsonProperty("max") double max, @JsonProperty("sum") BigDecimal sum,
-            @JsonProperty("count") int count,
+            @JsonProperty("fieldType") Type fieldType, @JsonProperty("sum") BigDecimal sum,
             @JsonProperty("history") List<Double> history) {
         this.name = name;
         this.pos = pos;
         this.fieldType = fieldType;
-        this.min = min;
-        this.max = max;
         this.sum = sum;
-        this.count = count;
         this.history = new ArrayList<>(history);
     }
 
@@ -63,10 +55,7 @@ public class NumericAggregateCollector implements RecordCollector {
     }
 
     public NumericAggregateCollector(String fieldName, Schema schema) {
-        min = Double.MAX_VALUE;
-        max = Double.MIN_VALUE;
         sum = BigDecimal.ZERO;
-        count = 0;
         this.history = new ArrayList<>();
 
         this.name = fieldName;
@@ -127,37 +116,16 @@ public class NumericAggregateCollector implements RecordCollector {
      * @param value new sample that has to be analysed
      */
     public NumericAggregateCollector add(double value) {
-        updateMin(value);
-        updateMax(value);
-        updateMean(value);
+        updateSum(value);
         updateHistory(value);
 
         return this;
     }
 
     /**
-     * @param value new sample that update min value
-     */
-    private void updateMin(double value) {
-        if (min > value) {
-            min = value;
-        }
-    }
-
-    /**
-     * @param value new sample that update max value
-     */
-    private void updateMax(double value) {
-        if (max < value) {
-            max = value;
-        }
-    }
-
-    /**
      * @param value new sample that update average value
      */
-    private void updateMean(double value) {
-        count++;
+    private void updateSum(double value) {
         // use BigDecimal to avoid loss of precision
         sum = sum.add(BigDecimal.valueOf(value));
     }
@@ -188,11 +156,11 @@ public class NumericAggregateCollector implements RecordCollector {
     }
 
     public double getMin() {
-        return min;
+        return history.get(0);
     }
 
     public double getMax() {
-        return max;
+        return history.get(history.size() - 1);
     }
 
     public double getSum() {
@@ -200,11 +168,11 @@ public class NumericAggregateCollector implements RecordCollector {
     }
 
     public int getCount() {
-        return count;
+        return history.size();
     }
 
     public double getMean() {
-        return sum.doubleValue() / count;
+        return sum.doubleValue() / history.size();
     }
 
     public List<Double> getQuartile() {
