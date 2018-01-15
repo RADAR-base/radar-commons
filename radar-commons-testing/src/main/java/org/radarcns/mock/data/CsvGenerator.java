@@ -28,6 +28,18 @@ import org.radarcns.util.CsvWriter;
  * to compute the expected results.
  */
 public final class CsvGenerator {
+    private final ObservationKey key;
+
+    /** CsvGenerator sending data as project test, user UserID_0 and source SourceID_0. */
+    public CsvGenerator() {
+        this(new ObservationKey("test", "UserID_0", "SourceID_0"));
+    }
+
+    /** CsvGenerator sending data with given key. */
+    public CsvGenerator(ObservationKey key) {
+        this.key = key;
+    }
+
     /**
      * Generates new CSV file to simulation a single user with a single device.
      *
@@ -58,8 +70,6 @@ public final class CsvGenerator {
      */
     public void generate(RecordGenerator<ObservationKey> generator, long duration, File csvFile)
             throws IOException {
-        ObservationKey key = new ObservationKey("test", "UserID_0", "SourceID_0");
-
         try (CsvWriter writer = new CsvWriter(csvFile, generator.getHeader())) {
             writer.writeRows(generator.iterateRawValues(key, duration));
         }

@@ -24,70 +24,40 @@ import org.apache.avro.Schema;
 import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.data.Record;
 import org.radarcns.kafka.ObservationKey;
+import org.radarcns.stream.collector.RecordCollector;
 
 /**
  * It computes the expected value for a test case.
  */
-public abstract class ExpectedValue<V> {
+public abstract class ExpectedValue<V extends RecordCollector> {
     // Timewindow length in milliseconds
     public static final long DURATION = TimeUnit.SECONDS.toMillis(10);
     private final int timeReceivedPos;
-    private final int[] valuePos;
+    protected final Schema schema;
+    protected final String[] fieldNames;
 
     private Long lastTimestamp;
-    private ObservationKey lastKey;
-    private V lastValue;
+    private V lastCollector;
     private final Map<Long, V> series;
 
     /**
      * Constructor.
      **/
-    public ExpectedValue(Schema valueSchema, List<String> valueFields) {
+    public ExpectedValue(Schema valueSchema, List<String> fieldNames) {
+        this.schema = valueSchema;
+        this.fieldNames = fieldNames.toArray(new String[fieldNames.size()]);
         timeReceivedPos = valueSchema.getField("timeReceived").pos();
 
-        valuePos = new int[valueFields.size()];
-        for (int i = 0; i < valuePos.length; i++) {
-            valuePos[i] = valueSchema.getField(valueFields.get(i)).pos();
-        }
-
         series = new HashMap<>();
         lastTimestamp = 0L;
-        lastValue = null;
-    }
-
-    /**
-     * Constructor.
-     **/
-    public ExpectedValue() {
-        timeReceivedPos = -1;
-        valuePos = null;
-
-        series = new HashMap<>();
-        lastTimestamp = 0L;
-        lastValue = null;
+        lastCollector = null;
     }
 
     /**
      * Create a new value for the series. This is called when the time window of a record does not
      * match a previous value in the time series.
      */
-    protected abstract V createValue();
-
-    /**
-     * Add record to a single time series value.
-     * @param value value to add record to.
-     * @param values values of the record to add
-     */
-    protected abstract void addToValue(V value, Object[] values);
-
-    /** Number of value fields of the records in this expected value. */
-    public int getValueFieldLength() {
-        return valuePos.length;
-    }
-
-    protected Object getValue(SpecificRecord record, int i) {
-        return record.get(valuePos[i]);
-    }
+    protected abstract V createCollector();
 
     public Map<Long, V> getSeries() {
         return series;
@@ -102,31 +72,11 @@ public abstract class ExpectedValue<V> {
             throw new IllegalStateException("Cannot parse record without a schema.");
         }
         long timeMillis = (long) ((Double) record.value.get(timeReceivedPos) * 1000d);
-        Object[] obj = new Object[valuePos.length];
-        for (int i = 0; i < valuePos.length; i++) {
-            obj[i] = record.value.get(valuePos[i]);
-        }
-
-        add(record.key, timeMillis, obj);
-    }
-
-    /**
-     * Add a new record to the series of expected values.
-     * @param key measurement key
-     * @param timeMillis time the record is received
-     * @param values values to add
-     */
-    public void add(ObservationKey key, long timeMillis, Object... values) {
-        this.lastKey = key;
-        if (timeMillis >= lastTimestamp + DURATION || lastValue == null) {
+        if (timeMillis >= lastTimestamp + DURATION || lastCollector == null) {
             lastTimestamp = timeMillis - (timeMillis % DURATION);
-            lastValue = createValue();
-            getSeries().put(lastTimestamp, lastValue);
+            lastCollector = createCollector();
+            getSeries().put(lastTimestamp, lastCollector);
         }
-        addToValue(lastValue, values);
-    }
-
-    public ObservationKey getLastKey() {
-        return lastKey;
+        lastCollector.add(record.value);
     }
 }
