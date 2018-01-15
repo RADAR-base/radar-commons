@@ -30,7 +30,10 @@ import org.apache.avro.Schema.Field;
 import org.apache.avro.Schema.Type;
 import org.apache.avro.specific.SpecificRecord;
 
-/** Java class to aggregate data using Kafka Streams. Double is the base type. */
+/**
+ * Java class to aggregate data using Kafka Streams. Double is the base type.
+ * Only the sum and sorted history are collected, other values are calculated on request.
+ */
 public class NumericAggregateCollector implements RecordCollector {
     private final String name;
     private final int pos;
@@ -116,30 +119,16 @@ public class NumericAggregateCollector implements RecordCollector {
      * @param value new sample that has to be analysed
      */
     public NumericAggregateCollector add(double value) {
-        updateSum(value);
-        updateHistory(value);
-
-        return this;
-    }
-
-    /**
-     * @param value new sample that update average value
-     */
-    private void updateSum(double value) {
-        // use BigDecimal to avoid loss of precision
         sum = sum.add(BigDecimal.valueOf(value));
-    }
 
-    /**
-     * @param value new sample that update quartiles value
-     */
-    private void updateHistory(double value) {
         int index = Collections.binarySearch(history, value);
         if (index >= 0) {
             history.add(index, value);
         } else {
             history.add(-index - 1, value);
         }
+
+        return this;
     }
 
     @Override
