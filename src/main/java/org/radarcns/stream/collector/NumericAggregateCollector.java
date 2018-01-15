@@ -39,8 +39,6 @@ public class NumericAggregateCollector implements RecordCollector {
     private double max;
     private BigDecimal sum;
     private int count;
-    private final Double[] quartile;
-
     private final List<Double> history;
 
     @JsonCreator
@@ -48,7 +46,7 @@ public class NumericAggregateCollector implements RecordCollector {
             @JsonProperty("name") String name, @JsonProperty("pos") int pos,
             @JsonProperty("fieldType") Type fieldType, @JsonProperty("min") double min,
             @JsonProperty("max") double max, @JsonProperty("sum") BigDecimal sum,
-            @JsonProperty("count") int count, @JsonProperty("quartile") Double[] quartile,
+            @JsonProperty("count") int count,
             @JsonProperty("history") List<Double> history) {
         this.name = name;
         this.pos = pos;
@@ -57,7 +55,6 @@ public class NumericAggregateCollector implements RecordCollector {
         this.max = max;
         this.sum = sum;
         this.count = count;
-        this.quartile = quartile;
         this.history = new ArrayList<>(history);
     }
 
@@ -70,7 +67,6 @@ public class NumericAggregateCollector implements RecordCollector {
         max = Double.MIN_VALUE;
         sum = BigDecimal.ZERO;
         count = 0;
-        this.quartile = new Double[3];
         this.history = new ArrayList<>();
 
         this.name = fieldName;
@@ -134,7 +130,7 @@ public class NumericAggregateCollector implements RecordCollector {
         updateMin(value);
         updateMax(value);
         updateMean(value);
-        updateQuartile(value);
+        updateHistory(value);
 
         return this;
     }
@@ -169,32 +165,12 @@ public class NumericAggregateCollector implements RecordCollector {
     /**
      * @param value new sample that update quartiles value
      */
-    private void updateQuartile(double value) {
+    private void updateHistory(double value) {
         int index = Collections.binarySearch(history, value);
         if (index >= 0) {
             history.add(index, value);
         } else {
             history.add(-index - 1, value);
-        }
-
-        int length = history.size();
-
-        if (length == 1) {
-            quartile[0] = quartile[1] = quartile[2] = history.get(0);
-        } else {
-            for (int i = 0; i < 3; i++) {
-                double pos = (i + 1) * (length + 1) / 4.0d;  // == (i + 1) * 25 * (length + 1) / 100
-                int intPos = (int) pos;
-                if (intPos == 0) {
-                    quartile[i] = history.get(0);
-                } else if (intPos == length) {
-                    quartile[i] = history.get(length - 1);
-                } else {
-                    double diff = pos - intPos;
-                    double base = history.get(intPos - 1);
-                    quartile[i] = base + diff * (history.get(intPos) - base);
-                }
-            }
         }
     }
 
@@ -232,12 +208,36 @@ public class NumericAggregateCollector implements RecordCollector {
     }
 
     public List<Double> getQuartile() {
-        return  Arrays.asList(quartile);
+        int length = history.size();
+
+        List<Double> quartiles;
+        if (length == 1) {
+            Double elem = history.get(0);
+            quartiles = Arrays.asList(elem, elem, elem);
+        } else {
+            quartiles = new ArrayList<>(3);
+            for (int i = 1; i <= 3; i++) {
+                double pos = i * (length + 1) / 4.0d;  // == i * 25 * (length + 1) / 100
+                int intPos = (int) pos;
+                if (intPos == 0) {
+                    quartiles.add(history.get(0));
+                } else if (intPos == length) {
+                    quartiles.add(history.get(length - 1));
+                } else {
+                    double diff = pos - intPos;
+                    double base = history.get(intPos - 1);
+                    quartiles.add(base + diff * (history.get(intPos) - base));
+                }
+            }
+        }
+
+        return quartiles;
     }
 
     public double getInterQuartileRange() {
-        return BigDecimal.valueOf(quartile[2])
-                .subtract(BigDecimal.valueOf(quartile[0])).doubleValue();
+        List<Double> quartiles = getQuartile();
+        return BigDecimal.valueOf(quartiles.get(2))
+                .subtract(BigDecimal.valueOf(quartiles.get(0))).doubleValue();
     }
 
     public String getName() {
