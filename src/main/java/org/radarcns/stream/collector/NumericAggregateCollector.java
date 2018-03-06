@@ -271,7 +271,7 @@ public class NumericAggregateCollector implements RecordCollector {
         /**
          * For backwards compatibility purposes, convert a full history to a reservoir.
          * @param history stored history.
-         * @return
+         * @return the current builder.
          * @deprecated use reservoir instead.
          */
         @Deprecated
