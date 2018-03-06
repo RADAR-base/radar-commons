@@ -268,6 +268,13 @@ public class NumericAggregateCollector implements RecordCollector {
             return this;
         }
 
+        /**
+         * For backwards compatibility purposes, convert a full history to a reservoir.
+         * @param history stored history.
+         * @return
+         * @deprecated use reservoir instead.
+         */
+        @Deprecated
         @JsonSetter
         public Builder history(List<Double> history) {
             min(history.get(0));

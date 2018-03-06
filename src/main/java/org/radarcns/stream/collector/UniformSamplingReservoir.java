@@ -10,20 +10,41 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
+/**
+ * Uniform sampling reservoir for streaming. This should capture the input distribution in order
+ * to compute quartiles, using so-called Algorithm R.
+ *
+ * <p>The maximum size of the reservoir can be increased to get more accurate quartile estimations.
+ * As long as the number of samples is lower than the maximum size of the reservoir, the quartiles
+ * are computed exactly.
+ */
 public class UniformSamplingReservoir {
     private final List<Double> samples;
     private final int maxSize;
     private int count;
     private static final int MAX_SIZE_DEFAULT = 999;
 
+    /** Empty reservoir with default maximum size. */
     public UniformSamplingReservoir() {
         this(Collections.<Double>emptyList(), 0, MAX_SIZE_DEFAULT);
     }
 
-    public UniformSamplingReservoir(List<Double> allSamples) {
-        this(allSamples, allSamples.size(), MAX_SIZE_DEFAULT);
+    /**
+     * Create a reservoir that samples from given values.
+     * @param allValues list of values to sample from.
+     * @throws NullPointerException if given allValues are {@code null}.
+     */
+    public UniformSamplingReservoir(List<Double> allValues) {
+        this(allValues, allValues.size(), MAX_SIZE_DEFAULT);
     }
 
+    /**
+     * Create a reservoir that samples from given values.
+     * @param samples list of values to sample from.
+     * @param count current size of the number of samples that the reservoir represents.
+     * @param maxSize maximum reservoir size.
+     * @throws NullPointerException if given allValues are {@code null}
+     */
     @JsonCreator
     public UniformSamplingReservoir(
             @JsonProperty("samples") List<Double> samples,
@@ -52,6 +73,7 @@ public class UniformSamplingReservoir {
         Collections.sort(this.samples);
     }
 
+    /** Add a sample to the reservoir. */
     public void add(double value) {
         boolean doAdd;
         int removeIndex;
@@ -80,6 +102,11 @@ public class UniformSamplingReservoir {
         count++;
     }
 
+    /**
+     * Get the quartiles of the underlying distribution. If the number of samples is larger than
+     * the maximum size of the reservoir, this will be an estimate.
+     * @return list with size three, of the 25, 50 and 75 percentiles.
+     */
     public List<Double> getQuartiles() {
         int length = samples.size();
 
@@ -107,14 +134,17 @@ public class UniformSamplingReservoir {
         return quartiles;
     }
 
+    /** Get the currently stored samples. */
     public List<Double> getSamples() {
         return Collections.unmodifiableList(samples);
     }
 
+    /** Get the maximum size of this reservoir. */
     public int getMaxSize() {
         return maxSize;
     }
 
+    /** Get the number of samples that are being represented by the reservoir. */
     public int getCount() {
         return count;
     }
