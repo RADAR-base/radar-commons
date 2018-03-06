@@ -31,7 +31,11 @@ public class AggregateListCollectorTest {
                 new String[]{"a", "b", "c", "d"});
         double[] arrayvalues = {0.15d, 1.0d, 2.0d, 3.0d};
         arrayCollector.add(arrayvalues);
-        assertEquals("[DoubleValueCollector{name=a, min=0.15, max=0.15, sum=0.15, count=1, mean=0.15, quartile=[0.15, 0.15, 0.15], history=[0.15]}, DoubleValueCollector{name=b, min=1.0, max=1.0, sum=1.0, count=1, mean=1.0, quartile=[1.0, 1.0, 1.0], history=[1.0]}, DoubleValueCollector{name=c, min=2.0, max=2.0, sum=2.0, count=1, mean=2.0, quartile=[2.0, 2.0, 2.0], history=[2.0]}, DoubleValueCollector{name=d, min=3.0, max=3.0, sum=3.0, count=1, mean=3.0, quartile=[3.0, 3.0, 3.0], history=[3.0]}]" , arrayCollector.toString());
+        assertEquals(4, arrayCollector.getCollectors().size());
+        assertEquals(0.15, arrayCollector.getCollectors().get(0).getMin(), 0.0d);
+        assertEquals(1.0, arrayCollector.getCollectors().get(1).getMin(), 0.0d);
+        assertEquals(2.0, arrayCollector.getCollectors().get(2).getMin(), 0.0d);
+        assertEquals(3.0, arrayCollector.getCollectors().get(3).getMin(), 0.0d);
     }
 
     @Test
@@ -39,6 +43,10 @@ public class AggregateListCollectorTest {
         AggregateListCollector arrayCollector = new AggregateListCollector(new String[] {"x", "y", "z"},
                 EmpaticaE4Acceleration.getClassSchema());
         arrayCollector.add(new EmpaticaE4Acceleration(0d, 0d, 0.15f, 1.0f, 2.0f));
-        assertEquals("[DoubleValueCollector{name=x, min=0.15, max=0.15, sum=0.15, count=1, mean=0.15, quartile=[0.15, 0.15, 0.15], history=[0.15]}, DoubleValueCollector{name=y, min=1.0, max=1.0, sum=1.0, count=1, mean=1.0, quartile=[1.0, 1.0, 1.0], history=[1.0]}, DoubleValueCollector{name=z, min=2.0, max=2.0, sum=2.0, count=1, mean=2.0, quartile=[2.0, 2.0, 2.0], history=[2.0]}]" , arrayCollector.toString());
+
+        assertEquals(3, arrayCollector.getCollectors().size());
+        assertEquals(0.15, arrayCollector.getCollectors().get(0).getMin(), 0.0d);
+        assertEquals(1.0, arrayCollector.getCollectors().get(1).getMin(), 0.0d);
+        assertEquals(2.0, arrayCollector.getCollectors().get(2).getMin(), 0.0d);
     }
 }

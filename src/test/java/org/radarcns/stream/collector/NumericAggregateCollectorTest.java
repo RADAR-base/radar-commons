@@ -18,6 +18,9 @@ package org.radarcns.stream.collector;
 
 import static org.junit.Assert.assertEquals;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
 import org.radarcns.kafka.AggregateKey;
@@ -25,16 +28,21 @@ import org.radarcns.monitor.application.ApplicationRecordCounts;
 import org.radarcns.passive.empatica.EmpaticaE4BloodVolumePulse;
 import org.radarcns.passive.phone.PhoneBatteryLevel;
 
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.Arrays;
+
 /**
  * Created by nivethika on 20-12-16.
  */
 public class NumericAggregateCollectorTest {
 
-    private NumericAggregateCollector valueCollector ;
+    private NumericAggregateCollector valueCollector;
 
     @Before
     public void setUp() {
-        this.valueCollector = new NumericAggregateCollector("test");
+        this.valueCollector = new NumericAggregateCollector.Builder("test")
+                .build();
     }
 
     @Test
@@ -153,5 +161,42 @@ public class NumericAggregateCollectorTest {
         valueCollector.add(new ApplicationRecordCounts(0d, 2, 0, 1));
         assertEquals(2, valueCollector.getCount());
         assertEquals(1.5d, valueCollector.getMean(), 1e-5d);
+    }
+
+    @Test
+    public void testSerialization() throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+
+        mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
+        mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+
+        valueCollector = new NumericAggregateCollector.Builder("test")
+                .history(Arrays.asList(-1d, 15d))
+                .sum(BigDecimal.valueOf(14))
+                .build();
+
+        String valueString = mapper.writeValueAsString(valueCollector);
+        System.out.println(valueString);
+        assertEquals(valueCollector, mapper.readValue(valueString, NumericAggregateCollector.class));
+    }
+
+    @Test
+    public void testReservoirBuilder() {
+        valueCollector = new NumericAggregateCollector.Builder("test")
+                .reservoir(new UniformSamplingReservoir(Arrays.asList(-1d, 15d), 2, 1))
+                .build();
+
+        assertEquals(2, valueCollector.getCount());
+        assertEquals(1, valueCollector.getReservoir().getSamples().size());
+    }
+
+    @Test
+    public void testReservoirBuilderUnlimited() {
+        valueCollector = new NumericAggregateCollector.Builder("name")
+                .reservoir(new UniformSamplingReservoir(Arrays.asList(-1d, 15d), 2, 1000))
+                .build();
+
+        assertEquals(2, valueCollector.getCount());
+        assertEquals(2, valueCollector.getReservoir().getSamples().size());
     }
 }

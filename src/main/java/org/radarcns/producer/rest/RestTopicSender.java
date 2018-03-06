@@ -85,7 +85,7 @@ class RestTopicSender<K, V> implements KafkaTopicSender<K, V> {
                     logger.debug("Added message to topic {} -> {}",
                             topic, responseBody(response));
                 }
-            } else if (response.code() == 401 || response.code() == 403 || response.code() == 422) {
+            } else if (response.code() == 401 || response.code() == 403) {
                 state.wasUnauthorized();
             } else if (response.code() == 415
                     && Objects.equals(request.header("Accept"), KAFKA_REST_ACCEPT_ENCODING)) {
