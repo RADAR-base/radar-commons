@@ -117,7 +117,7 @@ public class UniformSamplingReservoir {
         } else {
             quartiles = new ArrayList<>(3);
             for (int i = 1; i <= 3; i++) {
-                double pos = i * (length + 1) / 4.0d;  // == i * 25 * (length + 1) / 100
+                double pos = i * (length + 1) * 0.25d; // 25 percentile steps
                 int intPos = (int) pos;
                 if (intPos == 0) {
                     quartiles.add(samples.get(0));
