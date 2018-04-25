@@ -67,7 +67,6 @@ public class UniformSamplingReservoir {
         this.count = count;
         this.samples = new ArrayList<>(maxSize);
         initializeReservoir(samples);
-        Collections.sort(this.samples);
     }
 
     /** Sample from given list of samples to initialize the reservoir. */
@@ -102,6 +101,7 @@ public class UniformSamplingReservoir {
         } else {
             this.samples.addAll(samples);
         }
+        Collections.sort(this.samples);
     }
 
     /** Add a sample to the reservoir. */
