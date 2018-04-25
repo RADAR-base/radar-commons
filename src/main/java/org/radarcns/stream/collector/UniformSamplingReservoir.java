@@ -6,8 +6,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -50,8 +53,9 @@ public class UniformSamplingReservoir {
             @JsonProperty("samples") List<Double> samples,
             @JsonProperty("count") int count,
             @JsonProperty("maxSize") int maxSize) {
-        this.samples = new ArrayList<>(Objects.requireNonNull(samples));
-
+        if (samples == null) {
+            throw new IllegalArgumentException("Samples may not be null");
+        }
         if (maxSize <= 0) {
             throw new IllegalArgumentException("Reservoir size must be strictly positive");
         }
@@ -61,14 +65,41 @@ public class UniformSamplingReservoir {
             throw new IllegalArgumentException("Reservoir size must be positive");
         }
         this.count = count;
+        this.samples = new ArrayList<>(maxSize);
+        initializeReservoir(samples);
+    }
 
-
-        int toRemove = this.samples.size() - maxSize;
-        if (toRemove > 0) {
+    /** Sample from given list of samples to initialize the reservoir. */
+    private void initializeReservoir(List<Double> samples) {
+        int numSamples = samples.size();
+        // There are much more samples than the size permits. Random sample from the
+        // given list. Duplicate addresses are retried, and for each hit there is at least a
+        // 50% probability of getting a number that has not yet been picked.
+        if (numSamples > maxSize * 2) {
             ThreadLocalRandom random = ThreadLocalRandom.current();
-            for (int i = 0; i < toRemove; i++) {
-                this.samples.remove(random.nextInt(this.samples.size()));
+            Set<Integer> indexes = new HashSet<>();
+            while (indexes.size() < maxSize) {
+                indexes.add(random.nextInt(numSamples));
             }
+            for (Integer index : indexes) {
+                this.samples.add(samples.get(index));
+            }
+            // There are not much more samples than the size permits. Make a list from all indexes
+            // and at random pick and remove index from that. Put all the samples at given
+            // indexes in the reservoir. Do not do retry sampling as above, as the final entry may
+            // have a probability of 1/maxSize of actually being picked.
+        } else if (numSamples > maxSize) {
+            LinkedList<Integer> indexes = new LinkedList<>();
+            for (int i = 0; i < numSamples; i++) {
+                indexes.add(i);
+            }
+            ThreadLocalRandom random = ThreadLocalRandom.current();
+            for (int i = 0; i < maxSize; i++) {
+                int index = indexes.remove(random.nextInt(indexes.size()));
+                this.samples.add(samples.get(index));
+            }
+        } else {
+            this.samples.addAll(samples);
         }
         Collections.sort(this.samples);
     }
