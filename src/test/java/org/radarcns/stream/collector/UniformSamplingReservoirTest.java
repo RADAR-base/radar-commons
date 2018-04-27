@@ -2,18 +2,17 @@ package org.radarcns.stream.collector;
 
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class UniformSamplingReservoirTest {
     @Test
     public void add() {
-        UniformSamplingReservoir reservoir = new UniformSamplingReservoir(Arrays.asList(0.1, 0.3, 0.5), 3, 3);
+        UniformSamplingReservoir reservoir = new UniformSamplingReservoir(new double[] {0.1, 0.3, 0.5}, 3, 3);
         reservoir.add(0.7);
         assertEquals(3, reservoir.getSamples().size());
         assertEquals(3, reservoir.getMaxSize());
@@ -25,7 +24,7 @@ public class UniformSamplingReservoirTest {
 
     @Test
     public void addRandom() {
-        UniformSamplingReservoir reservoir = new UniformSamplingReservoir(Collections.<Double>emptyList(), 0, 50);
+        UniformSamplingReservoir reservoir = new UniformSamplingReservoir(new double[0], 0, 50);
 
         ThreadLocalRandom random = ThreadLocalRandom.current();
         for (int i = 0; i < 100; i++) {
@@ -38,7 +37,7 @@ public class UniformSamplingReservoirTest {
 
     @Test
     public void addFromRandom() {
-        UniformSamplingReservoir reservoir = new UniformSamplingReservoir(Collections.<Double>emptyList(), 0, 50);
+        UniformSamplingReservoir reservoir = new UniformSamplingReservoir(new double[0], 0, 50);
 
         ThreadLocalRandom random = ThreadLocalRandom.current();
 

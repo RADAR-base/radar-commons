@@ -171,7 +171,7 @@ public class NumericAggregateCollectorTest {
         mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
 
         valueCollector = new NumericAggregateCollector.Builder("test")
-                .history(Arrays.asList(-1d, 15d))
+                .history(new double[] {-1d, 15d})
                 .sum(BigDecimal.valueOf(14))
                 .build();
 
@@ -183,7 +183,7 @@ public class NumericAggregateCollectorTest {
     @Test
     public void testReservoirBuilder() {
         valueCollector = new NumericAggregateCollector.Builder("test")
-                .reservoir(new UniformSamplingReservoir(Arrays.asList(-1d, 15d), 2, 1))
+                .reservoir(new UniformSamplingReservoir(new double[] {-1d, 15d}, 2, 1))
                 .build();
 
         assertEquals(2, valueCollector.getCount());
@@ -193,7 +193,7 @@ public class NumericAggregateCollectorTest {
     @Test
     public void testReservoirBuilderUnlimited() {
         valueCollector = new NumericAggregateCollector.Builder("name")
-                .reservoir(new UniformSamplingReservoir(Arrays.asList(-1d, 15d), 2, 1000))
+                .reservoir(new UniformSamplingReservoir(new double[] {-1d, 15d}, 2, 1000))
                 .build();
 
         assertEquals(2, valueCollector.getCount());

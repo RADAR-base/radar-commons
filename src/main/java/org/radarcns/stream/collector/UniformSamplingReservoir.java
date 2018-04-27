@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -22,14 +21,15 @@ import java.util.concurrent.ThreadLocalRandom;
  * are computed exactly.
  */
 public class UniformSamplingReservoir {
-    private final List<Double> samples;
+    private final double[] samples;
     private final int maxSize;
     private int count;
+    private transient int currentLength;
     private static final int MAX_SIZE_DEFAULT = 999;
 
     /** Empty reservoir with default maximum size. */
     public UniformSamplingReservoir() {
-        this(Collections.<Double>emptyList(), 0, MAX_SIZE_DEFAULT);
+        this(new double[] {}, 0, MAX_SIZE_DEFAULT);
     }
 
     /**
@@ -37,8 +37,8 @@ public class UniformSamplingReservoir {
      * @param allValues list of values to sample from.
      * @throws NullPointerException if given allValues are {@code null}.
      */
-    public UniformSamplingReservoir(List<Double> allValues) {
-        this(allValues, allValues.size(), MAX_SIZE_DEFAULT);
+    public UniformSamplingReservoir(double[] allValues) {
+        this(allValues, allValues.length, MAX_SIZE_DEFAULT);
     }
 
     /**
@@ -50,87 +50,120 @@ public class UniformSamplingReservoir {
      */
     @JsonCreator
     public UniformSamplingReservoir(
-            @JsonProperty("samples") List<Double> samples,
+            @JsonProperty("samples") double[] samples,
             @JsonProperty("count") int count,
             @JsonProperty("maxSize") int maxSize) {
         if (samples == null) {
             throw new IllegalArgumentException("Samples may not be null");
         }
         if (maxSize <= 0) {
-            throw new IllegalArgumentException("Reservoir size must be strictly positive");
+            throw new IllegalArgumentException("Reservoir maximum size must be strictly positive");
         }
-        this.maxSize = maxSize;
-
         if (count < 0) {
             throw new IllegalArgumentException("Reservoir size must be positive");
         }
+        this.samples = new double[maxSize];
+        this.maxSize = maxSize;
         this.count = count;
-        this.samples = new ArrayList<>(maxSize);
         initializeReservoir(samples);
-        Collections.sort(this.samples);
     }
 
     /** Sample from given list of samples to initialize the reservoir. */
-    private void initializeReservoir(List<Double> samples) {
-        int numSamples = samples.size();
+    private void initializeReservoir(double[] initSamples) {
+        int length = Math.min(initSamples.length, count);
+
+        if (length == 0) {
+            currentLength = 0;
+            return;
+        }
+
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+
         // There are much more samples than the size permits. Random sample from the
         // given list. Duplicate addresses are retried, and for each hit there is at least a
         // 50% probability of getting a number that has not yet been picked.
-        if (numSamples > maxSize * 2) {
-            ThreadLocalRandom random = ThreadLocalRandom.current();
-            Set<Integer> indexes = new HashSet<>();
-            while (indexes.size() < maxSize) {
-                indexes.add(random.nextInt(numSamples));
+        if (length > maxSize * 2) {
+            Set<Integer> indexSet = new HashSet<>();
+            int sampleIndex = 0;
+            while (sampleIndex < maxSize) {
+                int initIndex = random.nextInt(length);
+                // only add to samples if index set does not yet contain value
+                if (indexSet.add(initIndex)) {
+                    this.samples[sampleIndex] = initSamples[initIndex];
+                    sampleIndex++;
+                }
             }
-            for (Integer index : indexes) {
-                this.samples.add(samples.get(index));
-            }
+            currentLength = maxSize;
+
             // There are not much more samples than the size permits. Make a list from all indexes
             // and at random pick and remove index from that. Put all the samples at given
             // indexes in the reservoir. Do not do retry sampling as above, as the final entry may
             // have a probability of 1/maxSize of actually being picked.
-        } else if (numSamples > maxSize) {
-            LinkedList<Integer> indexes = new LinkedList<>();
-            for (int i = 0; i < numSamples; i++) {
-                indexes.add(i);
+        } else if (length > maxSize) {
+            LinkedList<Integer> allInitIndexes = new LinkedList<>();
+            for (int i = 0; i < length; i++) {
+                allInitIndexes.add(i);
             }
-            ThreadLocalRandom random = ThreadLocalRandom.current();
-            for (int i = 0; i < maxSize; i++) {
-                int index = indexes.remove(random.nextInt(indexes.size()));
-                this.samples.add(samples.get(index));
+            for (int sampleIndex = 0; sampleIndex < maxSize; sampleIndex++) {
+                int initIndex = allInitIndexes.remove(random.nextInt(allInitIndexes.size()));
+                this.samples[sampleIndex] = initSamples[initIndex];
             }
+            currentLength = maxSize;
         } else {
-            this.samples.addAll(samples);
+            System.arraycopy(initSamples, 0, this.samples, 0, length);
+            currentLength = length;
         }
+        Arrays.sort(this.samples, 0, currentLength);
     }
 
     /** Add a sample to the reservoir. */
     public void add(double value) {
-        boolean doAdd;
-        int removeIndex;
-
-        if (count < maxSize) {
-            doAdd = true;
-        } else {
-            removeIndex = ThreadLocalRandom.current().nextInt(count);
+        if (currentLength == maxSize) {
+            int removeIndex = ThreadLocalRandom.current().nextInt(count);
             if (removeIndex < maxSize) {
-                samples.remove(removeIndex);
-                doAdd = true;
-            } else {
-                doAdd = false;
+                removeAndAdd(removeIndex, value);
             }
-        }
-
-        if (doAdd) {
-            int index = Collections.binarySearch(samples, value);
-            if (index >= 0) {
-                samples.add(index, value);
-            } else {
-                samples.add(-index - 1, value);
-            }
+        } else {
+            removeAndAdd(currentLength, value);
+            currentLength++;
         }
 
         count++;
+    }
+
+    private void removeAndAdd(int removeIndex, double value) {
+        int addIndex = Arrays.binarySearch(samples, 0, currentLength, value);
+        if (addIndex < 0) {
+            addIndex = -addIndex - 1;
+        }
+
+        int copySrc;
+        int copyDest;
+        int copyLength;
+
+        // start: [a, b, c, d, e]
+        if (removeIndex < addIndex) {
+            // removeIndex = 2, value = d2 -> addIndex = 4
+            addIndex--;
+            // new addIndex -> 3
+            // copy(3 -> 2, len 1)
+            // end: [a, b, d, d2, e]
+            copySrc = removeIndex + 1;
+            copyDest = removeIndex;
+            copyLength = addIndex - removeIndex;
+        } else {
+            // removeIndex = 2, value = a2 -> addIndex = 1
+            // copy(1 -> 2, len 1)
+            // end: [a, a2, b, d, e]
+            copySrc = addIndex;
+            copyDest = addIndex + 1;
+            copyLength = removeIndex - addIndex;
+        }
+
+        if (copyLength > 0) {
+            System.arraycopy(samples, copySrc, samples, copyDest, copyLength);
+        }
+        samples[addIndex] = value;
     }
 
     /**
@@ -139,27 +172,34 @@ public class UniformSamplingReservoir {
      * @return list with size three, of the 25, 50 and 75 percentiles.
      */
     public List<Double> getQuartiles() {
-        int length = samples.size();
+        List<Double> quartiles = new ArrayList<>(3);
 
-        List<Double> quartiles;
-        if (length == 1) {
-            Double elem = samples.get(0);
-            quartiles = Arrays.asList(elem, elem, elem);
-        } else {
-            quartiles = new ArrayList<>(3);
-            for (int i = 1; i <= 3; i++) {
-                double pos = i * (length + 1) * 0.25d; // 25 percentile steps
-                int intPos = (int) pos;
-                if (intPos == 0) {
-                    quartiles.add(samples.get(0));
-                } else if (intPos == length) {
-                    quartiles.add(samples.get(length - 1));
-                } else {
-                    double diff = pos - intPos;
-                    double base = samples.get(intPos - 1);
-                    quartiles.add(base + diff * (samples.get(intPos) - base));
+        switch (currentLength) {
+            case 0:
+                quartiles.add(Double.NaN);
+                quartiles.add(Double.NaN);
+                quartiles.add(Double.NaN);
+                break;
+            case 1:
+                quartiles.add(samples[0]);
+                quartiles.add(samples[0]);
+                quartiles.add(samples[0]);
+                break;
+            default:
+                for (int i = 1; i <= 3; i++) {
+                    double pos = i * (currentLength + 1) * 0.25d; // 25 percentile steps
+                    int intPos = (int) pos;
+                    if (intPos == 0) {
+                        quartiles.add(samples[0]);
+                    } else if (intPos == currentLength) {
+                        quartiles.add(samples[currentLength - 1]);
+                    } else {
+                        double diff = pos - intPos;
+                        double base = samples[intPos - 1];
+                        quartiles.add(base + diff * (samples[intPos] - base));
+                    }
                 }
-            }
+                break;
         }
 
         return quartiles;
@@ -167,7 +207,11 @@ public class UniformSamplingReservoir {
 
     /** Get the currently stored samples. */
     public List<Double> getSamples() {
-        return Collections.unmodifiableList(samples);
+        List<Double> doubleList = new ArrayList<>(currentLength);
+        for (int i = 0; i < currentLength; i++) {
+            doubleList.add(samples[i]);
+        }
+        return doubleList;
     }
 
     /** Get the maximum size of this reservoir. */
@@ -191,7 +235,7 @@ public class UniformSamplingReservoir {
         UniformSamplingReservoir that = (UniformSamplingReservoir) o;
         return count == that.count
                 && maxSize == that.maxSize
-                && Objects.equals(samples, that.samples);
+                && Arrays.equals(samples, that.samples);
     }
 
     @Override
@@ -202,7 +246,7 @@ public class UniformSamplingReservoir {
     @Override
     public String toString() {
         return "UniformSamplingReservoir{"
-                + "samples=" + samples
+                + "samples=" + Arrays.toString(samples)
                 + ", maxSize=" + maxSize
                 + ", count=" + count
                 + '}';

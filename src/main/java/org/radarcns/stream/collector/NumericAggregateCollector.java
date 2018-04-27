@@ -276,9 +276,9 @@ public class NumericAggregateCollector implements RecordCollector {
          */
         @Deprecated
         @JsonSetter
-        public Builder history(List<Double> history) {
-            min(history.get(0));
-            max(history.get(history.size() - 1));
+        public Builder history(double[] history) {
+            min(history[0]);
+            max(history[history.length - 1]);
             reservoir(new UniformSamplingReservoir(history));
             return this;
         }
