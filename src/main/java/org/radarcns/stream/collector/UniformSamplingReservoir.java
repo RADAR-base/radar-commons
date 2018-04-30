@@ -138,10 +138,6 @@ public class UniformSamplingReservoir {
             addIndex = -addIndex - 1;
         }
 
-        int copySrc;
-        int copyDest;
-        int copyLength;
-
         // start: [a, b, c, d, e]
         if (removeIndex < addIndex) {
             // removeIndex = 2, value = d2 -> addIndex = 4
@@ -149,21 +145,16 @@ public class UniformSamplingReservoir {
             // new addIndex -> 3
             // copy(3 -> 2, len 1)
             // end: [a, b, d, d2, e]
-            copySrc = removeIndex + 1;
-            copyDest = removeIndex;
-            copyLength = addIndex - removeIndex;
-        } else {
+            if (removeIndex < addIndex) {
+                System.arraycopy(samples, removeIndex + 1, samples, removeIndex, addIndex - removeIndex);
+            }
+        } else if (removeIndex > addIndex) {
             // removeIndex = 2, value = a2 -> addIndex = 1
             // copy(1 -> 2, len 1)
             // end: [a, a2, b, d, e]
-            copySrc = addIndex;
-            copyDest = addIndex + 1;
-            copyLength = removeIndex - addIndex;
+            System.arraycopy(samples, addIndex, samples, addIndex + 1, removeIndex - addIndex);
         }
 
-        if (copyLength > 0) {
-            System.arraycopy(samples, copySrc, samples, copyDest, copyLength);
-        }
         samples[addIndex] = value;
     }
 
