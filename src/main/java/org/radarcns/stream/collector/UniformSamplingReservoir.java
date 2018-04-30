@@ -1,6 +1,7 @@
 package org.radarcns.stream.collector;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.ArrayList;
@@ -206,6 +207,7 @@ public class UniformSamplingReservoir {
     }
 
     /** Get the currently stored samples. */
+    @JsonGetter
     public List<Double> getSamples() {
         List<Double> doubleList = new ArrayList<>(currentLength);
         for (int i = 0; i < currentLength; i++) {
