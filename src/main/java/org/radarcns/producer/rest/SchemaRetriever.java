@@ -50,6 +50,7 @@ public class SchemaRetriever implements Closeable {
     private static final Schema NULL_SCHEMA = Schema.create(Type.NULL);
     private static final Map<Class<?>, Schema> PRIMITIVE_SCHEMAS = new HashMap<>();
     private static final byte[] SCHEMA = utf8("{\"schema\":");
+    private static final long MAX_VALIDITY = 86400L;
 
     static {
         PRIMITIVE_SCHEMAS.put(Long.class, Schema.create(Type.LONG));
@@ -61,7 +62,7 @@ public class SchemaRetriever implements Closeable {
         PRIMITIVE_SCHEMAS.put(byte[].class, Schema.create(Type.BYTES));
     }
 
-    private final ConcurrentMap<String, ParsedSchemaMetadata> cache;
+    private final ConcurrentMap<String, TimedSchemaMetadata> cache;
     private RestClient httpClient;
 
     public SchemaRetriever(ServerConfig config, long connectionTimeout) {
@@ -114,15 +115,15 @@ public class SchemaRetriever implements Closeable {
     public ParsedSchemaMetadata getSchemaMetadata(String topic, boolean ofValue, int version)
             throws IOException {
         String subject = subject(topic, ofValue);
-        ParsedSchemaMetadata value = cache.get(subject);
-        if (value == null) {
-            value = retrieveSchemaMetadata(subject, version);
-            ParsedSchemaMetadata oldValue = cache.putIfAbsent(subject, value);
+        TimedSchemaMetadata value = cache.get(subject);
+        if (value == null || value.isExpired()) {
+            value = new TimedSchemaMetadata(retrieveSchemaMetadata(subject, version));
+            TimedSchemaMetadata oldValue = cache.putIfAbsent(subject, value);
             if (oldValue != null) {
                 value = oldValue;
             }
         }
-        return value;
+        return value.metadata;
     }
 
     /** Parse a schema from string. */
@@ -152,7 +153,7 @@ public class SchemaRetriever implements Closeable {
             int schemaId = node.getInt("id");
             metadata.setId(schemaId);
         }
-        cache.put(subject, metadata);
+        cache.put(subject, new TimedSchemaMetadata(metadata));
     }
 
     /**
@@ -222,5 +223,35 @@ public class SchemaRetriever implements Closeable {
         throw new IllegalArgumentException("Passed object " + object + " of class "
                 + object.getClass() + " can not be schematized. "
                 + "Pass null, a primitive CONTENT_TYPE or a GenericContainer.");
+    }
+
+    private class TimedSchemaMetadata {
+        private final ParsedSchemaMetadata metadata;
+        private final long expiry;
+
+        TimedSchemaMetadata(ParsedSchemaMetadata metadata) {
+            expiry = System.currentTimeMillis() + MAX_VALIDITY;
+            this.metadata = Objects.requireNonNull(metadata);
+        }
+
+        boolean isExpired() {
+            return expiry < System.currentTimeMillis();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            return metadata.equals(((TimedSchemaMetadata)o).metadata);
+        }
+
+        @Override
+        public int hashCode() {
+            return metadata.hashCode();
+        }
     }
 }
