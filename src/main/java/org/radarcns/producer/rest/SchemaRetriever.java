@@ -118,10 +118,7 @@ public class SchemaRetriever implements Closeable {
         TimedSchemaMetadata value = cache.get(subject);
         if (value == null || value.isExpired()) {
             value = new TimedSchemaMetadata(retrieveSchemaMetadata(subject, version));
-            TimedSchemaMetadata oldValue = cache.putIfAbsent(subject, value);
-            if (oldValue != null) {
-                value = oldValue;
-            }
+            cache.put(subject, value);
         }
         return value.metadata;
     }
