@@ -20,6 +20,7 @@ import okhttp3.Callback;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.OkHttpClient.Builder;
+import okhttp3.Protocol;
 import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
@@ -37,6 +38,7 @@ import java.net.MalformedURLException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+import java.util.Collections;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -147,10 +149,11 @@ public class RestClient implements Closeable {
     private OkHttpClient buildHttpClient(Builder builder,
             ManagedConnectionPool connectionPool) {
         builder
-            .connectTimeout(timeout, TimeUnit.SECONDS)
-            .writeTimeout(timeout, TimeUnit.SECONDS)
-            .readTimeout(timeout, TimeUnit.SECONDS)
-            .proxy(config.getHttpProxy());
+                .connectTimeout(timeout, TimeUnit.SECONDS)
+                .writeTimeout(timeout, TimeUnit.SECONDS)
+                .readTimeout(timeout, TimeUnit.SECONDS)
+                .proxy(config.getHttpProxy())
+                .protocols(Collections.singletonList(Protocol.HTTP_1_1));
 
         if (connectionPool != null) {
             builder.connectionPool(connectionPool.acquire());
