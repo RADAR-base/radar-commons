@@ -12,7 +12,8 @@ import static org.junit.Assert.assertTrue;
 public class UniformSamplingReservoirTest {
     @Test
     public void add() {
-        UniformSamplingReservoir reservoir = new UniformSamplingReservoir(new double[] {0.1, 0.3, 0.5}, 3, 3);
+        UniformSamplingReservoir reservoir = new UniformSamplingReservoir(
+                new double[] {0.1, 0.3, 0.5}, 3, 3);
         reservoir.add(0.7);
         assertEquals(3, reservoir.getSamples().size());
         assertEquals(3, reservoir.getMaxSize());
