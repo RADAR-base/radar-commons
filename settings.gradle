@@ -17,4 +17,4 @@
 rootProject.name = 'radar-commons'
 
 include ':radar-commons-testing'
-
+enableFeaturePreview('STABLE_PUBLISHING')

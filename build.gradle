@@ -16,7 +16,7 @@
 
 plugins {
     // Get bintray version
-    id 'com.jfrog.bintray' version '1.8.0'
+    id 'com.jfrog.bintray' version '1.7.3'
     id 'com.jfrog.artifactory' version '4.5.4'
 }
 
@@ -323,10 +323,10 @@ publishing {
 }
 
 bintray {
-    user = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
-    key = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
-    override = false
-    publications = ['RadarCommonsPublication']
+    user project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
+    key project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
+    override false
+    publications 'RadarCommonsPublication'
     pkg {
         repo = project.group
         name = rootProject.name
@@ -363,7 +363,6 @@ artifactoryPublish {
     publications('RadarCommonsPublication')
 }
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '4.4'
-    distributionType 'all'
+wrapper {
+    gradleVersion '4.8'
 }
