@@ -31,7 +31,7 @@ class TopicRequestBody extends RequestBody {
     protected final TopicRequestData data;
     private final MediaType mediaType;
 
-    TopicRequestBody(TopicRequestData requestData, MediaType mediaType) throws IOException {
+    TopicRequestBody(TopicRequestData requestData, MediaType mediaType) {
         this.data = requestData;
         this.mediaType = mediaType;
     }
@@ -48,14 +48,14 @@ class TopicRequestBody extends RequestBody {
         }
     }
 
-    String content() throws IOException {
+    private String content() throws IOException {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             data.writeToStream(out);
             return out.toString();
         }
     }
 
-    public static String topicRequestContent(Request request) throws IOException {
+    static String topicRequestContent(Request request) throws IOException {
         TopicRequestBody body = (TopicRequestBody) request.body();
         if (body == null) {
             return null;

@@ -276,11 +276,11 @@ public class RestSender implements KafkaSender {
         }
     }
 
-    public static final class RequestProperties {
-        public final String acceptType;
-        public final MediaType contentType;
-        public final boolean useCompression;
-        public final Headers headers;
+    static final class RequestProperties {
+        final String acceptType;
+        final MediaType contentType;
+        final boolean useCompression;
+        final Headers headers;
 
         RequestProperties(String acceptType, MediaType contentType, boolean useCompression,
                 Headers headers) {
