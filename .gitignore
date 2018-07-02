@@ -21,6 +21,6 @@ build/
 /src/avroSources/java/
 
 # Generated compile files
-/out/
+out/
 backend.log
 local.properties
