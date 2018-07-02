@@ -1,64 +1,72 @@
-/*
- * Copyright 2017 The Hyve and King's College London
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-ext.moduleName = 'radar-commons-server'
-ext.description = 'RADAR Common server library utilities.'
-
 targetCompatibility = '1.8'
 sourceCompatibility = '1.8'
 
+ext.moduleName = 'radar-commons-unsafe'
+ext.description = 'RADAR Common unsafe libraries overriding stock Kafka and Confluent code.'
+
+//---------------------------------------------------------------------------//
+// Sources and classpath configurations                                      //
+//---------------------------------------------------------------------------//
+
+configurations {
+    codacy
+}
+
+configurations.compile {
+    resolutionStrategy.cacheChangingModulesFor 0, 'SECONDS'
+}
+
+// In this section you declare where to find the dependencies of your project
 repositories {
+    maven { url 'https://jitpack.io' }
     maven { url 'https://oss.jfrog.org/artifactory/oss-snapshot-local' }
 }
 
+// In this section you declare the dependencies for your production and test code
 dependencies {
-    api project(':radar-commons')
+    compileOnly group: 'io.confluent', name: 'kafka-avro-serializer', version: confluentVersion
+    compileOnly group: 'org.apache.kafka', name: 'kafka-clients', version: kafkaVersion
+    compileOnly group: 'org.apache.kafka', name: 'kafka_2.11', version: kafkaVersion
 
-    // For POJO classes and ConfigLoader
-    implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
-    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: jacksonVersion
-
-    api group: 'org.apache.avro', name: 'avro', version: avroVersion
-
-    implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
-    implementation group: 'org.apache.kafka', name: 'kafka-clients', version: kafkaVersion
-
-    testImplementation group: 'org.mockito', name: 'mockito-core', version: mockitoVersion
-    // Direct producer uses KafkaAvroSerializer if initialized
-    testImplementation (group: 'io.confluent', name: 'kafka-avro-serializer', version: confluentVersion) {
-        exclude group: 'com.101tec'
-        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
-    }
-    testImplementation group: 'org.radarcns', name: 'radar-schemas-commons', version: radarSchemasVersion
-    // Direct producer uses KafkaAvroSerializer if initialized
-    testImplementation group: 'junit', name: 'junit', version: junitVersion
-    testRuntime group: 'org.slf4j', name: 'slf4j-simple', version: slf4jVersion
 }
 
+//---------------------------------------------------------------------------//
+// Testing                                                                   //
+//---------------------------------------------------------------------------//
 checkstyle {
     // ignore tests
     sourceSets = [sourceSets.main]
-    ignoreFailures = false
 }
 
 pmd {
     // ignore tests
     sourceSets = [sourceSets.main]
-    ignoreFailures = false
 }
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
+        csv.enabled false
+        html.enabled false
+    }
+}
+
+task downloadDependencies(type: Exec) {
+    configurations.testRuntime.files
+    configurations.codacy.files
+    configurations.jacocoAnt.files
+    commandLine 'echo', 'Downloaded all dependencies'
+}
+
+task sendCoverageToCodacy(type: JavaExec, dependsOn: jacocoTestReport) {
+    main = 'com.codacy.CodacyCoverageReporter'
+    classpath = configurations.codacy
+    args = ['-l', 'Java', '-r', "${buildDir}/reports/jacoco/test/jacocoTestReport.xml"]
+}
+
+//---------------------------------------------------------------------------//
+// Build system metadata                                                     //
+//---------------------------------------------------------------------------//
 
 ext.sharedManifest = manifest {
     attributes("Implementation-Title": moduleName,
@@ -66,20 +74,16 @@ ext.sharedManifest = manifest {
 }
 
 jar {
-    baseName moduleName
     manifest.from sharedManifest
 }
-
 // custom tasks for creating source/javadoc jars
 task sourcesJar(type: Jar, dependsOn: classes) {
-    baseName moduleName
     classifier = 'sources'
     from sourceSets.main.allSource
     manifest.from sharedManifest
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    baseName moduleName
     classifier = 'javadoc'
     from javadoc.destinationDir
     manifest.from sharedManifest
@@ -87,12 +91,13 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 
 // add javadoc/source jar tasks as artifacts
 artifacts {
-    archives sourcesJar, javadocJar
+    archives javadocJar
+    archives sourcesJar
 }
 
 publishing {
     publications {
-        RadarCommonsServerPublication(MavenPublication) {
+        RadarCommonsPublication(MavenPublication) {
             from components.java
             artifact sourcesJar
             artifact javadocJar
@@ -114,7 +119,7 @@ bintray {
     user project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
     key project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
     override false
-    publications 'RadarCommonsServerPublication'
+    publications 'RadarCommonsPublication'
     pkg {
         repo = project.group
         name = moduleName
@@ -135,7 +140,6 @@ bintray {
     }
 }
 
-
 artifactory {
     contextUrl = 'https://oss.jfrog.org/artifactory'
     publish {
@@ -149,5 +153,5 @@ artifactory {
 }
 
 artifactoryPublish {
-    publications('RadarCommonsServerPublication')
+    publications('RadarCommonsPublication')
 }
