@@ -34,13 +34,13 @@ dependencies {
 // Testing                                                                   //
 //---------------------------------------------------------------------------//
 checkstyle {
-    // ignore tests
-    sourceSets = [sourceSets.main]
+    // ignore everything
+    sourceSets = []
 }
 
 pmd {
-    // ignore tests
-    sourceSets = [sourceSets.main]
+    // ignore everything
+    sourceSets = []
 }
 
 jacocoTestReport {
