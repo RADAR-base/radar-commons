@@ -46,7 +46,8 @@ public class NumericAggregateCollector implements RecordCollector {
     private BigDecimal sum;
     private final UniformSamplingReservoir reservoir;
 
-    public NumericAggregateCollector(Builder builder) {
+    /** Aggregate collector from builder. */
+    private NumericAggregateCollector(Builder builder) {
         this.name = builder.nameValue;
         this.pos = builder.posValue;
         this.fieldType = builder.fieldTypeValue;
@@ -56,10 +57,12 @@ public class NumericAggregateCollector implements RecordCollector {
         this.reservoir = builder.reservoirValue;
     }
 
+    /** Aggregate collector with only a field name. */
     public NumericAggregateCollector(String fieldName) {
         this(fieldName, null);
     }
 
+    /** Aggregate collector with a field name and accompanying schema containing the name. */
     public NumericAggregateCollector(String fieldName, Schema schema) {
         sum = BigDecimal.ZERO;
         min = Double.POSITIVE_INFINITY;
@@ -119,6 +122,7 @@ public class NumericAggregateCollector implements RecordCollector {
         }
     }
 
+    /** Add a single sample. */
     public NumericAggregateCollector add(float value) {
         return this.add(floatToDouble(value));
     }
@@ -176,6 +180,7 @@ public class NumericAggregateCollector implements RecordCollector {
         return reservoir.getQuartiles();
     }
 
+    /** Difference between the first quartile and third quartile (IQR). */
     public double getInterQuartileRange() {
         List<Double> quartiles = getQuartile();
         return BigDecimal.valueOf(quartiles.get(2))
@@ -283,6 +288,7 @@ public class NumericAggregateCollector implements RecordCollector {
             return this;
         }
 
+        /** Build the aggregator. */
         public NumericAggregateCollector build() {
             return new NumericAggregateCollector(this);
         }

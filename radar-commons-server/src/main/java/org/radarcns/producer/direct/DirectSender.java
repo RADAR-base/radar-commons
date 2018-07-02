@@ -27,7 +27,7 @@ import org.radarcns.topic.AvroTopic;
 import java.util.Properties;
 
 /**
- * Directly sends a message to Kafka using a KafkaProducer
+ * Directly sends a message to Kafka using a KafkaProducer.
  */
 public class DirectSender implements KafkaSender {
     private final KafkaProducer producer;

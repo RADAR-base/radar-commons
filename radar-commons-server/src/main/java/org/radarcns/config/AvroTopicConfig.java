@@ -23,7 +23,7 @@ import org.radarcns.topic.AvroTopic;
 import java.util.List;
 
 /**
- * Specifies an Avro topic
+ * Specifies an Avro topic.
  */
 public class AvroTopicConfig {
     private String topic;

@@ -26,12 +26,15 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * A YAML Config file loader, to load YAML files into equivalent POJO Objects
+ * A YAML Config file loader, to load YAML files into equivalent POJO Objects.
  */
 public class YamlConfigLoader {
 
     private final ObjectMapper mapper;
 
+    /**
+     * Default loader.
+     */
     public YamlConfigLoader() {
         mapper = new ObjectMapper(new YAMLFactory());
         mapper.setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
@@ -45,14 +48,26 @@ public class YamlConfigLoader {
         mapper.addMixIn(ServerConfig.class, ServerConfigMixin.class);
     }
 
+    /**
+     * Load a YAML file into given class.
+     * @param file file to load.
+     * @param configClass class for the config.
+     * @param <T> type of the config.
+     * @return loaded file.
+     * @throws IOException if the file cannot be opened or parsed.
+     */
     public <T> T load(File file, Class<T> configClass) throws IOException {
         return mapper.readValue(file, configClass);
     }
 
+    /** Store config into given YAML file. */
     public void store(File file, Object config) throws IOException {
         mapper.writeValue(file, config);
     }
 
+    /**
+     * Pretty-print the given object as a YAML string.
+     */
     public String prettyString(Object config) {
         // pretty print
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
