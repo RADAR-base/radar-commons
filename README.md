@@ -1,6 +1,6 @@
 # RADAR-Commons
-[![Build Status](https://travis-ci.org/RADAR-CNS/radar-commons.svg?branch=master)](https://travis-ci.org/RADAR-CNS/radar-commons)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/9fe7a419c83e4798af671e468c7e91cf)](https://www.codacy.com/app/RADAR-CNS/RADAR-Commons?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=RADAR-CNS/RADAR-Commons&amp;utm_campaign=Badge_Grade)
+[![Build Status](https://travis-ci.org/RADAR-base/radar-commons.svg?branch=master)](https://travis-ci.org/RADAR-base/radar-commons)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/9fe7a419c83e4798af671e468c7e91cf)](https://www.codacy.com/app/RADAR-base/radar-commons?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=RADAR-base/radar-commons&amp;utm_campaign=Badge_Grade)
 
 Common utilities library containing basic schemas, streaming features, testing bridges and utils.
 
@@ -14,7 +14,14 @@ repositories {
 }
 
 dependencies {
-    compile group: 'org.radarcns', name: 'radar-commons', version: '0.8.2'
+    implementation group: 'org.radarcns', name: 'radar-commons', version: '0.9.0'
+}
+```
+
+For server utilities, include `radar-commons-server`:
+```gradle
+dependencies {
+    implementation group: 'org.radarcns', name: 'radar-commons-server', version: '0.9.0'
 }
 ```
 
@@ -26,7 +33,14 @@ repositories {
 }
 
 dependencies {
-    testCompile group: 'org.radarcns', name: 'radar-commons-testing', version: '0.8.2'
+    testImplementation group: 'org.radarcns', name: 'radar-commons-testing', version: '0.9.0'
+}
+```
+
+Finally, if the schema registry is losing old schemas and your code is not recovering, include `radar-commons-unsafe`. Ensure that it comes in the classpath before any Confluent code. This will override the Confluent Avro deserializer to recover from failure when a message with unknown schema ID is passed.
+```gradle
+dependencies {
+    runtimeOnly group: 'org.radarcns', name: 'radar-commons-unsafe', version: '0.9.0'
 }
 ```
 

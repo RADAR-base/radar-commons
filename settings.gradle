@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-rootProject.name = 'radar-commons'
-
+include ':radar-commons'
 include ':radar-commons-testing'
-
+include ':radar-commons-server'
+include ':radar-commons-unsafe'
+enableFeaturePreview('STABLE_PUBLISHING')

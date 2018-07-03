@@ -14,21 +14,8 @@
  * limitations under the License.
  */
 
-apply plugin: 'application'
-apply plugin: 'com.jfrog.artifactory'
-
-mainClassName = 'org.radarcns.mock.MockProducer'
-
-run {
-    if (project.hasProperty("mockConfig")) {
-        args project.property("mockConfig")
-    } else {
-        args 'mock.yml'
-    }
-}
-
-ext.testingName = 'radar-commons-testing'
-ext.description = 'RADAR Common testing library mocking code and utilities.'
+ext.moduleName = 'radar-commons-server'
+ext.description = 'RADAR Common server library utilities.'
 
 targetCompatibility = '1.8'
 sourceCompatibility = '1.8'
@@ -39,18 +26,26 @@ repositories {
 
 dependencies {
     api project(':radar-commons')
-    api project(':radar-commons-server')
+
+    // For POJO classes and ConfigLoader
+    implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
+    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: jacksonVersion
+
     api group: 'org.apache.avro', name: 'avro', version: avroVersion
-    api group: 'org.radarcns', name: 'radar-schemas-commons', version: radarSchemasVersion
 
     implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
     implementation group: 'org.apache.kafka', name: 'kafka-clients', version: kafkaVersion
 
-    runtimeOnly group: 'org.slf4j', name: 'slf4j-simple', version: slf4jVersion
-
+    testImplementation group: 'org.mockito', name: 'mockito-core', version: mockitoVersion
+    // Direct producer uses KafkaAvroSerializer if initialized
+    testImplementation (group: 'io.confluent', name: 'kafka-avro-serializer', version: confluentVersion) {
+        exclude group: 'com.101tec'
+        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    }
+    testImplementation group: 'org.radarcns', name: 'radar-schemas-commons', version: radarSchemasVersion
     // Direct producer uses KafkaAvroSerializer if initialized
     testImplementation group: 'junit', name: 'junit', version: junitVersion
-    testImplementation group: 'org.hamcrest', name: 'hamcrest-all', version: hamcrestVersion
+    testRuntime group: 'org.slf4j', name: 'slf4j-simple', version: slf4jVersion
 }
 
 checkstyle {
@@ -66,25 +61,25 @@ pmd {
 }
 
 ext.sharedManifest = manifest {
-    attributes("Implementation-Title": testingName,
+    attributes("Implementation-Title": moduleName,
             "Implementation-Version": version)
 }
 
 jar {
-    baseName testingName
+    baseName moduleName
     manifest.from sharedManifest
 }
 
 // custom tasks for creating source/javadoc jars
 task sourcesJar(type: Jar, dependsOn: classes) {
-    baseName testingName
+    baseName moduleName
     classifier = 'sources'
     from sourceSets.main.allSource
     manifest.from sharedManifest
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    baseName testingName
+    baseName moduleName
     classifier = 'javadoc'
     from javadoc.destinationDir
     manifest.from sharedManifest
@@ -97,23 +92,18 @@ artifacts {
 
 publishing {
     publications {
-        RadarCommonsTestingPublication(MavenPublication) {
+        RadarCommonsServerPublication(MavenPublication) {
             from components.java
             artifact sourcesJar
             artifact javadocJar
             groupId project.group
-            artifactId testingName
+            artifactId moduleName
             version project.version
             pom.withXml {
                 def root = asNode()
                 root.appendNode('description', description)
-                root.appendNode('name', testingName)
+                root.appendNode('name', moduleName)
                 root.appendNode('url', githubUrl)
-                root.dependencies.'*'.findAll() {
-                    it.artifactId.text() == 'slf4j-simple'
-                }.each() {
-                    it.parent().remove(it)
-                }
                 root.children().last() + pomConfig
             }
         }
@@ -121,13 +111,13 @@ publishing {
 }
 
 bintray {
-    user = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
-    key = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
-    override = false
-    publications = ['RadarCommonsTestingPublication']
+    user project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
+    key project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
+    override false
+    publications 'RadarCommonsServerPublication'
     pkg {
         repo = project.group
-        name = testingName
+        name = moduleName
         userOrg = 'radar-cns'
         desc = description
         licenses = ['Apache-2.0']
@@ -159,5 +149,5 @@ artifactory {
 }
 
 artifactoryPublish {
-    publications('RadarCommonsTestingPublication')
+    publications('RadarCommonsServerPublication')
 }
