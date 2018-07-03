@@ -1,6 +1,7 @@
 targetCompatibility = '1.7'
 sourceCompatibility = '1.7'
 
+ext.moduleName = 'radar-commons'
 ext.description = 'RADAR Common utilities library.'
 
 //---------------------------------------------------------------------------//
@@ -87,7 +88,7 @@ task sendCoverageToCodacy(type: JavaExec, dependsOn: jacocoTestReport) {
 //---------------------------------------------------------------------------//
 
 ext.sharedManifest = manifest {
-    attributes("Implementation-Title": rootProject.name,
+    attributes("Implementation-Title": moduleName,
             "Implementation-Version": version)
 }
 
@@ -120,12 +121,12 @@ publishing {
             artifact sourcesJar
             artifact javadocJar
             groupId project.group
-            artifactId rootProject.name
+            artifactId moduleName
             version project.version
             pom.withXml {
                 def root = asNode()
                 root.appendNode('description', description)
-                root.appendNode('name', rootProject.name)
+                root.appendNode('name', moduleName)
                 root.appendNode('url', githubUrl)
                 root.children().last() + pomConfig
             }
@@ -140,7 +141,7 @@ bintray {
     publications 'RadarCommonsPublication'
     pkg {
         repo = project.group
-        name = rootProject.name
+        name = moduleName
         userOrg = 'radar-cns'
         desc = description
         licenses = ['Apache-2.0']
