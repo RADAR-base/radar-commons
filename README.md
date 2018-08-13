@@ -20,6 +20,11 @@ dependencies {
 
 For server utilities, include `radar-commons-server`:
 ```gradle
+repositories {
+    jcenter()
+    maven { url 'http://packages.confluent.io/maven/' }
+}
+
 dependencies {
     implementation group: 'org.radarcns', name: 'radar-commons-server', version: '0.9.0'
 }
@@ -29,6 +34,8 @@ For mocking clients of the RADAR-CNS infrastructure, use that 'radar-commons-tes
 
 ```gradle
 repositories {
+    jcenter()
+    maven { url 'http://packages.confluent.io/maven/' }
     maven { url  'http://dl.bintray.com/radar-cns/org.radarcns' }
 }
 
@@ -39,6 +46,12 @@ dependencies {
 
 Finally, if the schema registry is losing old schemas and your code is not recovering, include `radar-commons-unsafe`. Ensure that it comes in the classpath before any Confluent code. This will override the Confluent Avro deserializer to recover from failure when a message with unknown schema ID is passed.
 ```gradle
+repositories {
+    jcenter()
+    maven { url 'http://packages.confluent.io/maven/' }
+    maven { url  'http://dl.bintray.com/radar-cns/org.radarcns' }
+}
+
 dependencies {
     runtimeOnly group: 'org.radarcns', name: 'radar-commons-unsafe', version: '0.9.0'
 }
@@ -65,7 +78,7 @@ configurations.all {
 }
 
 dependencies {
-    compile group: 'org.radarcns', name: 'radar-commons', version: '0.8.3-SNAPSHOT', changing: true
+    compile group: 'org.radarcns', name: 'radar-commons', version: '0.9.1-SNAPSHOT', changing: true
 }
 ```
 
