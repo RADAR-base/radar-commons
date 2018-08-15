@@ -100,7 +100,6 @@ public class BatchedKafkaSender implements KafkaSender {
         }
 
         private void trySend(K key, V record) throws IOException, SchemaValidationException {
-            boolean doSend;
             boolean keysMatch;
 
             if (cache.isEmpty()) {
@@ -113,16 +112,10 @@ public class BatchedKafkaSender implements KafkaSender {
 
             if (keysMatch) {
                 cache.add(record);
-                doSend = exceedsBuffer(cache);
-            } else {
-                doSend = true;
-            }
-
-            if (doSend) {
                 doSend();
-                if (!keysMatch) {
-                    trySend(key, record);
-                }
+            } else {
+                doSend();
+                trySend(key, record);
             }
         }
 
@@ -140,10 +133,12 @@ public class BatchedKafkaSender implements KafkaSender {
 
         @Override
         public void flush() throws IOException {
-            try {
-                doSend();
-            } catch (SchemaValidationException ex) {
-                throw new IOException("Schemas do not match", ex);
+            if (!cache.isEmpty()) {
+                try {
+                    doSend();
+                } catch (SchemaValidationException ex) {
+                    throw new IOException("Schemas do not match", ex);
+                }
             }
             topicSender.flush();
         }

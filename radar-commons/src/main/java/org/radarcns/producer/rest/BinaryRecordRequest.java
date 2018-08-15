@@ -34,6 +34,14 @@ public class BinaryRecordRequest<K, V> implements RecordRequest<K, V> {
      * @throws IllegalArgumentException if the topic cannot be used to make a AvroWriter.
      */
     public BinaryRecordRequest(AvroTopic<K, V> topic) throws SchemaValidationException {
+        if (topic.getKeySchema() == null  || topic.getKeySchema().getType() != Schema.Type.RECORD) {
+            Schema keySchema = topic.getKeySchema();
+            if (keySchema == null) {
+                keySchema = Schema.create(Schema.Type.NULL);
+            }
+            throw new SchemaValidationException(keySchema, keySchema,
+                    new IllegalArgumentException("Cannot use non-record key schema"));
+        }
         Schema.Field sourceIdField = topic.getKeySchema().getField("sourceId");
         if (sourceIdField == null) {
             throw new SchemaValidationException(topic.getKeySchema(), topic.getKeySchema(),

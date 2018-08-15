@@ -41,12 +41,11 @@ import static org.radarcns.producer.rest.RestSender.KAFKA_REST_ACCEPT_LEGACY_ENC
 import static org.radarcns.producer.rest.RestSender.KAFKA_REST_AVRO_ENCODING;
 import static org.radarcns.producer.rest.RestSender.KAFKA_REST_AVRO_LEGACY_ENCODING;
 import static org.radarcns.producer.rest.RestSender.KAFKA_REST_BINARY_ENCODING;
-import static org.radarcns.producer.rest.TopicRequestBody.topicRequestContent;
+import static org.radarcns.producer.rest.UncheckedRequestException.fail;
 
 class RestTopicSender<K, V>
         implements KafkaTopicSender<K, V> {
     private static final Logger logger = LoggerFactory.getLogger(RestTopicSender.class);
-    private static final int LOG_CONTENT_LENGTH = 1024;
 
     private final AvroTopic<K, V> topic;
     private final SchemaReadValidator schemaValueValidator;
@@ -95,13 +94,8 @@ class RestTopicSender<K, V>
      */
     @Override
     public void send(RecordData<K, V> records) throws IOException, SchemaValidationException {
-        if (records.isEmpty()) {
-            return;
-        }
-
         RestSender.RequestContext context = sender.getRequestContext();
-        updateRecords(context, records);
-        Request request = buildRequest(context);
+        Request request = buildRequest(context, records);
 
         boolean doResend = false;
         try (Response response = context.client.request(request)) {
@@ -117,10 +111,12 @@ class RestTopicSender<K, V>
                 downgradeConnection(request, response);
                 doResend = true;
             } else {
-                throw failure(request, response, null);
+                throw fail(request, response, null);
             }
         } catch (IOException ex) {
-            throw failure(request, null, ex);
+            fail(request, null, ex).rethrow();
+        } catch (UncheckedRequestException ex) {
+            ex.rethrow();
         } finally {
             requestData.reset();
         }
@@ -165,11 +161,13 @@ class RestTopicSender<K, V>
                     false);
         }
 
-        throw failure(request, response, null);
+        throw fail(request, response, new IOException("Content-Type not accepted"));
     }
 
-    private Request buildRequest(RestSender.RequestContext context)
+    private Request buildRequest(RestSender.RequestContext context, RecordData<K, V> records)
             throws IOException, SchemaValidationException {
+        updateRecords(context, records);
+
         HttpUrl sendToUrl = updateRequestSchema(context.client);
 
         TopicRequestBody requestBody;
@@ -215,23 +213,6 @@ class RestTopicSender<K, V>
         }
 
         return restClient.getRelativeUrl("topics/" + sendTopic);
-    }
-
-    @SuppressWarnings("ConstantConditions")
-    private IOException failure(Request request, Response response, Exception ex)
-            throws IOException {
-        state.didDisconnect();
-        String content = response == null ? null : responseBody(response);
-        int code = response == null ? -1 : response.code();
-        String requestContent = topicRequestContent(request);
-        if (requestContent != null) {
-            requestContent = requestContent.substring(0,
-                    Math.min(requestContent.length(), LOG_CONTENT_LENGTH));
-        }
-        logger.error("FAILED to transmit message: {} -> {}...",
-                content, requestContent);
-        return new IOException("Failed to submit (HTTP status code " + code
-                + "): " + content, ex);
     }
 
     @Override
