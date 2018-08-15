@@ -179,8 +179,9 @@ class RestTopicSender<K, V>
                 .header("Accept", context.properties.acceptType);
 
         MediaType contentType = context.properties.contentType;
-        if (requestData instanceof BinaryRecordRequest) {
-            contentType = KAFKA_REST_BINARY_ENCODING;
+        if (contentType.equals(KAFKA_REST_BINARY_ENCODING)
+                && !(requestData instanceof BinaryRecordRequest)) {
+            contentType = KAFKA_REST_AVRO_ENCODING;
         }
 
         if (context.properties.useCompression) {
