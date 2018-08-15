@@ -16,6 +16,7 @@
 
 package org.radarcns.producer.rest;
 
+import okio.BufferedSink;
 import org.json.JSONObject;
 import org.radarcns.data.AvroEncoder;
 import org.radarcns.data.AvroRecordData;
@@ -23,14 +24,13 @@ import org.radarcns.data.RecordData;
 import org.radarcns.topic.AvroTopic;
 
 import java.io.IOException;
-import java.io.OutputStream;
 
 import static org.radarcns.util.Strings.utf8;
 
 /**
  * Request data to submit records to the Kafka REST proxy.
  */
-class JsonRecordRequest<K, V> implements RecordRequest<K, V> {
+public class JsonRecordRequest<K, V> implements RecordRequest<K, V> {
     public static final byte[] KEY_SCHEMA_ID = utf8("\"key_schema_id\":");
     public static final byte[] VALUE_SCHEMA_ID = utf8(",\"value_schema_id\":");
     public static final byte[] RECORDS = utf8(",\"records\":[");
@@ -60,36 +60,36 @@ class JsonRecordRequest<K, V> implements RecordRequest<K, V> {
      * Writes the current topic to a stream. This implementation does not use any JSON writers to
      * write the data, but writes it directly to a stream. {@link JSONObject#quote(String)}
      * is used to get the correct formatting. This makes the method as lean as possible.
-     * @param out OutputStream to write to. It is assumed to be buffered.
+     * @param sink buffered sink to write to.
      * @throws IOException if a superimposing stream could not be created
      */
     @Override
-    public void writeToStream(OutputStream out) throws IOException {
-        out.write('{');
-        out.write(KEY_SCHEMA_ID);
-        out.write(utf8(String.valueOf(keySchemaId)));
-        out.write(VALUE_SCHEMA_ID);
-        out.write(utf8(String.valueOf(valueSchemaId)));
+    public void writeToSink(BufferedSink sink) throws IOException {
+        sink.writeByte('{');
+        sink.write(KEY_SCHEMA_ID);
+        sink.write(utf8(String.valueOf(keySchemaId)));
+        sink.write(VALUE_SCHEMA_ID);
+        sink.write(utf8(String.valueOf(valueSchemaId)));
 
-        out.write(RECORDS);
+        sink.write(RECORDS);
 
         byte[] key = keyEncoder.encode(records.getKey());
 
         boolean first = true;
-        for (V record : records.values()) {
+        for (V record : records) {
             if (first) {
                 first = false;
             } else {
-                out.write(',');
+                sink.writeByte(',');
             }
-            out.write(KEY);
-            out.write(key);
+            sink.write(KEY);
+            sink.write(key);
 
-            out.write(VALUE);
-            out.write(valueEncoder.encode(record));
-            out.write('}');
+            sink.write(VALUE);
+            sink.write(valueEncoder.encode(record));
+            sink.writeByte('}');
         }
-        out.write(END);
+        sink.write(END);
     }
 
     @Override
@@ -97,18 +97,11 @@ class JsonRecordRequest<K, V> implements RecordRequest<K, V> {
         records = null;
     }
 
-    @Override
-    public void setKeySchemaMetadata(ParsedSchemaMetadata schema) {
-        this.keySchemaId = schema.getId();
-    }
 
     @Override
-    public void setValueSchemaMetadata(ParsedSchemaMetadata schema) {
-        this.valueSchemaId = schema.getId();
-    }
-
-    @Override
-    public void setRecords(RecordData<K, V> records) {
+    public void prepare(ParsedSchemaMetadata keySchema, ParsedSchemaMetadata valueSchema, RecordData<K, V> records) {
+        keySchemaId = keySchema.getId() == null ? 0 : keySchema.getId();
+        valueSchemaId = valueSchema.getId() == null ? 0 : valueSchema.getId();
         this.records = records;
     }
 }

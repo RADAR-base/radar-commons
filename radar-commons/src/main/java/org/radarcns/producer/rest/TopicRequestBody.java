@@ -19,7 +19,10 @@ package org.radarcns.producer.rest;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import okio.Buffer;
 import okio.BufferedSink;
+import okio.Okio;
+import okio.Sink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +36,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * TopicRequestData in a RequestBody.
  */
 class TopicRequestBody extends RequestBody {
-    private static final Logger logger = LoggerFactory.getLogger(TopicRequestBody.class);
 
     protected final RecordRequest data;
     private final MediaType mediaType;
@@ -50,21 +52,13 @@ class TopicRequestBody extends RequestBody {
 
     @Override
     public void writeTo(BufferedSink sink) throws IOException {
-        try (OutputStream out = sink.outputStream()) {
-            data.writeToStream(out);
-        }
-
-        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            data.writeToStream(out);
-            logger.info("Data: {}", new String(out.toByteArray(), UTF_8));
-        }
+        data.writeToSink(sink);
     }
 
     private String content() throws IOException {
-        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            data.writeToStream(out);
-            return out.toString();
-        }
+        Buffer buffer = new Buffer();
+        data.writeToSink(buffer);
+        return buffer.readUtf8();
     }
 
     static String topicRequestContent(Request request) throws IOException {

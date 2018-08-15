@@ -43,7 +43,7 @@ import static org.radarcns.util.Strings.utf8;
  * Internally, only {@link JSONObject} is used to manage JSON data, to keep the class as lean as
  * possible.
  */
-public class SchemaRetriever implements Closeable {
+public class SchemaRetriever {
     private static final Logger logger = LoggerFactory.getLogger(SchemaRetriever.class);
     private static final MediaType CONTENT_TYPE = MediaType.parse(
             "application/vnd.schemaregistry.v1+json; charset=utf-8");
@@ -68,15 +68,13 @@ public class SchemaRetriever implements Closeable {
     public SchemaRetriever(ServerConfig config, long connectionTimeout) {
         Objects.requireNonNull(config);
         cache = new ConcurrentHashMap<>();
-        httpClient = new RestClient(config, connectionTimeout, ManagedConnectionPool.GLOBAL_POOL);
+        httpClient = new RestClient(config, RestClient.getGlobalHttpClient(), connectionTimeout);
     }
 
     public synchronized void setConnectionTimeout(long connectionTimeout) {
         if (httpClient.getTimeout() != connectionTimeout) {
-            RestClient newHttpClient = new RestClient(httpClient.getConfig(), connectionTimeout,
-                    ManagedConnectionPool.GLOBAL_POOL);
-            httpClient.close();
-            httpClient = newHttpClient;
+            httpClient = new RestClient(httpClient.getConfig(),
+                    httpClient.getHttpClient(), connectionTimeout);
         }
     }
 
@@ -173,11 +171,6 @@ public class SchemaRetriever implements Closeable {
         metadata = new ParsedSchemaMetadata(null, null, schema);
         addSchemaMetadata(topic, ofValue, metadata);
         return metadata;
-    }
-
-    @Override
-    public void close() {
-        getRestClient().close();
     }
 
     private class SchemaRequestBody extends RequestBody {

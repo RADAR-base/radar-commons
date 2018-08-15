@@ -17,7 +17,9 @@
 package org.radarcns.producer.rest;
 
 import okhttp3.Headers;
+import okhttp3.Interceptor;
 import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.apache.avro.SchemaValidationException;
@@ -32,9 +34,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import static org.radarcns.producer.rest.RestClient.DEFAULT_TIMEOUT;
 import static org.radarcns.producer.rest.RestClient.responseBody;
 
 /**
@@ -70,19 +74,19 @@ public class RestSender implements KafkaSender {
         this.requestProperties = new RequestProperties(
                 KAFKA_REST_ACCEPT_ENCODING,
                 builder.binary ? KAFKA_REST_BINARY_ENCODING : KAFKA_REST_AVRO_ENCODING,
-                builder.compression,
                 builder.additionalHeaders.build(),
                 builder.binary);
         this.state = builder.state;
-        setRestClient(new RestClient(builder.kafkaConfig, builder.timeout, builder.pool));
+        setRestClient(new RestClient(builder.kafkaConfig, builder.client, builder.timeout));
+        if (builder.compression) {
+            setCompression(true);
+        }
     }
 
     public synchronized void setConnectionTimeout(long connectionTimeout) {
         if (connectionTimeout != httpClient.getTimeout()) {
-            RestClient newRestClient = new RestClient(httpClient.getConfig(),
-                    connectionTimeout, httpClient.getConnectionPool());
-            httpClient.close();
-            httpClient = newRestClient;
+            httpClient = new RestClient(httpClient.getConfig(), httpClient.getHttpClient(),
+                    connectionTimeout);
             state.setTimeout(connectionTimeout, TimeUnit.SECONDS);
         }
     }
@@ -92,10 +96,7 @@ public class RestSender implements KafkaSender {
         if (kafkaConfig.equals(httpClient.getConfig())) {
             return;
         }
-        RestClient newRestClient = new RestClient(kafkaConfig, httpClient.getTimeout(),
-                httpClient.getConnectionPool());
-        httpClient.close();
-        setRestClient(newRestClient);
+        setRestClient(new RestClient(kafkaConfig, httpClient.getHttpClient()));
     }
 
     private void setRestClient(RestClient newClient) {
@@ -125,9 +126,25 @@ public class RestSender implements KafkaSender {
     }
 
     public synchronized void setCompression(boolean useCompression) {
-        this.requestProperties = new RequestProperties(requestProperties.acceptType,
-                requestProperties.contentType, useCompression, requestProperties.headers,
-                requestProperties.binary);
+        Iterator<Interceptor> iterator = httpClient.getHttpClient().interceptors().iterator();
+        GzipRequestInterceptor gzip = null;
+        while (iterator.hasNext()) {
+            Interceptor interceptor = iterator.next();
+            if (interceptor instanceof GzipRequestInterceptor) {
+                gzip = (GzipRequestInterceptor) interceptor;
+                break;
+            }
+        }
+        if (useCompression && gzip == null) {
+            OkHttpClient client = httpClient.getHttpClient().newBuilder()
+                    .addInterceptor(new GzipRequestInterceptor())
+                    .build();
+            setRestClient(new RestClient(httpClient.getConfig(), client));
+        } else if (!useCompression && gzip != null) {
+            OkHttpClient.Builder builder = httpClient.getHttpClient().newBuilder();
+            builder.interceptors().remove(gzip);
+            setRestClient(new RestClient(httpClient.getConfig(), builder.build()));
+        }
     }
 
     public synchronized Headers getHeaders() {
@@ -136,7 +153,7 @@ public class RestSender implements KafkaSender {
 
     public synchronized void setHeaders(Headers additionalHeaders) {
         this.requestProperties = new RequestProperties(requestProperties.acceptType,
-                requestProperties.contentType, requestProperties.useCompression, additionalHeaders,
+                requestProperties.contentType, additionalHeaders,
                 requestProperties.binary);
         this.state.reset();
     }
@@ -201,13 +218,13 @@ public class RestSender implements KafkaSender {
 
     @Override
     public void close() {
-        httpClient.close();
+        // noop
     }
 
     public synchronized void useLegacyEncoding(String acceptEncoding,
             MediaType contentEncoding, boolean binary) {
         this.requestProperties = new RequestProperties(acceptEncoding,
-                contentEncoding, requestProperties.useCompression,
+                contentEncoding,
                 requestProperties.headers, binary);
     }
 
@@ -215,9 +232,9 @@ public class RestSender implements KafkaSender {
         private ServerConfig kafkaConfig;
         private SchemaRetriever retriever;
         private boolean compression = false;
-        private long timeout = 10;
+        private long timeout = DEFAULT_TIMEOUT;
         private ConnectionState state;
-        private ManagedConnectionPool pool;
+        private OkHttpClient client;
         private Headers.Builder additionalHeaders = new Headers.Builder();
         private boolean binary = false;
 
@@ -251,8 +268,8 @@ public class RestSender implements KafkaSender {
             return this;
         }
 
-        public Builder connectionPool(ManagedConnectionPool pool) {
-            this.pool = pool;
+        public Builder httpClient(OkHttpClient client) {
+            this.client = client;
             return this;
         }
 
@@ -275,8 +292,8 @@ public class RestSender implements KafkaSender {
             if (state == null) {
                 state = new ConnectionState(timeout, TimeUnit.SECONDS);
             }
-            if (pool == null) {
-                pool = ManagedConnectionPool.GLOBAL_POOL;
+            if (client == null) {
+                client = RestClient.getGlobalHttpClient();
             }
 
             return new RestSender(this);
@@ -296,15 +313,13 @@ public class RestSender implements KafkaSender {
     static final class RequestProperties {
         final String acceptType;
         final MediaType contentType;
-        final boolean useCompression;
         final Headers headers;
         final boolean binary;
 
-        RequestProperties(String acceptType, MediaType contentType, boolean useCompression,
-                Headers headers, boolean binary) {
+        RequestProperties(String acceptType, MediaType contentType, Headers headers,
+                boolean binary) {
             this.acceptType = acceptType;
             this.contentType = contentType;
-            this.useCompression = useCompression;
             this.headers = headers;
             this.binary = binary;
         }

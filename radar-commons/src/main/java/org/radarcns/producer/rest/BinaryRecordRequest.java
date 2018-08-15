@@ -1,5 +1,7 @@
 package org.radarcns.producer.rest;
 
+import okio.BufferedSink;
+import okio.Sink;
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaValidationException;
 import org.apache.avro.generic.IndexedRecord;
@@ -59,8 +61,8 @@ public class BinaryRecordRequest<K, V> implements RecordRequest<K, V> {
     }
 
     @Override
-    public void writeToStream(OutputStream out) throws IOException {
-        binaryEncoder = EncoderFactory.get().binaryEncoder(out, binaryEncoder);
+    public void writeToSink(BufferedSink sink) throws IOException {
+        binaryEncoder = EncoderFactory.get().directBinaryEncoder(sink.outputStream(), binaryEncoder);
         binaryEncoder.startItem();
         binaryEncoder.writeInt(keyVersion);
         binaryEncoder.writeInt(valueVersion);
@@ -70,7 +72,7 @@ public class BinaryRecordRequest<K, V> implements RecordRequest<K, V> {
         binaryEncoder.writeArrayStart();
         binaryEncoder.setItemCount(records.size());
 
-        for (V record : records.values()) {
+        for (V record : records) {
             binaryEncoder.startItem();
             binaryEncoder.writeBytes(valueEncoder.encode(record));
         }
@@ -84,17 +86,9 @@ public class BinaryRecordRequest<K, V> implements RecordRequest<K, V> {
     }
 
     @Override
-    public void setKeySchemaMetadata(ParsedSchemaMetadata schema) {
-        keyVersion = schema.getVersion() == null ? 0 : schema.getVersion();
-    }
-
-    @Override
-    public void setValueSchemaMetadata(ParsedSchemaMetadata schema) {
-        valueVersion = schema.getVersion() == null ? 0 : schema.getVersion();
-    }
-
-    @Override
-    public void setRecords(RecordData<K, V> records) {
+    public void prepare(ParsedSchemaMetadata keySchema, ParsedSchemaMetadata valueSchema, RecordData<K, V> records) {
+        keyVersion = keySchema.getVersion() == null ? 0 : keySchema.getVersion();
+        valueVersion = valueSchema.getVersion() == null ? 0 : valueSchema.getVersion();
         this.records = records;
     }
 }

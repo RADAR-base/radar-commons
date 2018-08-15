@@ -132,16 +132,34 @@ class RestTopicSender<K, V>
         }
     }
 
-    private void updateRecords(RestSender.RequestContext context, RecordData<K, V> records) {
+    private void updateRecords(RestSender.RequestContext context, RecordData<K, V> records) throws IOException, SchemaValidationException {
         if (!context.properties.binary && requestData instanceof BinaryRecordRequest) {
             requestData = new JsonRecordRequest<>(topic);
         }
 
+        String sendTopic = topic.getName();
+        SchemaRetriever retriever = sender.getSchemaRetriever();
+
+        ParsedSchemaMetadata keyMetadata;
+        ParsedSchemaMetadata valueMetadata;
+
         try {
-            requestData.setRecords(records);
+            keyMetadata = retriever.getOrSetSchemaMetadata(
+                    sendTopic, false, topic.getKeySchema(), -1);
+            schemaKeyValidator.validate(keyMetadata);
+
+            valueMetadata = retriever.getOrSetSchemaMetadata(
+                    sendTopic, true, topic.getValueSchema(), -1);
+            schemaValueValidator.validate(valueMetadata);
+        } catch (IOException ex) {
+            throw new IOException("Failed to get schemas for topic " + topic, ex);
+        }
+
+        try {
+            requestData.prepare(keyMetadata, valueMetadata, records);
         } catch (IllegalArgumentException ex) {
             requestData = new JsonRecordRequest<>(topic);
-            requestData.setRecords(records);
+            requestData.prepare(keyMetadata, valueMetadata, records);
         }
     }
 
@@ -183,13 +201,7 @@ class RestTopicSender<K, V>
                 && !(requestData instanceof BinaryRecordRequest)) {
             contentType = KAFKA_REST_AVRO_ENCODING;
         }
-
-        if (context.properties.useCompression) {
-            requestBody = new GzipTopicRequestBody(requestData, contentType);
-            requestBuilder.addHeader("Content-Encoding", "gzip");
-        } else {
-            requestBody = new TopicRequestBody(requestData, contentType);
-        }
+        requestBody = new TopicRequestBody(requestData, contentType);
 
         return requestBuilder.post(requestBody).build();
     }
@@ -198,21 +210,6 @@ class RestTopicSender<K, V>
             throws IOException, SchemaValidationException {
         // Get schema IDs
         String sendTopic = topic.getName();
-
-        SchemaRetriever retriever = sender.getSchemaRetriever();
-        try {
-            ParsedSchemaMetadata metadata = retriever.getOrSetSchemaMetadata(
-                    sendTopic, false, topic.getKeySchema(), -1);
-            schemaKeyValidator.validate(metadata);
-            requestData.setKeySchemaMetadata(metadata);
-
-            metadata = retriever.getOrSetSchemaMetadata(
-                    sendTopic, true, topic.getValueSchema(), -1);
-            schemaValueValidator.validate(metadata);
-            requestData.setValueSchemaMetadata(metadata);
-        } catch (IOException ex) {
-            throw new IOException("Failed to get schemas for topic " + topic, ex);
-        }
 
         return restClient.getRelativeUrl("topics/" + sendTopic);
     }

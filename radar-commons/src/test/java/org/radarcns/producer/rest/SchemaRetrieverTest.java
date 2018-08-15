@@ -56,7 +56,6 @@ public class SchemaRetrieverTest {
 
     @After
     public void tearDown() throws IOException {
-        retriever.close();
         server.close();
     }
 

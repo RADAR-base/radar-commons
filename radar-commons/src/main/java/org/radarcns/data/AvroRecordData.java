@@ -6,6 +6,7 @@ import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.topic.AvroTopic;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -34,8 +35,8 @@ public class AvroRecordData<K, V> implements RecordData<K, V> {
     }
 
     @Override
-    public List<V> values() {
-        return records;
+    public Iterator<V> iterator() {
+        return records.iterator();
     }
 
     /**

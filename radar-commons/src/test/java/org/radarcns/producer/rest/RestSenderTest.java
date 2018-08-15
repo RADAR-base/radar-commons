@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import okhttp3.Headers;
+import okhttp3.OkHttpClient;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -69,7 +70,7 @@ public class RestSenderTest {
         this.sender = new RestSender.Builder()
                 .server(config)
                 .schemaRetriever(retriever)
-                .connectionPool(new ManagedConnectionPool())
+                .httpClient(new OkHttpClient())
                 .build();
     }
 

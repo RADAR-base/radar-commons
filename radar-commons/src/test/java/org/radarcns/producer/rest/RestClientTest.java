@@ -21,6 +21,7 @@ import static org.junit.Assert.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.mockwebserver.MockResponse;
@@ -39,7 +40,7 @@ public class RestClientTest {
     public void setUp() {
         server = new MockWebServer();
         config = new ServerConfig(server.url("base").url());
-        client = new RestClient(config, 1, new ManagedConnectionPool());
+        client = new RestClient(config, new OkHttpClient(), 1);
     }
 
     @Test

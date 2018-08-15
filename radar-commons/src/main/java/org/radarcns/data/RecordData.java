@@ -2,14 +2,12 @@ package org.radarcns.data;
 
 import org.radarcns.topic.AvroTopic;
 
-import java.util.List;
-
 /**
  * Record data belonging to a single key.
  * @param <K> key type
  * @param <V> value type
  */
-public interface RecordData<K, V> {
+public interface RecordData<K, V> extends Iterable<V> {
     /**
      * Topic that the data belongs to.
      * @return Avro topic.
@@ -21,12 +19,6 @@ public interface RecordData<K, V> {
      * @return key
      */
     K getKey();
-
-    /**
-     * Values of the data set.
-     * @return list of values.
-     */
-    List<V> values();
 
     /**
      * Whether the list of values is empty.

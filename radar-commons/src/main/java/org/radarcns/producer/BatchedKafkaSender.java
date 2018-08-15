@@ -94,7 +94,7 @@ public class BatchedKafkaSender implements KafkaSender {
                 return;
             }
             K key = records.getKey();
-            for (V value : records.values()) {
+            for (V value : records) {
                 trySend(key, value);
             }
         }
