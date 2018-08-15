@@ -114,8 +114,10 @@ class RestTopicSender<K, V>
                 throw fail(request, response, null);
             }
         } catch (IOException ex) {
+            state.didDisconnect();
             fail(request, null, ex).rethrow();
         } catch (UncheckedRequestException ex) {
+            state.didDisconnect();
             ex.rethrow();
         } finally {
             requestData.reset();
