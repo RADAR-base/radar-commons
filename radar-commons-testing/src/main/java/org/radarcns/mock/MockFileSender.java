@@ -16,15 +16,13 @@
 
 package org.radarcns.mock;
 
-import org.radarcns.data.AvroRecordData;
+import org.apache.avro.SchemaValidationException;
 import org.radarcns.data.Record;
 import org.radarcns.mock.data.MockCsvParser;
 import org.radarcns.producer.KafkaSender;
 import org.radarcns.producer.KafkaTopicSender;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 
 /**
  * Send mock data from a CSV file.
@@ -47,11 +45,12 @@ public class MockFileSender {
     @SuppressWarnings("unchecked")
     public void send() throws IOException {
         try (KafkaTopicSender topicSender = sender.sender(parser.getTopic())) {
-            Collection<Record> records = new ArrayList<>();
             while (parser.hasNext()) {
-                records.add(parser.next());
+                Record record = parser.next();
+                topicSender.send(record.key, record.value);
             }
-            topicSender.send(new AvroRecordData(parser.getTopic(), records));
+        } catch (SchemaValidationException e) {
+            throw new IOException("Failed to match schemas", e);
         }
     }
 }

@@ -16,6 +16,7 @@
 
 package org.radarcns.producer.rest;
 
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -25,12 +26,12 @@ import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.apache.avro.Schema;
+import org.apache.avro.SchemaValidationException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.radarcns.config.ServerConfig;
 import org.radarcns.data.AvroRecordData;
-import org.radarcns.data.Record;
 import org.radarcns.kafka.ObservationKey;
 import org.radarcns.passive.phone.PhoneLight;
 import org.radarcns.producer.AuthenticationException;
@@ -52,6 +53,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class RestSenderTest {
+    private static final JsonFactory FACTORY = new JsonFactory();
+    private static final ObjectReader READER = new ObjectMapper(FACTORY).reader();
     private SchemaRetriever retriever;
     private RestSender sender;
 
@@ -108,8 +111,7 @@ public class RestSenderTest {
 
         RecordedRequest request = webServer.takeRequest();
         assertEquals("/topics/test", request.getPath());
-        ObjectReader reader = new ObjectMapper().readerFor(JsonNode.class);
-        JsonNode body = reader.readValue(request.getBody().inputStream());
+        JsonNode body = READER.readTree(request.getBody().inputStream());
         assertEquals(10, body.get("key_schema_id").asInt());
         assertEquals(10, body.get("value_schema_id").asInt());
         JsonNode records = body.get("records");
@@ -144,9 +146,7 @@ public class RestSenderTest {
                 .setHeader("Content-Type", "application/json; charset=utf-8")
                 .setBody("{\"offset\": 100}"));
 
-        topicSender.send(new AvroRecordData<>(topic, Arrays.asList(
-                new Record<>(key, value),
-                new Record<>(key, value))));
+        topicSender.send(new AvroRecordData<>(topic, key, Arrays.asList(value, value)));
 
         verify(retriever, times(1))
                 .getOrSetSchemaMetadata("test", false, keySchema, -1);
@@ -155,8 +155,7 @@ public class RestSenderTest {
 
         RecordedRequest request = webServer.takeRequest();
         assertEquals("/topics/test", request.getPath());
-        ObjectReader reader = new ObjectMapper().readerFor(JsonNode.class);
-        JsonNode body = reader.readValue(request.getBody().inputStream());
+        JsonNode body = READER.readTree(request.getBody().inputStream());
         assertEquals(10, body.get("key_schema_id").asInt());
         assertEquals(10, body.get("value_schema_id").asInt());
         JsonNode records = body.get("records");
@@ -224,7 +223,8 @@ public class RestSenderTest {
     }
 
     @Test
-    public void withCompression() throws IOException, InterruptedException {
+    public void withCompression()
+            throws IOException, InterruptedException, SchemaValidationException {
         sender.setCompression(true);
         webServer.enqueue(new MockResponse()
                 .setHeader("Content-Type", "application/json; charset=utf-8")
@@ -252,11 +252,9 @@ public class RestSenderTest {
         RecordedRequest request = webServer.takeRequest();
         assertEquals("gzip", request.getHeader("Content-Encoding"));
 
-        ObjectReader reader = new ObjectMapper().readerFor(JsonNode.class);
-
         try (InputStream in = request.getBody().inputStream();
                 GZIPInputStream gzipIn = new GZIPInputStream(in)) {
-            JsonNode body = reader.readValue(gzipIn);
+            JsonNode body = READER.readTree(gzipIn);
             assertEquals(10, body.get("key_schema_id").asInt());
             assertEquals(10, body.get("value_schema_id").asInt());
             JsonNode records = body.get("records");

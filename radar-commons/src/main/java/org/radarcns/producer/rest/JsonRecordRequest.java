@@ -17,35 +17,43 @@
 package org.radarcns.producer.rest;
 
 import org.json.JSONObject;
+import org.radarcns.data.AvroEncoder;
+import org.radarcns.data.AvroRecordData;
 import org.radarcns.data.RecordData;
+import org.radarcns.topic.AvroTopic;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Iterator;
 
 import static org.radarcns.util.Strings.utf8;
 
 /**
  * Request data to submit records to the Kafka REST proxy.
  */
-class TopicRequestData {
-    private static final byte[] KEY_SCHEMA_ID = utf8("\"key_schema_id\":");
-    private static final byte[] VALUE_SCHEMA_ID = utf8(",\"value_schema_id\":");
-    private static final byte[] RECORDS = utf8(",\"records\":[");
-    private static final byte[] KEY = utf8("{\"key\":");
-    private static final byte[] VALUE = utf8(",\"value\":");
-    private static final byte[] END = utf8("]}");
+class JsonRecordRequest<K, V> implements RecordRequest<K, V> {
+    public static final byte[] KEY_SCHEMA_ID = utf8("\"key_schema_id\":");
+    public static final byte[] VALUE_SCHEMA_ID = utf8(",\"value_schema_id\":");
+    public static final byte[] RECORDS = utf8(",\"records\":[");
+    public static final byte[] KEY = utf8("{\"key\":");
+    public static final byte[] VALUE = utf8(",\"value\":");
+    public static final byte[] END = utf8("]}");
 
-    private final byte[] buffer;
+    private final AvroEncoder.AvroWriter<K> keyEncoder;
+    private final AvroEncoder.AvroWriter<V> valueEncoder;
 
     private int keySchemaId;
     private int valueSchemaId;
+    private RecordData<K, V> records;
 
-    private RecordData<?, ?> records;
-
-    TopicRequestData() {
-        buffer = new byte[1024];
+    public JsonRecordRequest(AvroTopic<K, V> topic) {
+        try {
+            keyEncoder = AvroRecordData.getEncoder(
+                    topic.getKeySchema(), topic.getKeyClass(), false);
+            valueEncoder = AvroRecordData.getEncoder(
+                    topic.getValueSchema(), topic.getValueClass(), false);
+        } catch (IOException ex) {
+            throw new IllegalArgumentException("Cannot create encoder of schema.", ex);
+        }
     }
 
     /**
@@ -55,7 +63,8 @@ class TopicRequestData {
      * @param out OutputStream to write to. It is assumed to be buffered.
      * @throws IOException if a superimposing stream could not be created
      */
-    void writeToStream(OutputStream out) throws IOException {
+    @Override
+    public void writeToStream(OutputStream out) throws IOException {
         out.write('{');
         out.write(KEY_SCHEMA_ID);
         out.write(utf8(String.valueOf(keySchemaId)));
@@ -64,45 +73,42 @@ class TopicRequestData {
 
         out.write(RECORDS);
 
+        byte[] key = keyEncoder.encode(records.getKey());
+
         boolean first = true;
-        Iterator<InputStream> iterator = records.rawIterator();
-        while (iterator.hasNext()) {
+        for (V record : records.values()) {
             if (first) {
                 first = false;
             } else {
                 out.write(',');
             }
             out.write(KEY);
-            copyStream(iterator.next(), out);
+            out.write(key);
 
             out.write(VALUE);
-            copyStream(iterator.next(), out);
+            out.write(valueEncoder.encode(record));
             out.write('}');
         }
         out.write(END);
     }
 
-    void reset() {
+    @Override
+    public void reset() {
         records = null;
     }
 
-    void setKeySchemaId(int keySchemaId) {
-        this.keySchemaId = keySchemaId;
+    @Override
+    public void setKeySchemaMetadata(ParsedSchemaMetadata schema) {
+        this.keySchemaId = schema.getId();
     }
 
-    void setValueSchemaId(int valueSchemaId) {
-        this.valueSchemaId = valueSchemaId;
+    @Override
+    public void setValueSchemaMetadata(ParsedSchemaMetadata schema) {
+        this.valueSchemaId = schema.getId();
     }
 
-    void setRecords(RecordData<?, ?> records) {
+    @Override
+    public void setRecords(RecordData<K, V> records) {
         this.records = records;
-    }
-
-    private void copyStream(InputStream in, OutputStream out) throws IOException {
-        int len = in.read(buffer);
-        while (len != -1) {
-            out.write(buffer, 0, len);
-            len = in.read(buffer);
-        }
     }
 }

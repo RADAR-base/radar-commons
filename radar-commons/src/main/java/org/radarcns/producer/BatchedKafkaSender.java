@@ -16,14 +16,16 @@
 
 package org.radarcns.producer;
 
+import org.apache.avro.SchemaValidationException;
 import org.radarcns.data.AvroRecordData;
-import org.radarcns.data.Record;
 import org.radarcns.data.RecordData;
 import org.radarcns.topic.AvroTopic;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A Kafka REST Proxy sender that batches up records. It will send data once the batch size is
@@ -34,18 +36,18 @@ import java.util.List;
  */
 public class BatchedKafkaSender implements KafkaSender {
     private final KafkaSender wrappedSender;
-    private final int ageMillis;
+    private final long ageNanos;
     private final int maxBatchSize;
 
     public BatchedKafkaSender(KafkaSender sender, int ageMillis, int maxBatchSize) {
         this.wrappedSender = sender;
-        this.ageMillis = ageMillis;
+        this.ageNanos = TimeUnit.MILLISECONDS.toNanos(ageMillis);
         this.maxBatchSize = maxBatchSize;
     }
 
     @Override
     public <K, V> KafkaTopicSender<K, V> sender(final AvroTopic<K, V> topic)
-            throws IOException {
+            throws IOException, SchemaValidationException {
         return new BatchedKafkaTopicSender<>(topic);
     }
 
@@ -64,49 +66,70 @@ public class BatchedKafkaSender implements KafkaSender {
         wrappedSender.close();
     }
 
-    private class BatchedKafkaTopicSender<K, V> implements
-            KafkaTopicSender<K, V> {
-        private final List<Record<K, V>> cache;
+    private class BatchedKafkaTopicSender<K, V> implements KafkaTopicSender<K, V> {
+        private long nanoAdded;
+        private K cachedKey;
+        private final List<V> cache;
         private final KafkaTopicSender<K, V> topicSender;
         private final AvroTopic<K, V> topic;
 
-        private BatchedKafkaTopicSender(AvroTopic<K, V> topic) throws IOException {
+        private BatchedKafkaTopicSender(AvroTopic<K, V> topic)
+                throws IOException, SchemaValidationException {
             cache = new ArrayList<>();
             this.topic = topic;
             topicSender = wrappedSender.sender(topic);
         }
 
         @Override
-        public void send(K key, V value) throws IOException {
+        public void send(K key, V value) throws IOException, SchemaValidationException {
             if (!isConnected()) {
                 throw new IOException("Cannot send records to unconnected producer.");
             }
-            trySend(new Record<>(key, value));
+            trySend(key, value);
         }
 
         @Override
-        public void send(RecordData<K, V> records) throws IOException {
+        public void send(RecordData<K, V> records) throws IOException, SchemaValidationException {
             if (records.isEmpty()) {
                 return;
             }
-            for (Record<K, V> record : records) {
-                trySend(record);
+            K key = records.getKey();
+            for (V value : records.values()) {
+                trySend(key, value);
             }
         }
 
-        private void trySend(Record<K, V> record) throws IOException {
+        private void trySend(K key, V record) throws IOException, SchemaValidationException {
             boolean doSend;
-            if (record == null) {
-                doSend = !cache.isEmpty();
+            boolean keysMatch;
+
+            if (cache.isEmpty()) {
+                cachedKey = key;
+                nanoAdded = System.nanoTime();
+                keysMatch = true;
             } else {
+                keysMatch = Objects.equals(key, cachedKey);
+            }
+
+            if (keysMatch) {
                 cache.add(record);
                 doSend = exceedsBuffer(cache);
+            } else {
+                doSend = true;
             }
 
             if (doSend) {
-                topicSender.send(new AvroRecordData<>(topic, cache));
-                cache.clear();
+                doSend();
+                if (!keysMatch) {
+                    trySend(key, record);
+                }
             }
+        }
+
+        private void doSend() throws IOException, SchemaValidationException {
+            topicSender.send(new AvroRecordData<>(topic, cachedKey, cache));
+            cache.clear();
+            cachedKey = null;
         }
 
         @Override
@@ -117,7 +140,11 @@ public class BatchedKafkaSender implements KafkaSender {
 
         @Override
         public void flush() throws IOException {
-            trySend(null);
+            try {
+                doSend();
+            } catch (SchemaValidationException ex) {
+                throw new IOException("Schemas do not match", ex);
+            }
             topicSender.flush();
         }
 
@@ -130,9 +157,9 @@ public class BatchedKafkaSender implements KafkaSender {
             }
         }
 
-        private boolean exceedsBuffer(List<Record<K, V>> records) {
+        private boolean exceedsBuffer(List<?> records) {
             return records.size() >= maxBatchSize
-                    || System.currentTimeMillis() - records.get(0).milliTimeAdded >= ageMillis;
+                    || System.nanoTime() - nanoAdded >= ageNanos;
         }
     }
 }

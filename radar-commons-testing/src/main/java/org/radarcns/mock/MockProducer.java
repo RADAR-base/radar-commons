@@ -16,6 +16,7 @@
 
 package org.radarcns.mock;
 
+import org.apache.avro.SchemaValidationException;
 import org.radarcns.config.ServerConfig;
 import org.radarcns.config.YamlConfigLoader;
 import org.radarcns.kafka.ObservationKey;
@@ -197,7 +198,7 @@ public class MockProducer {
     }
 
     /** Stop sending data and clean up all resources. */
-    public void shutdown() throws IOException, InterruptedException {
+    public void shutdown() throws IOException, InterruptedException, SchemaValidationException {
         if (!devices.isEmpty()) {
             logger.info("Shutting down mock devices");
             for (MockDevice device : devices) {
@@ -215,9 +216,7 @@ public class MockProducer {
         retriever.close();
 
         for (MockDevice device : devices) {
-            if (device.getException() != null) {
-                throw device.getException();
-            }
+            device.checkException();
         }
     }
 
@@ -246,17 +245,17 @@ public class MockProducer {
         } catch (IllegalArgumentException ex) {
             logger.error("{}", ex.getMessage());
             System.exit(1);
-        } catch (IOException ex) {
-            logger.error("Failed to start mock producer", ex);
-            System.exit(1);
         } catch (InterruptedException e) {
             // during shutdown, not that important. Will shutdown again.
+        } catch (Exception ex) {
+            logger.error("Failed to start mock producer", ex);
+            System.exit(1);
         }
     }
 
     /** Wait for given duration and then stop the producer. */
     private static void waitForProducer(final MockProducer producer, long duration)
-            throws IOException, InterruptedException {
+            throws IOException, InterruptedException, SchemaValidationException {
         final AtomicBoolean isShutdown = new AtomicBoolean(false);
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -265,10 +264,10 @@ public class MockProducer {
                     if (!isShutdown.get()) {
                         producer.shutdown();
                     }
-                } catch (IOException ex) {
-                    logger.warn("Failed to shutdown producer", ex);
                 } catch (InterruptedException ex) {
                     logger.warn("Shutdown interrupted", ex);
+                } catch (Exception ex) {
+                    logger.warn("Failed to shutdown producer", ex);
                 }
             }
         });

@@ -18,7 +18,6 @@ package org.radarcns.producer.direct;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.radarcns.data.Record;
 import org.radarcns.data.RecordData;
 import org.radarcns.producer.KafkaSender;
 import org.radarcns.producer.KafkaTopicSender;
@@ -73,8 +72,8 @@ public class DirectSender implements KafkaSender {
 
         @Override
         public void send(RecordData<K, V> records) {
-            for (Record<K, V> record : records) {
-                producer.send(new ProducerRecord<>(name, record.key, record.value));
+            for (V record : records.values()) {
+                producer.send(new ProducerRecord<>(name, records.getKey(), record));
             }
             producer.flush();
         }

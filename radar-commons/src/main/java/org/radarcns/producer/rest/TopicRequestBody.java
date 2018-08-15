@@ -16,22 +16,29 @@
 
 package org.radarcns.producer.rest;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okio.BufferedSink;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * TopicRequestData in a RequestBody.
  */
 class TopicRequestBody extends RequestBody {
-    protected final TopicRequestData data;
+    private static final Logger logger = LoggerFactory.getLogger(TopicRequestBody.class);
+
+    protected final RecordRequest data;
     private final MediaType mediaType;
 
-    TopicRequestBody(TopicRequestData requestData, MediaType mediaType) {
+    TopicRequestBody(RecordRequest requestData, MediaType mediaType) {
         this.data = requestData;
         this.mediaType = mediaType;
     }
@@ -45,6 +52,11 @@ class TopicRequestBody extends RequestBody {
     public void writeTo(BufferedSink sink) throws IOException {
         try (OutputStream out = sink.outputStream()) {
             data.writeToStream(out);
+        }
+
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            data.writeToStream(out);
+            logger.info("Data: {}", new String(out.toByteArray(), UTF_8));
         }
     }
 

@@ -16,6 +16,7 @@
 
 package org.radarcns.producer;
 
+import org.apache.avro.SchemaValidationException;
 import org.radarcns.topic.AvroTopic;
 
 import java.io.Closeable;
@@ -27,7 +28,8 @@ import java.io.IOException;
  */
 public interface KafkaSender extends Closeable {
     /** Get a non thread-safe sender instance. */
-    <K, V> KafkaTopicSender<K, V> sender(AvroTopic<K, V> topic) throws IOException;
+    <K, V> KafkaTopicSender<K, V> sender(AvroTopic<K, V> topic)
+            throws IOException, SchemaValidationException;
 
     /**
      * If the sender is no longer connected, try to reconnect.

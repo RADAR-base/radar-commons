@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.apache.avro.SchemaValidationException;
 import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.data.Record;
 import org.radarcns.mock.data.RecordGenerator;
@@ -44,7 +46,7 @@ public class MockDevice<K extends SpecificRecord> extends Thread {
     private final List<RecordGenerator<K>> generators;
     private final K key;
 
-    private IOException exception;
+    private Exception exception;
 
     /**
      * Basic constructor.
@@ -96,7 +98,7 @@ public class MockDevice<K extends SpecificRecord> extends Thread {
             for (KafkaTopicSender<K, SpecificRecord> topicSender : topicSenders) {
                 topicSender.close();
             }
-        } catch (IOException e) {
+        } catch (SchemaValidationException | IOException e) {
             synchronized (this) {
                 this.exception = e;
             }
@@ -112,8 +114,23 @@ public class MockDevice<K extends SpecificRecord> extends Thread {
     }
 
     /** Get the exception that occurred in the thread. Returns null if no exception occurred. */
-    public synchronized IOException getException() {
+    public synchronized Exception getException() {
         return exception;
+    }
+
+    /** Check whether an exception occurred, and rethrow the exception if that is the case. */
+    public synchronized void checkException() throws IOException, SchemaValidationException {
+        if (exception != null) {
+            if (exception instanceof IOException) {
+                throw (IOException) exception;
+            } else if (exception instanceof SchemaValidationException) {
+                throw (SchemaValidationException) exception;
+            } else if (exception instanceof RuntimeException) {
+                throw (RuntimeException) exception;
+            } else {
+                throw new IllegalStateException("Unknown exception occurred", exception);
+            }
+        }
     }
 
     private int computeBaseFrequency(List<RecordGenerator<K>> generators) {

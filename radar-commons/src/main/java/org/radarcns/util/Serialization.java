@@ -16,6 +16,10 @@
 
 package org.radarcns.util;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
 /** Serialization utility class. */
 public final class Serialization {
 
@@ -107,5 +111,14 @@ public final class Serialization {
      */
     public static double floatToDouble(float value) {
         return Double.parseDouble(Float.toString(value));
+    }
+
+    public static void copyStream(byte[] buffer, InputStream in, OutputStream out)
+            throws IOException {
+        int len = in.read(buffer);
+        while (len != -1) {
+            out.write(buffer, 0, len);
+            len = in.read(buffer);
+        }
     }
 }
