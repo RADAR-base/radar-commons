@@ -30,8 +30,8 @@ public class AvroTopic<K, V> extends KafkaTopic {
     private final Schema valueSchema;
     private final Schema keySchema;
     private final Schema.Type[] valueFieldTypes;
-    private final Class<V> valueClass;
-    private final Class<K> keyClass;
+    private final Class<? extends V> valueClass;
+    private final Class<? extends K> keyClass;
 
     /**
      * Kafka topic with Avro schema.
@@ -43,7 +43,7 @@ public class AvroTopic<K, V> extends KafkaTopic {
      */
     public AvroTopic(String name,
             Schema keySchema, Schema valueSchema,
-            Class<K> keyClass, Class<V> valueClass) {
+            Class<? extends K> keyClass, Class<? extends V> valueClass) {
         super(name);
 
         if (keySchema == null || valueSchema == null || keyClass == null || valueClass == null) {
@@ -77,12 +77,12 @@ public class AvroTopic<K, V> extends KafkaTopic {
     }
 
     /** Java class used for keys. */
-    public Class<K> getKeyClass() {
+    public Class<? extends K> getKeyClass() {
         return keyClass;
     }
 
     /** Java class used for values. */
-    public Class<V> getValueClass() {
+    public Class<? extends V> getValueClass() {
         return valueClass;
     }
 
@@ -115,13 +115,13 @@ public class AvroTopic<K, V> extends KafkaTopic {
             Objects.requireNonNull(keySchema, "key_schema needs to be specified");
             Objects.requireNonNull(valueSchema, "value_schema needs to be specified");
 
-            Class<K> keyClass = (Class<K>) Class.forName(keySchema);
+            Class<? extends K> keyClass = (Class<? extends K>) Class.forName(keySchema);
             Schema keyAvroSchema = (Schema) keyClass
                     .getMethod("getClassSchema").invoke(null);
             // check instantiation
             SpecificData.newInstance(keyClass, keyAvroSchema);
 
-            Class<V> valueClass = (Class<V>) Class.forName(valueSchema);
+            Class<? extends V> valueClass = (Class<? extends V>) Class.forName(valueSchema);
             Schema valueAvroSchema = (Schema) valueClass
                     .getMethod("getClassSchema").invoke(null);
             // check instantiation

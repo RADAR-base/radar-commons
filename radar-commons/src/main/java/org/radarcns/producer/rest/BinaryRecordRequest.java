@@ -53,6 +53,7 @@ public class BinaryRecordRequest<K, V> implements RecordRequest<K, V> {
     @Override
     public void writeToStream(OutputStream out) throws IOException {
         binaryEncoder = EncoderFactory.get().binaryEncoder(out, binaryEncoder);
+        binaryEncoder.startItem();
         binaryEncoder.writeInt(keyVersion);
         binaryEncoder.writeInt(valueVersion);
 
@@ -66,6 +67,7 @@ public class BinaryRecordRequest<K, V> implements RecordRequest<K, V> {
             binaryEncoder.writeBytes(valueEncoder.encode(record));
         }
         binaryEncoder.writeArrayEnd();
+        binaryEncoder.flush();
     }
 
     @Override

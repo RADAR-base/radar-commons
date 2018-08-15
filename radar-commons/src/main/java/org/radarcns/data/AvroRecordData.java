@@ -50,7 +50,7 @@ public class AvroRecordData<K, V> implements RecordData<K, V> {
      * @throws IllegalArgumentException if the supplied class is not an IndexedRecord.
      */
     public static <T> AvroEncoder.AvroWriter<T> getEncoder(
-            Schema schema, Class<T> cls, boolean binary) throws IOException {
+            Schema schema, Class<? extends T> cls, boolean binary) throws IOException {
         AvroEncoder encoder;
         if (SpecificRecord.class.isAssignableFrom(cls)) {
             encoder = new SpecificRecordEncoder(binary);

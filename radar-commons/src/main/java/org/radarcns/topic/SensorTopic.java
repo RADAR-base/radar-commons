@@ -27,7 +27,7 @@ import org.apache.avro.specific.SpecificRecord;
 @SuppressWarnings("PMD.UseUtilityClass")
 public class SensorTopic<K, V> extends AvroTopic<K, V> {
     public SensorTopic(String name, Schema keySchema, Schema valueSchema,
-            Class<K> keyClass, Class<V> valueClass) {
+            Class<? extends K> keyClass, Class<? extends V> valueClass) {
         super(name, keySchema, valueSchema, keyClass, valueClass);
 
         if (keySchema.getType() != Type.RECORD) {

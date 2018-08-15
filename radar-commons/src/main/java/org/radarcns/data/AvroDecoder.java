@@ -23,7 +23,7 @@ import java.io.IOException;
 /** Decode Avro values with a given encoder. */
 public interface AvroDecoder {
     /** Create a new reader. This method is thread-safe, but the class it returns is not. */
-    <T> AvroReader<T> reader(Schema schema, Class<T> clazz) throws IOException;
+    <T> AvroReader<T> reader(Schema schema, Class<? extends T> clazz) throws IOException;
 
     interface AvroReader<T> {
         /**

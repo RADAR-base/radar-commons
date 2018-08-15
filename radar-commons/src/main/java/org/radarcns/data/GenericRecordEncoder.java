@@ -38,7 +38,7 @@ public class GenericRecordEncoder implements AvroEncoder {
     }
 
     @Override
-    public <T> AvroWriter<T> writer(Schema schema, Class<T> clazz) throws IOException {
+    public <T> AvroWriter<T> writer(Schema schema, Class<? extends T> clazz) throws IOException {
         if (!GenericRecord.class.isAssignableFrom(clazz)) {
             throw new IllegalArgumentException("Can only create readers for SpecificRecords.");
         }

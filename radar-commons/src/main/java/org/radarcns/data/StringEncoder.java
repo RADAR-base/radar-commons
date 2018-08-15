@@ -28,7 +28,7 @@ public class StringEncoder implements AvroEncoder, AvroEncoder.AvroWriter<String
 
     @SuppressWarnings("unchecked")
     @Override
-    public <T> AvroWriter<T> writer(Schema schema, Class<T> clazz) {
+    public <T> AvroWriter<T> writer(Schema schema, Class<? extends T> clazz) {
         if (schema.getType() != Schema.Type.STRING || !clazz.equals(String.class)) {
             throw new IllegalArgumentException(
                     "Cannot encode String with a different type than STRING.");
