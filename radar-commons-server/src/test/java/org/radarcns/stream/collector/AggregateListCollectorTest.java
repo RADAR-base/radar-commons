@@ -16,10 +16,10 @@
 
 package org.radarcns.stream.collector;
 
-import static org.junit.Assert.assertEquals;
-
 import org.junit.Test;
 import org.radarcns.passive.empatica.EmpaticaE4Acceleration;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by nivethika on 20-12-16.

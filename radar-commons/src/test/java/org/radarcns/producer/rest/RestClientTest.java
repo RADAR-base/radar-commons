@@ -16,12 +16,7 @@
 
 package org.radarcns.producer.rest;
 
-import static org.junit.Assert.*;
-
-import java.net.MalformedURLException;
-import java.net.URL;
 import okhttp3.HttpUrl;
-import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.mockwebserver.MockResponse;
@@ -30,6 +25,12 @@ import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.Before;
 import org.junit.Test;
 import org.radarcns.config.ServerConfig;
+
+import java.net.URL;
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class RestClientTest {
     private MockWebServer server;
@@ -40,7 +41,10 @@ public class RestClientTest {
     public void setUp() {
         server = new MockWebServer();
         config = new ServerConfig(server.url("base").url());
-        client = new RestClient(config, new OkHttpClient(), 1);
+        client = RestClient.newClient()
+                .server(config)
+                .timeout(1, TimeUnit.SECONDS)
+                .build();
     }
 
     @Test

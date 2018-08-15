@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import okhttp3.Headers;
-import okhttp3.OkHttpClient;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -67,10 +66,14 @@ public class RestSenderTest {
         this.retriever = mock(SchemaRetriever.class);
 
         ServerConfig config = new ServerConfig(webServer.url("/").url());
-        this.sender = new RestSender.Builder()
+
+        RestClient client = RestClient.newClient()
                 .server(config)
+                .build();
+
+        this.sender = new RestSender.Builder()
+                .httpClient(client)
                 .schemaRetriever(retriever)
-                .httpClient(new OkHttpClient())
                 .build();
     }
 

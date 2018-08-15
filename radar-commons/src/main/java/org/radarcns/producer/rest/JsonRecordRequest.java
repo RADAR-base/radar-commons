@@ -16,6 +16,7 @@
 
 package org.radarcns.producer.rest;
 
+import okio.Buffer;
 import okio.BufferedSink;
 import org.json.JSONObject;
 import org.radarcns.data.AvroEncoder;
@@ -52,7 +53,7 @@ public class JsonRecordRequest<K, V> implements RecordRequest<K, V> {
             valueEncoder = AvroRecordData.getEncoder(
                     topic.getValueSchema(), topic.getValueClass(), false);
         } catch (IOException ex) {
-            throw new IllegalArgumentException("Cannot create encoder of schema.", ex);
+            throw new IllegalArgumentException("Cannot newClient encoder of schema.", ex);
         }
     }
 
@@ -97,11 +98,18 @@ public class JsonRecordRequest<K, V> implements RecordRequest<K, V> {
         records = null;
     }
 
-
     @Override
-    public void prepare(ParsedSchemaMetadata keySchema, ParsedSchemaMetadata valueSchema, RecordData<K, V> records) {
+    public void prepare(ParsedSchemaMetadata keySchema, ParsedSchemaMetadata valueSchema,
+            RecordData<K, V> records) {
         keySchemaId = keySchema.getId() == null ? 0 : keySchema.getId();
         valueSchemaId = valueSchema.getId() == null ? 0 : valueSchema.getId();
         this.records = records;
+    }
+
+    @Override
+    public String content() throws IOException {
+        Buffer buffer = new Buffer();
+        writeToSink(buffer);
+        return buffer.readUtf8();
     }
 }

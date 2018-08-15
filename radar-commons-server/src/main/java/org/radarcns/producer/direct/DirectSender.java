@@ -72,7 +72,7 @@ public class DirectSender implements KafkaSender {
 
         @Override
         public void send(RecordData<K, V> records) {
-            for (V record : records.values()) {
+            for (V record : records) {
                 producer.send(new ProducerRecord<>(name, records.getKey(), record));
             }
             producer.flush();

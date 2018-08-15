@@ -28,13 +28,13 @@ import org.radarcns.config.ServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 import static org.radarcns.util.Strings.utf8;
 
@@ -66,15 +66,18 @@ public class SchemaRetriever {
     private RestClient httpClient;
 
     public SchemaRetriever(ServerConfig config, long connectionTimeout) {
-        Objects.requireNonNull(config);
         cache = new ConcurrentHashMap<>();
-        httpClient = new RestClient(config, RestClient.getGlobalHttpClient(), connectionTimeout);
+        httpClient = RestClient.global()
+                .server(Objects.requireNonNull(config))
+                .timeout(connectionTimeout, TimeUnit.SECONDS)
+                .build();
     }
 
     public synchronized void setConnectionTimeout(long connectionTimeout) {
         if (httpClient.getTimeout() != connectionTimeout) {
-            httpClient = new RestClient(httpClient.getConfig(),
-                    httpClient.getHttpClient(), connectionTimeout);
+            httpClient = httpClient.newBuilder()
+                    .timeout(connectionTimeout, TimeUnit.SECONDS)
+                    .build();
         }
     }
 

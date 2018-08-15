@@ -40,7 +40,7 @@ public class SpecificRecordEncoder implements AvroEncoder {
     @Override
     public <T> AvroWriter<T> writer(Schema schema, Class<? extends T> clazz) throws IOException {
         if (!SpecificRecord.class.isAssignableFrom(clazz)) {
-            throw new IllegalArgumentException("Can only create readers for SpecificRecords.");
+            throw new IllegalArgumentException("Can only newClient readers for SpecificRecords.");
         }
         return new AvroRecordWriter<>(encoderFactory, schema, new SpecificDatumWriter<T>(schema),
                 binary);

@@ -1,7 +1,23 @@
+/*
+ * Copyright 2018 The Hyve
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.radarcns.producer.rest;
 
+import okio.Buffer;
 import okio.BufferedSink;
-import okio.Sink;
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaValidationException;
 import org.apache.avro.generic.IndexedRecord;
@@ -13,7 +29,8 @@ import org.radarcns.data.RecordData;
 import org.radarcns.topic.AvroTopic;
 
 import java.io.IOException;
-import java.io.OutputStream;
+
+import static org.radarcns.util.Strings.bytesToHex;
 
 /**
  * Encodes a record request as binary data, in the form of a RecordSet.
@@ -56,13 +73,14 @@ public class BinaryRecordRequest<K, V> implements RecordRequest<K, V> {
             valueEncoder = AvroRecordData.getEncoder(
                     topic.getValueSchema(), topic.getValueClass(), true);
         } catch (IOException e) {
-            throw new IllegalArgumentException("Cannot create encoder", e);
+            throw new IllegalArgumentException("Cannot newClient encoder", e);
         }
     }
 
     @Override
     public void writeToSink(BufferedSink sink) throws IOException {
-        binaryEncoder = EncoderFactory.get().directBinaryEncoder(sink.outputStream(), binaryEncoder);
+        binaryEncoder = EncoderFactory.get().directBinaryEncoder(
+                sink.outputStream(), binaryEncoder);
         binaryEncoder.startItem();
         binaryEncoder.writeInt(keyVersion);
         binaryEncoder.writeInt(valueVersion);
@@ -86,9 +104,17 @@ public class BinaryRecordRequest<K, V> implements RecordRequest<K, V> {
     }
 
     @Override
-    public void prepare(ParsedSchemaMetadata keySchema, ParsedSchemaMetadata valueSchema, RecordData<K, V> records) {
+    public void prepare(ParsedSchemaMetadata keySchema, ParsedSchemaMetadata valueSchema,
+            RecordData<K, V> records) {
         keyVersion = keySchema.getVersion() == null ? 0 : keySchema.getVersion();
         valueVersion = valueSchema.getVersion() == null ? 0 : valueSchema.getVersion();
         this.records = records;
+    }
+
+    @Override
+    public String content() throws IOException {
+        Buffer buffer = new Buffer();
+        writeToSink(buffer);
+        return "0x" + bytesToHex(buffer.readByteArray());
     }
 }

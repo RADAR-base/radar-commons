@@ -17,9 +17,10 @@
 package org.radarcns.mock.config;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.radarcns.config.ServerConfig;
+
 import java.util.List;
 import java.util.Objects;
-import org.radarcns.config.ServerConfig;
 
 /**
  * A Minimal Mock Config to talk to Kafka and stream data using a mock set-up.

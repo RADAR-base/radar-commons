@@ -16,13 +16,14 @@
 
 package org.radarcns.data;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import org.apache.avro.Schema;
 import org.apache.avro.io.DatumWriter;
 import org.apache.avro.io.Encoder;
 import org.apache.avro.io.EncoderFactory;
 import org.radarcns.data.AvroEncoder.AvroWriter;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 /**
  * Encodes Avro records to bytes.

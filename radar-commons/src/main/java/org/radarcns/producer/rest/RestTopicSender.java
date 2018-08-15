@@ -132,7 +132,8 @@ class RestTopicSender<K, V>
         }
     }
 
-    private void updateRecords(RestSender.RequestContext context, RecordData<K, V> records) throws IOException, SchemaValidationException {
+    private void updateRecords(RestSender.RequestContext context, RecordData<K, V> records)
+            throws IOException, SchemaValidationException {
         if (!context.properties.binary && requestData instanceof BinaryRecordRequest) {
             requestData = new JsonRecordRequest<>(topic);
         }

@@ -42,7 +42,7 @@ public class ServerConfig {
         // POJO initializer
     }
 
-    // Parses the config from URL
+    // Parses the server from URL
     public ServerConfig(URL url) {
         host = url.getHost();
         port = url.getPort();
@@ -50,7 +50,7 @@ public class ServerConfig {
         setPath(url.getFile());
     }
 
-    // Parses the config from URL
+    // Parses the server from URL
     public ServerConfig(String urlString) throws MalformedURLException {
         this(new URL(urlString));
     }

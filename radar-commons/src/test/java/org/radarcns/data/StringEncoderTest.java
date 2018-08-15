@@ -16,12 +16,13 @@
 
 package org.radarcns.data;
 
-import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Type;
 import org.junit.Test;
+
+import java.io.IOException;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by nivethika on 24-2-17.

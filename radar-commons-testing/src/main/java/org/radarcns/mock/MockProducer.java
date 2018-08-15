@@ -34,7 +34,7 @@ import org.radarcns.producer.BatchedKafkaSender;
 import org.radarcns.producer.KafkaSender;
 import org.radarcns.producer.direct.DirectSender;
 import org.radarcns.producer.rest.ConnectionState;
-import org.radarcns.producer.rest.ManagedConnectionPool;
+import org.radarcns.producer.rest.RestClient;
 import org.radarcns.producer.rest.RestSender;
 import org.radarcns.producer.rest.SchemaRetriever;
 import org.radarcns.util.serde.KafkaAvroSerializer;
@@ -131,7 +131,6 @@ public class MockProducer {
                     sender.close();
                 }
             }
-            retriever.close();
             throw ex;
         }
 
@@ -170,19 +169,20 @@ public class MockProducer {
             SchemaRetriever retriever, ServerConfig restProxy, boolean useCompression) {
         List<KafkaSender> result = new ArrayList<>(numDevices);
         ConnectionState sharedState = new ConnectionState(10, TimeUnit.SECONDS);
-        RestSender.Builder restBuilder =
-                new RestSender.Builder()
-                        .server(restProxy)
-                        .schemaRetriever(retriever)
-                        .useCompression(useCompression)
-                        .connectionState(sharedState)
-                        .connectionTimeout(10, TimeUnit.SECONDS);
 
         for (int i = 0; i < numDevices; i++) {
-            RestSender firstSender = restBuilder
-                    .connectionPool(new ManagedConnectionPool())
+            RestClient httpClient = RestClient.newClient()
+                    .server(restProxy)
+                    .gzipCompression(useCompression)
+                    .timeout(10, TimeUnit.SECONDS)
                     .build();
-            result.add(new BatchedKafkaSender(firstSender, 1000, 1000));
+
+            RestSender restSender = new RestSender.Builder()
+                    .schemaRetriever(retriever)
+                    .httpClient(httpClient)
+                    .connectionState(sharedState)
+                    .build();
+            result.add(new BatchedKafkaSender(restSender, 1000, 1000));
         }
         return result;
     }
@@ -213,7 +213,6 @@ public class MockProducer {
         for (KafkaSender sender : senders) {
             sender.close();
         }
-        retriever.close();
 
         for (MockDevice device : devices) {
             device.checkException();
@@ -221,7 +220,7 @@ public class MockProducer {
     }
 
     /**
-     * Runs the MockProducer with given YAML mock config file.
+     * Runs the MockProducer with given YAML mock server file.
      */
     public static void main(String[] args) {
         if (args.length != 1) {

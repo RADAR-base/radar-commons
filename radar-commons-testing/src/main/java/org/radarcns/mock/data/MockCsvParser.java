@@ -16,6 +16,15 @@
 
 package org.radarcns.mock.data;
 
+import org.apache.avro.Schema;
+import org.apache.avro.Schema.Field;
+import org.apache.avro.specific.SpecificData;
+import org.apache.avro.specific.SpecificRecord;
+import org.radarcns.data.Record;
+import org.radarcns.mock.config.MockDataConfig;
+import org.radarcns.topic.AvroTopic;
+import org.radarcns.util.CsvParser;
+
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
@@ -26,14 +35,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.avro.Schema;
-import org.apache.avro.Schema.Field;
-import org.apache.avro.specific.SpecificData;
-import org.apache.avro.specific.SpecificRecord;
-import org.radarcns.data.Record;
-import org.radarcns.mock.config.MockDataConfig;
-import org.radarcns.topic.AvroTopic;
-import org.radarcns.util.CsvParser;
 
 /**
  * Parse mock data from a CSV file

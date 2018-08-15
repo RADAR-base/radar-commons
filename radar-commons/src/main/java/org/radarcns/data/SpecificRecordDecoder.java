@@ -16,8 +16,6 @@
 
 package org.radarcns.data;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import org.apache.avro.Schema;
 import org.apache.avro.io.BinaryDecoder;
 import org.apache.avro.io.DatumReader;
@@ -25,6 +23,9 @@ import org.apache.avro.io.Decoder;
 import org.apache.avro.io.DecoderFactory;
 import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.avro.specific.SpecificRecord;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 
 /** An AvroDecoder to decode known SpecificRecord classes */
 public class SpecificRecordDecoder implements AvroDecoder {
@@ -39,7 +40,7 @@ public class SpecificRecordDecoder implements AvroDecoder {
     @Override
     public <T> AvroReader<T> reader(Schema schema, Class<? extends T> clazz) {
         if (!SpecificRecord.class.isAssignableFrom(clazz)) {
-            throw new IllegalArgumentException("Can only create readers for SpecificRecords.");
+            throw new IllegalArgumentException("Can only newClient readers for SpecificRecords.");
         }
         return new AvroRecordReader<>(schema, new SpecificDatumReader<T>(schema));
     }

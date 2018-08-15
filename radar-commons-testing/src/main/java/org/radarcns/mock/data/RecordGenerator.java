@@ -16,6 +16,15 @@
 
 package org.radarcns.mock.data;
 
+import org.apache.avro.Schema;
+import org.apache.avro.Schema.Field;
+import org.apache.avro.Schema.Type;
+import org.apache.avro.specific.SpecificRecord;
+import org.radarcns.data.Record;
+import org.radarcns.mock.config.MockDataConfig;
+import org.radarcns.topic.AvroTopic;
+import org.radarcns.util.Metronome;
+
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,14 +34,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
-import org.apache.avro.Schema;
-import org.apache.avro.Schema.Field;
-import org.apache.avro.Schema.Type;
-import org.apache.avro.specific.SpecificRecord;
-import org.radarcns.data.Record;
-import org.radarcns.mock.config.MockDataConfig;
-import org.radarcns.topic.AvroTopic;
-import org.radarcns.util.Metronome;
 
 /**
  * Generates records according to the specification in a {@link MockDataConfig}.
@@ -51,8 +52,8 @@ public class RecordGenerator<K extends SpecificRecord> {
     private final List<String> header;
 
     /**
-     * Generates records according to config. Given key class must match the one specified in the
-     * config.
+     * Generates records according to server. Given key class must match the one specified in the
+     * server.
      * @param config configuration to use
      * @throws ClassNotFoundException if key or value type is not found
      * @throws NoSuchMethodException if key or value do not have #getClassSchema() static function

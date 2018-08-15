@@ -18,10 +18,11 @@ package org.radarcns.stream.collector;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.Arrays;
-import java.util.List;
 import org.apache.avro.Schema;
 import org.apache.avro.specific.SpecificRecord;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Java class to aggregate multiple fields of data using Kafka Streams. It can be used for example

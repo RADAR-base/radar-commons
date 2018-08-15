@@ -16,13 +16,14 @@
 
 package org.radarcns.data;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.Test;
+import org.radarcns.kafka.ObservationKey;
+import org.radarcns.passive.empatica.EmpaticaE4BloodVolumePulse;
+import org.radarcns.topic.AvroTopic;
 
 import java.io.IOException;
-import org.junit.Test;
-import org.radarcns.passive.empatica.EmpaticaE4BloodVolumePulse;
-import org.radarcns.kafka.ObservationKey;
-import org.radarcns.topic.AvroTopic;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by nivethika on 24-2-17.

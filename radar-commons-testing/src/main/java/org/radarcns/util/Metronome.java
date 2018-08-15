@@ -19,7 +19,7 @@ package org.radarcns.util;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Dynamically computes create for the given amount of samples with the given frequency.
+ * Dynamically computes newClient for the given amount of samples with the given frequency.
  * Timestamps start back in time, and the last timestamp will be equal to the time that this
  * function was called. If samples is set to 0, this function will start at the current time
  * and move forward, generating an infinite number of samples.

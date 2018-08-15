@@ -18,135 +18,41 @@ package org.radarcns.producer.rest;
 
 import okhttp3.Callback;
 import okhttp3.HttpUrl;
+import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
-import okhttp3.OkHttpClient.Builder;
 import okhttp3.Protocol;
 import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import org.radarcns.config.ServerConfig;
 
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-import java.io.Closeable;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.net.MalformedURLException;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
-import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import static org.radarcns.util.RestUtils.DEFAULT_HOSTNAME_VERIFIER;
+import static org.radarcns.util.RestUtils.UNSAFE_HOSTNAME_VERIFIER;
+import static org.radarcns.util.RestUtils.UNSAFE_SSL_FACTORY;
+import static org.radarcns.util.RestUtils.UNSAFE_TRUST_MANAGER;
+import static org.radarcns.util.RestUtils.systemDefaultSslSocketFactory;
+import static org.radarcns.util.RestUtils.systemDefaultTrustManager;
+
 /** REST client using OkHttp3. This class is not thread-safe. */
 public class RestClient {
-    private final ServerConfig config;
+    public static final long DEFAULT_TIMEOUT = 30;
+    private static WeakReference<OkHttpClient> globalHttpClient = new WeakReference<>(null);
+
+    private final ServerConfig server;
     private final OkHttpClient httpClient;
-    private boolean isClosed;
-    private static WeakReference<OkHttpClient> GLOBAL_HTTP_CLIENT = new WeakReference<>(null);
-    public static long DEFAULT_TIMEOUT = 30;
 
-    public synchronized static OkHttpClient getGlobalHttpClient() {
-        OkHttpClient client = GLOBAL_HTTP_CLIENT.get();
-        if (client == null) {
-            client = new OkHttpClient.Builder()
-                    .connectTimeout(DEFAULT_TIMEOUT, TimeUnit.SECONDS)
-                    .readTimeout(DEFAULT_TIMEOUT, TimeUnit.SECONDS)
-                    .writeTimeout(DEFAULT_TIMEOUT, TimeUnit.SECONDS)
-                    .build();
-            GLOBAL_HTTP_CLIENT = new WeakReference<>(client);
-        }
-        return client;
-    }
-
-    /**
-     * REST client. This client will use the OkHttp3 default connection pool and 30 second timeout.
-     *
-     * @param config server configuration
-     */
-    public RestClient(ServerConfig config) {
-        this(config, new OkHttpClient(), DEFAULT_TIMEOUT);
-    }
-
-    public RestClient(ServerConfig config, OkHttpClient client) {
-        this(config, client, client.connectTimeoutMillis() / 1000);
-    }
-
-    /**
-     * REST client. This client will reuse a global connection pool unless
-     *
-     * @param config server configuration
-     * @param client HTTP client to use
-     * @param timeouts connection timeouts in seconds
-     */
-    public RestClient(ServerConfig config, OkHttpClient client, long timeouts) {
-        Objects.requireNonNull(config);
-        this.config = config;
-
-        OkHttpClient.Builder builder = client.newBuilder();
-        if (config.isUnsafe()) {
-            try {
-                setUnsafe(builder);
-            } catch (NoSuchAlgorithmException | KeyManagementException e) {
-                throw new IllegalStateException(
-                        "Failed to create unsafe SSL certificate connection", e);
-            }
-        }
-        httpClient = builder.connectTimeout(timeouts, TimeUnit.SECONDS)
-                .readTimeout(timeouts, TimeUnit.SECONDS)
-                .writeTimeout(timeouts, TimeUnit.SECONDS)
-                .proxy(config.getHttpProxy())
-                .protocols(Collections.singletonList(Protocol.HTTP_1_1))
-                .build();
-    }
-
-    /**
-     * Generate a {@code OkHttpClient.Builder} to establish connection with server using
-     *      self-signed certificate.
-     *
-     * @throws NoSuchAlgorithmException if the required cryptographic algorithm is not available
-     * @throws KeyManagementException if key management fails
-     */
-    public static void setUnsafe(OkHttpClient.Builder builder)
-        throws NoSuchAlgorithmException, KeyManagementException {
-        final TrustManager[] trustAllCerts = new TrustManager[] {
-            new X509TrustManager() {
-                @Override
-                public void checkClientTrusted(java.security.cert.X509Certificate[] chain,
-                        String authType) {
-                    //Nothing to do
-                }
-
-                @Override
-                public void checkServerTrusted(java.security.cert.X509Certificate[] chain,
-                        String authType) {
-                    //Nothing to do
-                }
-
-                @Override
-                public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                    return new java.security.cert.X509Certificate[]{};
-                }
-            }
-        };
-
-        final SSLContext sslContext = SSLContext.getInstance("SSL");
-        sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
-
-        final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
-
-        builder.sslSocketFactory(sslSocketFactory, (X509TrustManager)trustAllCerts[0]);
-        builder.hostnameVerifier(new HostnameVerifier() {
-            @Override
-            public boolean verify(String hostname, SSLSession session) {
-                return true;
-            }
-        });
+    private RestClient(Builder builder) {
+        this.server = Objects.requireNonNull(builder.serverConfig);
+        this.httpClient = builder.client.build();
     }
 
     /** OkHttp client. */
@@ -160,8 +66,8 @@ public class RestClient {
     }
 
     /** Configured server. */
-    public ServerConfig getConfig() {
-        return config;
+    public ServerConfig getServer() {
+        return server;
     }
 
     /**
@@ -224,7 +130,7 @@ public class RestClient {
      * Call{@link Request.Builder#build()} to make the actual request with
      * {@link #request(Request)}.
      *
-     * @param relativePath relative path from the server config
+     * @param relativePath relative path from the server serverConfig
      * @return request builder.
      * @throws MalformedURLException if the path not valid
      */
@@ -243,7 +149,7 @@ public class RestClient {
         while (!strippedPath.isEmpty() && strippedPath.charAt(0) == '/') {
             strippedPath = strippedPath.substring(1);
         }
-        HttpUrl.Builder builder = getConfig().getHttpUrl().newBuilder(strippedPath);
+        HttpUrl.Builder builder = getServer().getHttpUrl().newBuilder(strippedPath);
         if (builder == null) {
             throw new MalformedURLException();
         }
@@ -261,24 +167,131 @@ public class RestClient {
 
         RestClient that = (RestClient) o;
 
-        return this.config.equals(that.config) && this.httpClient.equals(that.httpClient);
+        return this.server.equals(that.server) && this.httpClient.equals(that.httpClient);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(config, httpClient);
+        return Objects.hash(server, httpClient);
     }
 
     @Override
     public String toString() {
-        return "RestClient{config=" + config + ", httpClient=" + httpClient + '}';
+        return "RestClient{serverConfig=" + server + ", httpClient=" + httpClient + '}';
     }
 
+    /** Get the response body of a response as a String.
+     * Will return null if the response body is null.
+     * @param response call response
+     * @return body contents as a String.
+     * @throws IOException if the body could not be read as a String.
+     */
     public static String responseBody(Response response) throws IOException {
         ResponseBody body = response.body();
         if (body == null) {
             return null;
         }
         return body.string();
+    }
+
+    /** Create a new builder with the settings of the current client. */
+    public Builder newBuilder() {
+        return new Builder(httpClient)
+                .server(server);
+    }
+
+    /** Builder. */
+    public static class Builder {
+        private ServerConfig serverConfig;
+        private final OkHttpClient.Builder client;
+
+        public Builder(OkHttpClient client) {
+            this.client = Objects.requireNonNull(client).newBuilder();
+        }
+
+        /** Server configuration. */
+        public Builder server(ServerConfig config) {
+            this.serverConfig = Objects.requireNonNull(config);
+
+            if (config.isUnsafe()) {
+                this.client.sslSocketFactory(UNSAFE_SSL_FACTORY,
+                        (X509TrustManager) UNSAFE_TRUST_MANAGER[0]);
+                this.client.hostnameVerifier(UNSAFE_HOSTNAME_VERIFIER);
+            } else {
+                X509TrustManager trustManager = systemDefaultTrustManager();
+                SSLSocketFactory socketFactory = systemDefaultSslSocketFactory(trustManager);
+                this.client.sslSocketFactory(socketFactory, trustManager);
+                this.client.hostnameVerifier(DEFAULT_HOSTNAME_VERIFIER);
+            }
+            return this;
+        }
+
+        /** Allowed protocols. */
+        public Builder protocols(List<Protocol> protocols) {
+            this.client.protocols(protocols);
+            return this;
+        }
+
+        /** Builder to extend the HTTP client with. */
+        public OkHttpClient.Builder httpClientBuilder() {
+            return client;
+        }
+
+        /** Whether to enable GZIP compression. */
+        public Builder gzipCompression(boolean compression) {
+            GzipRequestInterceptor gzip = null;
+            for (Interceptor interceptor : client.interceptors()) {
+                if (interceptor instanceof GzipRequestInterceptor) {
+                    gzip = (GzipRequestInterceptor) interceptor;
+                    break;
+                }
+            }
+            if (compression && gzip == null) {
+                client.addInterceptor(new GzipRequestInterceptor());
+            } else if (!compression && gzip != null) {
+                client.interceptors().remove(gzip);
+            }
+            return this;
+        }
+
+        /** Timeouts for connecting, reading and writing. */
+        public Builder timeout(long timeout, TimeUnit unit) {
+            client.connectTimeout(timeout, unit)
+                    .readTimeout(timeout, unit)
+                    .writeTimeout(timeout, unit);
+            return this;
+        }
+
+        /** Build a new RestClient. */
+        public RestClient build() {
+            return new RestClient(this);
+        }
+    }
+
+    /** Create a builder with a global shared OkHttpClient. */
+    public static synchronized RestClient.Builder global() {
+        OkHttpClient client = globalHttpClient.get();
+        if (client == null) {
+            client = createDefaultClient();
+            globalHttpClient = new WeakReference<>(client);
+        }
+        return new RestClient.Builder(client);
+    }
+
+    /** Create a builder with a new OkHttpClient using default settings. */
+    public static synchronized RestClient.Builder newClient() {
+        return new RestClient.Builder(createDefaultClient());
+    }
+
+    /**
+     * Create a new OkHttpClient. The timeouts are set to the default.
+     * @return new OkHttpClient.
+     */
+    private static OkHttpClient createDefaultClient() {
+        return new OkHttpClient.Builder()
+                .connectTimeout(DEFAULT_TIMEOUT, TimeUnit.SECONDS)
+                .readTimeout(DEFAULT_TIMEOUT, TimeUnit.SECONDS)
+                .writeTimeout(DEFAULT_TIMEOUT, TimeUnit.SECONDS)
+                .build();
     }
 }

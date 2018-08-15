@@ -16,17 +16,8 @@
 
 package org.radarcns.util.serde;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Field;
 import org.apache.avro.Schema.Type;
@@ -34,8 +25,18 @@ import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.Test;
 import org.radarcns.kafka.ObservationKey;
-import org.radarcns.producer.rest.SchemaRetriever;
 import org.radarcns.producer.rest.ParsedSchemaMetadata;
+import org.radarcns.producer.rest.SchemaRetriever;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class KafkaAvroSerializerTest {
 
