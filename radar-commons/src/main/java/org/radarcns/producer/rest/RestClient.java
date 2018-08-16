@@ -205,7 +205,11 @@ public class RestClient {
         private final OkHttpClient.Builder client;
 
         public Builder(OkHttpClient client) {
-            this.client = Objects.requireNonNull(client).newBuilder();
+            this(client.newBuilder());
+        }
+
+        public Builder(OkHttpClient.Builder client) {
+            this.client = client;
         }
 
         /** Server configuration. */
@@ -271,7 +275,7 @@ public class RestClient {
     public static synchronized RestClient.Builder global() {
         OkHttpClient client = globalHttpClient.get();
         if (client == null) {
-            client = createDefaultClient();
+            client = createDefaultClient().build();
             globalHttpClient = new WeakReference<>(client);
         }
         return new RestClient.Builder(client);
@@ -286,11 +290,10 @@ public class RestClient {
      * Create a new OkHttpClient. The timeouts are set to the default.
      * @return new OkHttpClient.
      */
-    private static OkHttpClient createDefaultClient() {
+    private static OkHttpClient.Builder createDefaultClient() {
         return new OkHttpClient.Builder()
                 .connectTimeout(DEFAULT_TIMEOUT, TimeUnit.SECONDS)
                 .readTimeout(DEFAULT_TIMEOUT, TimeUnit.SECONDS)
-                .writeTimeout(DEFAULT_TIMEOUT, TimeUnit.SECONDS)
-                .build();
+                .writeTimeout(DEFAULT_TIMEOUT, TimeUnit.SECONDS);
     }
 }

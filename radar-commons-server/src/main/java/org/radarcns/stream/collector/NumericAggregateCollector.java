@@ -83,6 +83,13 @@ public class NumericAggregateCollector implements RecordCollector {
         }
     }
 
+    /**
+     * Get the non-null number type for a given field. If the tye is a union, it will use the first
+     * non-null type in the union.
+     * @param field record field to get type for.
+     * @return type
+     * @throws IllegalArgumentException if the resulting field is non-numeric.
+     */
     private static Type getType(Field field) {
         Type apparentType = field.schema().getType();
         if (apparentType == Type.UNION) {
@@ -244,6 +251,7 @@ public class NumericAggregateCollector implements RecordCollector {
             return this;
         }
 
+        /** Set minimum value. */
         @JsonSetter
         public Builder min(double min) {
             if (min < minValue) {
@@ -252,6 +260,7 @@ public class NumericAggregateCollector implements RecordCollector {
             return this;
         }
 
+        /** Set maximum value. */
         @JsonSetter
         public Builder max(double max) {
             if (max > maxValue) {

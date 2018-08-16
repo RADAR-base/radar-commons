@@ -16,7 +16,6 @@
 
 package org.radarcns.mock.data;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -51,17 +50,11 @@ public class RecordGenerator<K extends SpecificRecord> {
     private final List<String> header;
 
     /**
-     * Generates records according to server. Given key class must match the one specified in the
+     * Generates records according to config. Given key class must match the one specified in the
      * server.
      * @param config configuration to use
-     * @throws ClassNotFoundException if key or value type is not found
-     * @throws NoSuchMethodException if key or value do not have #getClassSchema() static function
-     * @throws InvocationTargetException if key or value is not instantiable
-     * @throws IllegalAccessException if key or value may not be instantiated
      */
-    public RecordGenerator(MockDataConfig config, Class<K> keyClass)
-            throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
-            IllegalAccessException {
+    public RecordGenerator(MockDataConfig config, Class<K> keyClass) {
         this.config = config;
 
         // doing type checking below.
