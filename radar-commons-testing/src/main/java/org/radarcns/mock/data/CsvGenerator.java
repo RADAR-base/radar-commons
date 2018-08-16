@@ -16,13 +16,12 @@
 
 package org.radarcns.mock.data;
 
-import org.radarcns.kafka.ObservationKey;
-import org.radarcns.mock.config.MockDataConfig;
-import org.radarcns.util.CsvWriter;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import org.radarcns.kafka.ObservationKey;
+import org.radarcns.mock.config.MockDataConfig;
+import org.radarcns.util.CsvWriter;
 
 /**
  * It generates a CVS file that can be used to stream data and

@@ -16,6 +16,21 @@
 
 package org.radarcns.producer.rest;
 
+import static org.radarcns.util.RestUtils.DEFAULT_HOSTNAME_VERIFIER;
+import static org.radarcns.util.RestUtils.UNSAFE_HOSTNAME_VERIFIER;
+import static org.radarcns.util.RestUtils.UNSAFE_SSL_FACTORY;
+import static org.radarcns.util.RestUtils.UNSAFE_TRUST_MANAGER;
+import static org.radarcns.util.RestUtils.systemDefaultSslSocketFactory;
+import static org.radarcns.util.RestUtils.systemDefaultTrustManager;
+
+import java.io.IOException;
+import java.lang.ref.WeakReference;
+import java.net.MalformedURLException;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.X509TrustManager;
 import okhttp3.Callback;
 import okhttp3.HttpUrl;
 import okhttp3.Interceptor;
@@ -25,22 +40,6 @@ import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import org.radarcns.config.ServerConfig;
-
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.X509TrustManager;
-import java.io.IOException;
-import java.lang.ref.WeakReference;
-import java.net.MalformedURLException;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-
-import static org.radarcns.util.RestUtils.DEFAULT_HOSTNAME_VERIFIER;
-import static org.radarcns.util.RestUtils.UNSAFE_HOSTNAME_VERIFIER;
-import static org.radarcns.util.RestUtils.UNSAFE_SSL_FACTORY;
-import static org.radarcns.util.RestUtils.UNSAFE_TRUST_MANAGER;
-import static org.radarcns.util.RestUtils.systemDefaultSslSocketFactory;
-import static org.radarcns.util.RestUtils.systemDefaultTrustManager;
 
 /** REST client using OkHttp3. This class is not thread-safe. */
 public class RestClient {

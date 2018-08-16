@@ -16,9 +16,8 @@
 
 package org.radarcns.data;
 
-import org.apache.avro.Schema;
-
 import java.io.IOException;
+import org.apache.avro.Schema;
 
 /** Encode Avro values with a given encoder. */
 public interface AvroEncoder {

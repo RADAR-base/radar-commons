@@ -16,13 +16,12 @@
 
 package org.radarcns.producer.rest;
 
-import okhttp3.Request;
-import okhttp3.Response;
-
-import java.io.IOException;
-
 import static org.radarcns.producer.rest.RestClient.responseBody;
 import static org.radarcns.producer.rest.TopicRequestBody.topicRequestContent;
+
+import java.io.IOException;
+import okhttp3.Request;
+import okhttp3.Response;
 
 /** Unchecked exception for failures during request handling. */
 public class UncheckedRequestException extends RuntimeException {

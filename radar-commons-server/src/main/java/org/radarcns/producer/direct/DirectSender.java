@@ -16,14 +16,13 @@
 
 package org.radarcns.producer.direct;
 
+import java.util.Properties;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.radarcns.data.RecordData;
 import org.radarcns.producer.KafkaSender;
 import org.radarcns.producer.KafkaTopicSender;
 import org.radarcns.topic.AvroTopic;
-
-import java.util.Properties;
 
 /**
  * Directly sends a message to Kafka using a KafkaProducer.

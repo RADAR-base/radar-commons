@@ -16,6 +16,8 @@
 
 package org.radarcns.util.serde;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.io.BinaryEncoder;
@@ -26,9 +28,6 @@ import org.apache.kafka.common.errors.SerializationException;
 import org.radarcns.producer.rest.ParsedSchemaMetadata;
 import org.radarcns.producer.rest.SchemaRetriever;
 import org.radarcns.util.Serialization;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 
 /**
  * Serialize Kafka producer data with Avro.

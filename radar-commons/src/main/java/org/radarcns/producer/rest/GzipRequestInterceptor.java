@@ -16,6 +16,7 @@
 
 package org.radarcns.producer.rest;
 
+import java.io.IOException;
 import okhttp3.Interceptor;
 import okhttp3.MediaType;
 import okhttp3.Request;
@@ -24,8 +25,6 @@ import okhttp3.Response;
 import okio.BufferedSink;
 import okio.GzipSink;
 import okio.Okio;
-
-import java.io.IOException;
 
 /** This interceptor compresses the HTTP request body. Many webservers can't handle this! */
 public class GzipRequestInterceptor implements Interceptor {

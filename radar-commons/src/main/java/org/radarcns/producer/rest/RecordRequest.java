@@ -16,10 +16,9 @@
 
 package org.radarcns.producer.rest;
 
+import java.io.IOException;
 import okio.BufferedSink;
 import org.radarcns.data.RecordData;
-
-import java.io.IOException;
 
 /**
  * Record request contents. Before {@link #writeToSink(BufferedSink)} is called, first

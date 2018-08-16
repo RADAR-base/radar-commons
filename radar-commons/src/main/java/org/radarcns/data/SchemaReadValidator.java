@@ -1,12 +1,11 @@
 package org.radarcns.data;
 
+import java.util.Collections;
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaValidationException;
 import org.apache.avro.SchemaValidator;
 import org.apache.avro.SchemaValidatorBuilder;
 import org.radarcns.producer.rest.ParsedSchemaMetadata;
-
-import java.util.Collections;
 
 /**
  * Validates whether a schema in the schema registry is compatible with a local schema.

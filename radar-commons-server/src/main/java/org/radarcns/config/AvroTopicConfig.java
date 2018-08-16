@@ -17,10 +17,9 @@
 package org.radarcns.config;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.topic.AvroTopic;
-
-import java.util.List;
 
 /**
  * Specifies an Avro topic.

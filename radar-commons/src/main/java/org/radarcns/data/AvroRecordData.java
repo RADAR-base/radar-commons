@@ -1,14 +1,13 @@
 package org.radarcns.data;
 
-import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.specific.SpecificRecord;
-import org.radarcns.topic.AvroTopic;
-
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.specific.SpecificRecord;
+import org.radarcns.topic.AvroTopic;
 
 /**
  * Avro record data belonging to a single key.

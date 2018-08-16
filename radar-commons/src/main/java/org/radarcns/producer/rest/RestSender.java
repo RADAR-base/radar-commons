@@ -16,6 +16,14 @@
 
 package org.radarcns.producer.rest;
 
+import static org.radarcns.producer.rest.RestClient.DEFAULT_TIMEOUT;
+import static org.radarcns.producer.rest.RestClient.responseBody;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.util.Collections;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import okhttp3.Headers;
 import okhttp3.MediaType;
 import okhttp3.Protocol;
@@ -30,15 +38,6 @@ import org.radarcns.producer.rest.ConnectionState.State;
 import org.radarcns.topic.AvroTopic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.util.Collections;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-
-import static org.radarcns.producer.rest.RestClient.DEFAULT_TIMEOUT;
-import static org.radarcns.producer.rest.RestClient.responseBody;
 
 /**
  * RestSender sends records to the Kafka REST Proxy. It does so using an Avro JSON encoding. A new

@@ -16,20 +16,19 @@
 
 package org.radarcns.stream.collector;
 
+import static org.junit.Assert.assertEquals;
+
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.math.BigDecimal;
 import org.junit.Before;
 import org.junit.Test;
 import org.radarcns.kafka.AggregateKey;
 import org.radarcns.monitor.application.ApplicationRecordCounts;
 import org.radarcns.passive.empatica.EmpaticaE4BloodVolumePulse;
 import org.radarcns.passive.phone.PhoneBatteryLevel;
-
-import java.io.IOException;
-import java.math.BigDecimal;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  * Created by nivethika on 20-12-16.

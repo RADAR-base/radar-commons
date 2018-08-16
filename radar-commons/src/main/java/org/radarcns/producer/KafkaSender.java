@@ -16,11 +16,10 @@
 
 package org.radarcns.producer;
 
-import org.apache.avro.SchemaValidationException;
-import org.radarcns.topic.AvroTopic;
-
 import java.io.Closeable;
 import java.io.IOException;
+import org.apache.avro.SchemaValidationException;
+import org.radarcns.topic.AvroTopic;
 
 /**
  * Thread-safe sender. Calling {@link #close()} must be done after all {@link KafkaTopicSender}

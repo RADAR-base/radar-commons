@@ -16,6 +16,17 @@
 
 package org.radarcns.producer.rest;
 
+import static org.radarcns.producer.rest.RestClient.responseBody;
+import static org.radarcns.producer.rest.RestSender.KAFKA_REST_ACCEPT_ENCODING;
+import static org.radarcns.producer.rest.RestSender.KAFKA_REST_ACCEPT_LEGACY_ENCODING;
+import static org.radarcns.producer.rest.RestSender.KAFKA_REST_AVRO_ENCODING;
+import static org.radarcns.producer.rest.RestSender.KAFKA_REST_AVRO_LEGACY_ENCODING;
+import static org.radarcns.producer.rest.RestSender.KAFKA_REST_BINARY_ENCODING;
+import static org.radarcns.producer.rest.UncheckedRequestException.fail;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Objects;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.Request;
@@ -30,18 +41,6 @@ import org.radarcns.producer.KafkaTopicSender;
 import org.radarcns.topic.AvroTopic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Objects;
-
-import static org.radarcns.producer.rest.RestClient.responseBody;
-import static org.radarcns.producer.rest.RestSender.KAFKA_REST_ACCEPT_ENCODING;
-import static org.radarcns.producer.rest.RestSender.KAFKA_REST_ACCEPT_LEGACY_ENCODING;
-import static org.radarcns.producer.rest.RestSender.KAFKA_REST_AVRO_ENCODING;
-import static org.radarcns.producer.rest.RestSender.KAFKA_REST_AVRO_LEGACY_ENCODING;
-import static org.radarcns.producer.rest.RestSender.KAFKA_REST_BINARY_ENCODING;
-import static org.radarcns.producer.rest.UncheckedRequestException.fail;
 
 class RestTopicSender<K, V>
         implements KafkaTopicSender<K, V> {

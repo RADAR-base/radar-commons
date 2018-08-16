@@ -16,16 +16,15 @@
 
 package org.radarcns.mock.data;
 
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.data.Record;
 import org.radarcns.kafka.ObservationKey;
 import org.radarcns.mock.config.MockDataConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 
 /**
  * CSV files must be validate before using since MockAggregator can handle only files containing

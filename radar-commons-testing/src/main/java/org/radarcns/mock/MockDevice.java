@@ -16,6 +16,12 @@
 
 package org.radarcns.mock;
 
+import java.io.IOException;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.avro.SchemaValidationException;
 import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.data.Record;
@@ -25,13 +31,6 @@ import org.radarcns.producer.KafkaTopicSender;
 import org.radarcns.util.Oscilloscope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Mock device that sends data for given topics at a given rate. This can be used to simulate

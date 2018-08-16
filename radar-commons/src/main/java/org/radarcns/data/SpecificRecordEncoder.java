@@ -16,12 +16,11 @@
 
 package org.radarcns.data;
 
+import java.io.IOException;
 import org.apache.avro.Schema;
 import org.apache.avro.io.EncoderFactory;
 import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.avro.specific.SpecificRecord;
-
-import java.io.IOException;
 
 /** An AvroEncoder to encode known SpecificRecord classes. */
 public class SpecificRecordEncoder implements AvroEncoder {

@@ -16,21 +16,20 @@
 
 package org.radarcns.stream.collector;
 
+import static org.radarcns.util.Serialization.floatToDouble;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Objects;
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Field;
 import org.apache.avro.Schema.Type;
 import org.apache.avro.specific.SpecificRecord;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Objects;
-
-import static org.radarcns.util.Serialization.floatToDouble;
 
 /**
  * Java class to aggregate data using Kafka Streams. Double is the base type.

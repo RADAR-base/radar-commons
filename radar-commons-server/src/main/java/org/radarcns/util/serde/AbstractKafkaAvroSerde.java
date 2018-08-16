@@ -16,13 +16,12 @@
 
 package org.radarcns.util.serde;
 
+import java.util.Map;
 import org.apache.avro.io.EncoderFactory;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.common.serialization.Serializer;
 import org.radarcns.config.ServerConfig;
 import org.radarcns.producer.rest.SchemaRetriever;
-
-import java.util.Map;
 
 /**
  * Abstract class for KafkaAvro(De)serializer.

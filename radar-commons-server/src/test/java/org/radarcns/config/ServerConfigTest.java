@@ -16,17 +16,16 @@
 
 package org.radarcns.config;
 
+import static org.junit.Assert.assertEquals;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import okhttp3.HttpUrl;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-
-import static org.junit.Assert.assertEquals;
+import okhttp3.HttpUrl;
+import org.junit.Test;
 
 /**
  * Created by joris on 01/05/2017.

@@ -16,6 +16,15 @@
 
 package org.radarcns.producer.rest;
 
+import static org.radarcns.util.Strings.utf8;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -27,16 +36,6 @@ import org.json.JSONObject;
 import org.radarcns.config.ServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-
-import static org.radarcns.util.Strings.utf8;
 
 /**
  * Retriever of an Avro Schema. Internally, only {@link JSONObject} is used to manage JSON data,

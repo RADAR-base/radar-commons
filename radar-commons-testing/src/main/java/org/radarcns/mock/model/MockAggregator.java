@@ -16,18 +16,17 @@
 
 package org.radarcns.mock.model;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.avro.Schema;
 import org.radarcns.kafka.ObservationKey;
 import org.radarcns.mock.config.MockDataConfig;
 import org.radarcns.mock.data.MockCsvParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * The MockAggregator simulates the behaviour of a Kafka Streams application based on time window.

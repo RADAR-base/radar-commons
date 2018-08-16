@@ -1,10 +1,9 @@
 package org.radarcns.producer;
 
-import org.apache.avro.SchemaValidationException;
-import org.radarcns.data.RecordData;
-
 import java.io.Closeable;
 import java.io.IOException;
+import org.apache.avro.SchemaValidationException;
+import org.radarcns.data.RecordData;
 
 /**
  * Sender for a single topic. Should be created through a {@link KafkaSender}.

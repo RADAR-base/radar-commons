@@ -16,8 +16,6 @@
 
 package org.radarcns.config;
 
-import okhttp3.HttpUrl;
-
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.Proxy;
@@ -25,6 +23,7 @@ import java.net.Proxy.Type;
 import java.net.URL;
 import java.util.List;
 import java.util.Objects;
+import okhttp3.HttpUrl;
 
 /**
  * POJO representing a ServerConfig configuration.

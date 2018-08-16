@@ -16,14 +16,13 @@
 
 package org.radarcns.topic;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.List;
+import java.util.Objects;
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Type;
 import org.apache.avro.specific.SpecificData;
 import org.apache.avro.specific.SpecificRecord;
-
-import java.lang.reflect.InvocationTargetException;
-import java.util.List;
-import java.util.Objects;
 
 /** Kafka topic with schema. */
 public class AvroTopic<K, V> extends KafkaTopic {

@@ -16,6 +16,9 @@
 
 package org.radarcns.producer.rest;
 
+import static org.radarcns.util.Strings.bytesToHex;
+
+import java.io.IOException;
 import okio.Buffer;
 import okio.BufferedSink;
 import org.apache.avro.Schema;
@@ -27,10 +30,6 @@ import org.radarcns.data.AvroEncoder;
 import org.radarcns.data.AvroRecordData;
 import org.radarcns.data.RecordData;
 import org.radarcns.topic.AvroTopic;
-
-import java.io.IOException;
-
-import static org.radarcns.util.Strings.bytesToHex;
 
 /**
  * Encodes a record request as binary data, in the form of a RecordSet.

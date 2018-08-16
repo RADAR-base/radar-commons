@@ -16,11 +16,10 @@
 
 package org.radarcns.data;
 
+import java.io.IOException;
 import org.apache.avro.Schema;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectWriter;
-
-import java.io.IOException;
 
 /** Encodes a String as Avro. */
 public class StringEncoder implements AvroEncoder, AvroEncoder.AvroWriter<String> {

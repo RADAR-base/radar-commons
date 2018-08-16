@@ -16,13 +16,12 @@
 
 package org.radarcns.mock;
 
+import java.io.IOException;
 import org.apache.avro.SchemaValidationException;
 import org.radarcns.data.Record;
 import org.radarcns.mock.data.MockCsvParser;
 import org.radarcns.producer.KafkaSender;
 import org.radarcns.producer.KafkaTopicSender;
-
-import java.io.IOException;
 
 /**
  * Send mock data from a CSV file.

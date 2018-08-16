@@ -16,12 +16,11 @@
 
 package org.radarcns.data;
 
+import java.io.IOException;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.EncoderFactory;
-
-import java.io.IOException;
 
 /** An AvroEncoder to encode GenericRecord classes. */
 public class GenericRecordEncoder implements AvroEncoder {

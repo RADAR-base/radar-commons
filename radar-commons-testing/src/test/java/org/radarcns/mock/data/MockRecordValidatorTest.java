@@ -16,6 +16,9 @@
 
 package org.radarcns.mock.data;
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Arrays;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -23,10 +26,6 @@ import org.junit.rules.TemporaryFolder;
 import org.radarcns.mock.config.MockDataConfig;
 import org.radarcns.passive.phone.PhoneAcceleration;
 import org.radarcns.passive.phone.PhoneLight;
-
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.Arrays;
 
 public class MockRecordValidatorTest {
     @Rule

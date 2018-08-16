@@ -16,16 +16,15 @@
 
 package org.radarcns.producer;
 
-import org.apache.avro.SchemaValidationException;
-import org.radarcns.data.AvroRecordData;
-import org.radarcns.data.RecordData;
-import org.radarcns.topic.AvroTopic;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import org.apache.avro.SchemaValidationException;
+import org.radarcns.data.AvroRecordData;
+import org.radarcns.data.RecordData;
+import org.radarcns.topic.AvroTopic;
 
 /**
  * A Kafka REST Proxy sender that batches up records. It will send data once the batch size is

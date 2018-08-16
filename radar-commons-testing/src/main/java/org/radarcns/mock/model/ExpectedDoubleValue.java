@@ -16,10 +16,9 @@
 
 package org.radarcns.mock.model;
 
+import java.util.List;
 import org.apache.avro.Schema;
 import org.radarcns.stream.collector.NumericAggregateCollector;
-
-import java.util.List;
 
 /**
  * {@code ExpectedValue} represented as {@code Double}.

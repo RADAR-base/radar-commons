@@ -16,11 +16,13 @@
 
 package org.radarcns.util;
 
-import okhttp3.internal.platform.Platform;
-import okhttp3.internal.tls.OkHostnameVerifier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static okhttp3.internal.Util.assertionError;
 
+import java.security.GeneralSecurityException;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
@@ -28,13 +30,10 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
-import java.security.GeneralSecurityException;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
-
-import static okhttp3.internal.Util.assertionError;
+import okhttp3.internal.platform.Platform;
+import okhttp3.internal.tls.OkHostnameVerifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Utility methods and variables for OkHttp initialization. */
 public final class RestUtils {

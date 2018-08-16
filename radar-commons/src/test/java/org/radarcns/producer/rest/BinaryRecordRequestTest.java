@@ -1,5 +1,9 @@
 package org.radarcns.producer.rest;
 
+import static org.junit.Assert.assertArrayEquals;
+
+import java.io.IOException;
+import java.util.Collections;
 import okio.Buffer;
 import org.apache.avro.SchemaValidationException;
 import org.junit.Test;
@@ -7,11 +11,6 @@ import org.radarcns.data.AvroRecordData;
 import org.radarcns.kafka.ObservationKey;
 import org.radarcns.passive.empatica.EmpaticaE4BloodVolumePulse;
 import org.radarcns.topic.AvroTopic;
-
-import java.io.IOException;
-import java.util.Collections;
-
-import static org.junit.Assert.assertArrayEquals;
 
 public class BinaryRecordRequestTest {
     @Test

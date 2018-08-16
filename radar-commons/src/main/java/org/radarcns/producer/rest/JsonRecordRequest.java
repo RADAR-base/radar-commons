@@ -16,6 +16,9 @@
 
 package org.radarcns.producer.rest;
 
+import static org.radarcns.util.Strings.utf8;
+
+import java.io.IOException;
 import okio.Buffer;
 import okio.BufferedSink;
 import org.json.JSONObject;
@@ -23,10 +26,6 @@ import org.radarcns.data.AvroEncoder;
 import org.radarcns.data.AvroRecordData;
 import org.radarcns.data.RecordData;
 import org.radarcns.topic.AvroTopic;
-
-import java.io.IOException;
-
-import static org.radarcns.util.Strings.utf8;
 
 /**
  * Request data to submit records to the Kafka REST proxy.

@@ -16,12 +16,11 @@
 
 package org.radarcns.producer.rest;
 
+import java.io.IOException;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okio.BufferedSink;
-
-import java.io.IOException;
 
 /**
  * TopicRequestData in a RequestBody.

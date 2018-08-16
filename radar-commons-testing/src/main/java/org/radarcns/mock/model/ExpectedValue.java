@@ -16,16 +16,15 @@
 
 package org.radarcns.mock.model;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.apache.avro.Schema;
 import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.data.Record;
 import org.radarcns.kafka.ObservationKey;
 import org.radarcns.stream.collector.RecordCollector;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * It computes the expected value for a test case.

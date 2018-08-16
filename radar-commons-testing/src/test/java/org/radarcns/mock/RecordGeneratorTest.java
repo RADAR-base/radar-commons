@@ -16,6 +16,11 @@
 
 package org.radarcns.mock;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.util.Arrays;
+import java.util.Iterator;
 import org.apache.avro.specific.SpecificRecord;
 import org.junit.Test;
 import org.radarcns.data.Record;
@@ -23,12 +28,6 @@ import org.radarcns.kafka.ObservationKey;
 import org.radarcns.mock.config.MockDataConfig;
 import org.radarcns.mock.data.RecordGenerator;
 import org.radarcns.passive.empatica.EmpaticaE4Acceleration;
-
-import java.util.Arrays;
-import java.util.Iterator;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Created by joris on 17/05/2017.
