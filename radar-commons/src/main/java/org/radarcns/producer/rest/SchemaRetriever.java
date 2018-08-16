@@ -38,10 +38,9 @@ import java.util.concurrent.TimeUnit;
 
 import static org.radarcns.util.Strings.utf8;
 
-/** Retriever of an Avro Schema.
- *
- * Internally, only {@link JSONObject} is used to manage JSON data, to keep the class as lean as
- * possible.
+/**
+ * Retriever of an Avro Schema. Internally, only {@link JSONObject} is used to manage JSON data,
+ * to keep the class as lean as possible.
  */
 public class SchemaRetriever {
     private static final Logger logger = LoggerFactory.getLogger(SchemaRetriever.class);
@@ -65,6 +64,11 @@ public class SchemaRetriever {
     private final ConcurrentMap<String, TimedSchemaMetadata> cache;
     private RestClient httpClient;
 
+    /**
+     * Schema retriever for a Confluent Schema Registry.
+     * @param config schema registry configuration.
+     * @param connectionTimeout timeout in seconds.
+     */
     public SchemaRetriever(ServerConfig config, long connectionTimeout) {
         cache = new ConcurrentHashMap<>();
         httpClient = RestClient.global()
@@ -73,6 +77,10 @@ public class SchemaRetriever {
                 .build();
     }
 
+    /**
+     * Set the connection timeout.
+     * @param connectionTimeout timeout in seconds.
+     */
     public synchronized void setConnectionTimeout(long connectionTimeout) {
         if (httpClient.getTimeout() != connectionTimeout) {
             httpClient = httpClient.newBuilder()
@@ -131,9 +139,7 @@ public class SchemaRetriever {
     }
 
     /**
-     * Add schema metadata to the retriever.
-     *
-     * This implementation only adds it to the cache.
+     * Add schema metadata to the retriever. This implementation only adds it to the cache.
      */
     public void addSchemaMetadata(String topic, boolean ofValue, ParsedSchemaMetadata metadata)
             throws IOException {

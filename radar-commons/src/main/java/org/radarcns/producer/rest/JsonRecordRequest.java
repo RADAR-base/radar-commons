@@ -46,6 +46,11 @@ public class JsonRecordRequest<K, V> implements RecordRequest<K, V> {
     private int valueSchemaId;
     private RecordData<K, V> records;
 
+    /**
+     * Generate a record request for given topic.
+     * @param topic topic to use.
+     * @throws IllegalStateException if key or value encoders could not be made.
+     */
     public JsonRecordRequest(AvroTopic<K, V> topic) {
         try {
             keyEncoder = AvroRecordData.getEncoder(

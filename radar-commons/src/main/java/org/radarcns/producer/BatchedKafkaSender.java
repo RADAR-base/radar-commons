@@ -39,6 +39,12 @@ public class BatchedKafkaSender implements KafkaSender {
     private final long ageNanos;
     private final int maxBatchSize;
 
+    /**
+     * Kafka sender that sends data along.
+     * @param sender kafka sender to send data with.
+     * @param ageMillis threshold time after which a record should be sent.
+     * @param maxBatchSize threshold batch size over which records should be sent.
+     */
     public BatchedKafkaSender(KafkaSender sender, int ageMillis, int maxBatchSize) {
         this.wrappedSender = sender;
         this.ageNanos = TimeUnit.MILLISECONDS.toNanos(ageMillis);
@@ -66,6 +72,7 @@ public class BatchedKafkaSender implements KafkaSender {
         wrappedSender.close();
     }
 
+    /** Batched kafka topic sender. This does the actual data batching. */
     private class BatchedKafkaTopicSender<K, V> implements KafkaTopicSender<K, V> {
         private long nanoAdded;
         private K cachedKey;
@@ -112,7 +119,9 @@ public class BatchedKafkaSender implements KafkaSender {
 
             if (keysMatch) {
                 cache.add(record);
-                doSend();
+                if (exceedsBuffer(cache)) {
+                    doSend();
+                }
             } else {
                 doSend();
                 trySend(key, record);

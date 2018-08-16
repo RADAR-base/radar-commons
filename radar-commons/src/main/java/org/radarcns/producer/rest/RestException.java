@@ -18,14 +18,28 @@ package org.radarcns.producer.rest;
 
 import java.io.IOException;
 
+/**
+ * Exception when a HTTP REST request fails.
+ */
 public class RestException extends IOException {
     private final int statusCode;
     private final String body;
 
+    /**
+     * Request with status code and response body.
+     * @param statusCode HTTP status code
+     * @param body response body.
+     */
     public RestException(int statusCode, String body) {
         this(statusCode, body, null);
     }
 
+    /**
+     * Request with status code, response body and cause.
+     * @param statusCode HTTP status code
+     * @param body response body.
+     * @param cause causing exception.
+     */
     public RestException(int statusCode, String body, Throwable cause) {
         super("REST call failed (HTTP code " + statusCode + "): "
                 + body.substring(0, Math.min(512, body.length())), cause);

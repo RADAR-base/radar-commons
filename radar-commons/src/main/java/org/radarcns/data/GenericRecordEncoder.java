@@ -23,7 +23,7 @@ import org.apache.avro.io.EncoderFactory;
 
 import java.io.IOException;
 
-/** An AvroEncoder to encode GenericRecord classes */
+/** An AvroEncoder to encode GenericRecord classes. */
 public class GenericRecordEncoder implements AvroEncoder {
     private final EncoderFactory encoderFactory;
     private final boolean binary;

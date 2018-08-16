@@ -23,7 +23,7 @@ import org.apache.avro.specific.SpecificRecord;
 
 import java.io.IOException;
 
-/** An AvroEncoder to encode known SpecificRecord classes */
+/** An AvroEncoder to encode known SpecificRecord classes. */
 public class SpecificRecordEncoder implements AvroEncoder {
     private final EncoderFactory encoderFactory;
     private final boolean binary;

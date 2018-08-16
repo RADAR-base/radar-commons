@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * {@link #getState()} after a timeout occurs and {@link #didConnect()}; and UNKNOWN to DISCONNECTED
  * with {@link #didDisconnect()}.
  *
- * A connection state could be shared with multiple HTTP clients if they are talking to the same
+ * <p>A connection state could be shared with multiple HTTP clients if they are talking to the same
  * server.
  */
 public final class ConnectionState {

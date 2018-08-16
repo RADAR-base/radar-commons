@@ -77,6 +77,11 @@ public final class Strings {
         return value == null || value.isEmpty();
     }
 
+    /**
+     * Converts given bytes to a hex string.
+     * @param bytes bytes to read.
+     * @return String with hex values.
+     */
     public static String bytesToHex(byte[] bytes) {
         char[] hexChars = new char[bytes.length * 2];
         for (int i = 0; i < bytes.length; i++) {

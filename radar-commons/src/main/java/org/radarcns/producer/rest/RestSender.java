@@ -81,6 +81,12 @@ public class RestSender implements KafkaSender {
                 .build());
     }
 
+    /**
+     * Set the connection timeout. This affects both the connection state as the HTTP client
+     * setting.
+     * @param connectionTimeout timeout
+     * @param unit time unit
+     */
     public synchronized void setConnectionTimeout(long connectionTimeout, TimeUnit unit) {
         if (connectionTimeout != httpClient.getTimeout()) {
             httpClient = httpClient.newBuilder().timeout(connectionTimeout, unit).build();
@@ -88,6 +94,10 @@ public class RestSender implements KafkaSender {
         }
     }
 
+    /**
+     * Set the Kafka REST Proxy settings. This affects the REST client.
+     * @param kafkaConfig server configuration of the Kafka REST proxy.
+     */
     public synchronized void setKafkaConfig(ServerConfig kafkaConfig) {
         Objects.requireNonNull(kafkaConfig);
         if (kafkaConfig.equals(httpClient.getServer())) {
@@ -96,6 +106,9 @@ public class RestSender implements KafkaSender {
         setRestClient(httpClient.newBuilder().server(kafkaConfig).build());
     }
 
+    /**
+     * Set the REST client. This will reset the connection state.
+     */
     private void setRestClient(RestClient newClient) {
         try {
             isConnectedRequest = newClient.requestBuilder("").head();
@@ -106,30 +119,37 @@ public class RestSender implements KafkaSender {
         state.reset();
     }
 
+    /** Set the schema retriever. */
     public final synchronized void setSchemaRetriever(SchemaRetriever retriever) {
         this.schemaRetriever = retriever;
     }
 
+    /** Get the current REST client. */
     public synchronized RestClient getRestClient() {
         return httpClient;
     }
 
+    /** Get the schema retriever. */
     public synchronized SchemaRetriever getSchemaRetriever() {
         return this.schemaRetriever;
     }
 
+    /** Get a request to check the connection status. */
     private synchronized Request getIsConnectedRequest() {
         return isConnectedRequest.headers(requestProperties.headers).build();
     }
 
+    /** Set the compression of the REST client. */
     public synchronized void setCompression(boolean useCompression) {
         httpClient = httpClient.newBuilder().gzipCompression(useCompression).build();
     }
 
+    /** Get the headers used in requests. */
     public synchronized Headers getHeaders() {
         return requestProperties.headers;
     }
 
+    /** Set the headers used in requests. */
     public synchronized void setHeaders(Headers additionalHeaders) {
         this.requestProperties = new RequestProperties(requestProperties.acceptType,
                 requestProperties.contentType, additionalHeaders,
@@ -143,10 +163,16 @@ public class RestSender implements KafkaSender {
         return new RestTopicSender<>(topic, this, state);
     }
 
+    /**
+     * Get the current request properties.
+     */
     public synchronized RequestProperties getRequestProperties() {
         return requestProperties;
     }
 
+    /**
+     * Get the current request context.
+     */
     public synchronized RequestContext getRequestContext() {
         return new RequestContext(httpClient, requestProperties);
     }
@@ -180,6 +206,7 @@ public class RestSender implements KafkaSender {
         return state.getState() == State.CONNECTED;
     }
 
+    @Override
     public boolean isConnected() throws AuthenticationException {
         switch (state.getState()) {
             case CONNECTED:
@@ -200,6 +227,12 @@ public class RestSender implements KafkaSender {
         // noop
     }
 
+    /**
+     * Revert to a legacy connection if the server does not support the latest protocols.
+     * @param acceptEncoding accept encoding to use in the legacy connection.
+     * @param contentEncoding content encoding to use in the legacy connection.
+     * @param binary whether to send the data as binary.
+     */
     public synchronized void useLegacyEncoding(String acceptEncoding,
             MediaType contentEncoding, boolean binary) {
         this.requestProperties = new RequestProperties(acceptEncoding,
@@ -244,6 +277,7 @@ public class RestSender implements KafkaSender {
             return this;
         }
 
+        /** Build a new RestSender. */
         public RestSender build() {
             if (state == null) {
                 state = new ConnectionState(DEFAULT_TIMEOUT, TimeUnit.SECONDS);

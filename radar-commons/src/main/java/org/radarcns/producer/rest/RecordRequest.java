@@ -23,7 +23,8 @@ import java.io.IOException;
 
 /**
  * Record request contents. Before {@link #writeToSink(BufferedSink)} is called, first
- * {@link #prepare(ParsedSchemaMetadata, ParsedSchemaMetadata, RecordData)} should be called.
+ * {@link #prepare(ParsedSchemaMetadata, ParsedSchemaMetadata, RecordData)} should be called. This
+ * class may be reused by calling prepare and reset alternatively.
  *
  * @param <K> record key type.
  * @param <V> record content type.
@@ -39,5 +40,11 @@ public interface RecordRequest<K, V> {
     void prepare(ParsedSchemaMetadata keySchema, ParsedSchemaMetadata valueSchema,
             RecordData<K, V> records);
 
+    /**
+     * Return the content of the record as a string. To avoid dual reading of data for RecordData
+     * that does not store the results, prepare and reset may be called around this method.
+     * @return the content.
+     * @throws IOException if the content cannot be written.
+     */
     String content() throws IOException;
 }

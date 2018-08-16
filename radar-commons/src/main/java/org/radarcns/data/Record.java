@@ -19,19 +19,20 @@ package org.radarcns.data;
 /**
  * A single data record.
  *
- * The time it gets created is stored as {@link #milliTimeAdded}.
- *
  * @param <K> key type
  * @param <V> value type
  */
 public class Record<K, V> {
     public final K key;
     public final V value;
-    public final long milliTimeAdded;
 
+    /**
+     * Single record, with current time as time added.
+     * @param key key
+     * @param value value
+     */
     public Record(K key, V value) {
         this.key = key;
         this.value = value;
-        this.milliTimeAdded = System.currentTimeMillis();
     }
 }

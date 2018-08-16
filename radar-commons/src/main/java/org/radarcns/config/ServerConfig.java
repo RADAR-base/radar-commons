@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * POJO representing a ServerConfig configuration
+ * POJO representing a ServerConfig configuration.
  */
 public class ServerConfig {
     private String host;
@@ -38,11 +38,12 @@ public class ServerConfig {
     private int proxyPort = -1;
     private boolean unsafe = false;
 
+    /** Pojo initializer. */
     public ServerConfig() {
         // POJO initializer
     }
 
-    // Parses the server from URL
+    /** Parses the config from a URL. */
     public ServerConfig(URL url) {
         host = url.getHost();
         port = url.getPort();
@@ -50,7 +51,7 @@ public class ServerConfig {
         setPath(url.getFile());
     }
 
-    // Parses the server from URL
+    /** Parses the config from a URL string. */
     public ServerConfig(String urlString) throws MalformedURLException {
         this(new URL(urlString));
     }
@@ -199,6 +200,12 @@ public class ServerConfig {
         return path;
     }
 
+    /**
+     * Set the absolute path. If the path is null or empty, it will be set to the root. The path
+     * will be ended with a single slash. The path will be prepended with a single slash if needed.
+     * @param path path string
+     * @throws IllegalArgumentException if the path contains a question mark.
+     */
     public final void setPath(String path) {
         if (path == null) {
             this.path = "/";

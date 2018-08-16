@@ -113,8 +113,21 @@ public final class Serialization {
         return Double.parseDouble(Float.toString(value));
     }
 
+    /**
+     * Copy a stream using a buffer.
+     *
+     * @param buffer non-empty, non-null buffer for the copy operations.
+     * @param in input stream to read data from
+     * @param out output stream to write data to
+     * @throws IOException if the streams cannot be read from or written to.
+     * @throws IllegalArgumentException if the buffer has size 0
+     * @throws NullPointerException if buffer, in or out are null.
+     */
     public static void copyStream(byte[] buffer, InputStream in, OutputStream out)
             throws IOException {
+        if (buffer.length == 0) {
+            throw new IllegalArgumentException("Cannot copy with empty buffer.");
+        }
         int len = in.read(buffer);
         while (len != -1) {
             out.write(buffer, 0, len);

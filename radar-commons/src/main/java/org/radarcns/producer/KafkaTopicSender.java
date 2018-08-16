@@ -6,6 +6,9 @@ import org.radarcns.data.RecordData;
 import java.io.Closeable;
 import java.io.IOException;
 
+/**
+ * Sender for a single topic. Should be created through a {@link KafkaSender}.
+ */
 public interface KafkaTopicSender<K, V> extends Closeable {
     /**
      * Send a message to Kafka eventually.
@@ -18,10 +21,8 @@ public interface KafkaTopicSender<K, V> extends Closeable {
     void send(K key, V value) throws IOException, SchemaValidationException;
 
     /**
-     * Send a message to Kafka eventually.
-     *
-     * Contained offsets must be strictly monotonically increasing
-     * for subsequent calls.
+     * Send a message to Kafka eventually. Contained offsets must be strictly monotonically
+     * increasing for subsequent calls.
      *
      * @param records records to send.
      * @throws AuthenticationException if the client failed to authenticate itself

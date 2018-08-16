@@ -34,11 +34,18 @@ public interface KafkaSender extends Closeable {
     /**
      * If the sender is no longer connected, try to reconnect.
      * @return whether the connection has been restored.
+     * @throws AuthenticationException if the headers caused an authentication error
+     *                                 in the current request or in a previous one.
      */
     boolean resetConnection() throws AuthenticationException;
 
     /**
-     * Whether the sender is connected to the Kafka system.
+     * Get the current connection state to Kafka. If the connection state is unknown, this will
+     * trigger a connection check.
+     * @return true if connected, false if not connected.
+     * @throws AuthenticationException if the headers caused an authentication error
+     *                                 in a previous request or during an additional connection
+     *                                 check.
      */
     boolean isConnected() throws AuthenticationException;
 }
