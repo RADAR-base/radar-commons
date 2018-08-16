@@ -65,7 +65,6 @@ class RestTopicSender<K, V>
         this.schemaValueValidator = new SchemaReadValidator(topic.getValueSchema());
         this.sender = sender;
         this.state = state;
-        this.requestData = null;
 
         if (sender.getRequestContext().properties.binary) {
             try {
@@ -73,9 +72,10 @@ class RestTopicSender<K, V>
             } catch (IllegalArgumentException ex) {
                 logger.warn("Cannot use Binary encoding for incompatible topic {}: {}",
                         topic, ex.toString());
-                requestData = new JsonRecordRequest<>(topic);
             }
-        } else {
+        }
+
+        if (requestData == null) {
             requestData = new JsonRecordRequest<>(topic);
         }
     }
@@ -155,12 +155,7 @@ class RestTopicSender<K, V>
             throw new IOException("Failed to get schemas for topic " + topic, ex);
         }
 
-        try {
-            requestData.prepare(keyMetadata, valueMetadata, records);
-        } catch (IllegalArgumentException ex) {
-            requestData = new JsonRecordRequest<>(topic);
-            requestData.prepare(keyMetadata, valueMetadata, records);
-        }
+        requestData.prepare(keyMetadata, valueMetadata, records);
     }
 
     private void downgradeConnection(Request request, Response response) throws IOException {
@@ -188,7 +183,7 @@ class RestTopicSender<K, V>
             throws IOException, SchemaValidationException {
         updateRecords(context, records);
 
-        HttpUrl sendToUrl = updateRequestSchema(context.client);
+        HttpUrl sendToUrl = context.client.getRelativeUrl("topics/" + topic.getName());
 
         TopicRequestBody requestBody;
         Request.Builder requestBuilder = new Request.Builder()
@@ -204,14 +199,6 @@ class RestTopicSender<K, V>
         requestBody = new TopicRequestBody(requestData, contentType);
 
         return requestBuilder.post(requestBody).build();
-    }
-
-    private HttpUrl updateRequestSchema(RestClient restClient)
-            throws IOException, SchemaValidationException {
-        // Get schema IDs
-        String sendTopic = topic.getName();
-
-        return restClient.getRelativeUrl("topics/" + sendTopic);
     }
 
     @Override
