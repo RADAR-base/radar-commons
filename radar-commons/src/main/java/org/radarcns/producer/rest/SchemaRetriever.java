@@ -16,6 +16,15 @@
 
 package org.radarcns.producer.rest;
 
+import static org.radarcns.util.Strings.utf8;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -28,22 +37,11 @@ import org.radarcns.config.ServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
-import static org.radarcns.util.Strings.utf8;
-
-/** Retriever of an Avro Schema.
- *
- * Internally, only {@link JSONObject} is used to manage JSON data, to keep the class as lean as
- * possible.
+/**
+ * Retriever of an Avro Schema. Internally, only {@link JSONObject} is used to manage JSON data,
+ * to keep the class as lean as possible.
  */
-public class SchemaRetriever implements Closeable {
+public class SchemaRetriever {
     private static final Logger logger = LoggerFactory.getLogger(SchemaRetriever.class);
     private static final MediaType CONTENT_TYPE = MediaType.parse(
             "application/vnd.schemaregistry.v1+json; charset=utf-8");
@@ -65,18 +63,28 @@ public class SchemaRetriever implements Closeable {
     private final ConcurrentMap<String, TimedSchemaMetadata> cache;
     private RestClient httpClient;
 
+    /**
+     * Schema retriever for a Confluent Schema Registry.
+     * @param config schema registry configuration.
+     * @param connectionTimeout timeout in seconds.
+     */
     public SchemaRetriever(ServerConfig config, long connectionTimeout) {
-        Objects.requireNonNull(config);
         cache = new ConcurrentHashMap<>();
-        httpClient = new RestClient(config, connectionTimeout, ManagedConnectionPool.GLOBAL_POOL);
+        httpClient = RestClient.global()
+                .server(Objects.requireNonNull(config))
+                .timeout(connectionTimeout, TimeUnit.SECONDS)
+                .build();
     }
 
+    /**
+     * Set the connection timeout.
+     * @param connectionTimeout timeout in seconds.
+     */
     public synchronized void setConnectionTimeout(long connectionTimeout) {
         if (httpClient.getTimeout() != connectionTimeout) {
-            RestClient newHttpClient = new RestClient(httpClient.getConfig(), connectionTimeout,
-                    ManagedConnectionPool.GLOBAL_POOL);
-            httpClient.close();
-            httpClient = newHttpClient;
+            httpClient = httpClient.newBuilder()
+                    .timeout(connectionTimeout, TimeUnit.SECONDS)
+                    .build();
         }
     }
 
@@ -130,9 +138,7 @@ public class SchemaRetriever implements Closeable {
     }
 
     /**
-     * Add schema metadata to the retriever.
-     *
-     * This implementation only adds it to the cache.
+     * Add schema metadata to the retriever. This implementation only adds it to the cache.
      */
     public void addSchemaMetadata(String topic, boolean ofValue, ParsedSchemaMetadata metadata)
             throws IOException {
@@ -173,11 +179,6 @@ public class SchemaRetriever implements Closeable {
         metadata = new ParsedSchemaMetadata(null, null, schema);
         addSchemaMetadata(topic, ofValue, metadata);
         return metadata;
-    }
-
-    @Override
-    public void close() {
-        getRestClient().close();
     }
 
     private class SchemaRequestBody extends RequestBody {

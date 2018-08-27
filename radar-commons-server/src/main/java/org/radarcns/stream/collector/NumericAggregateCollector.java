@@ -16,21 +16,20 @@
 
 package org.radarcns.stream.collector;
 
+import static org.radarcns.util.Serialization.floatToDouble;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Objects;
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Field;
 import org.apache.avro.Schema.Type;
 import org.apache.avro.specific.SpecificRecord;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Objects;
-
-import static org.radarcns.util.Serialization.floatToDouble;
 
 /**
  * Java class to aggregate data using Kafka Streams. Double is the base type.
@@ -84,6 +83,13 @@ public class NumericAggregateCollector implements RecordCollector {
         }
     }
 
+    /**
+     * Get the non-null number type for a given field. If the tye is a union, it will use the first
+     * non-null type in the union.
+     * @param field record field to get type for.
+     * @return type
+     * @throws IllegalArgumentException if the resulting field is non-numeric.
+     */
     private static Type getType(Field field) {
         Type apparentType = field.schema().getType();
         if (apparentType == Type.UNION) {
@@ -245,6 +251,7 @@ public class NumericAggregateCollector implements RecordCollector {
             return this;
         }
 
+        /** Set minimum value. */
         @JsonSetter
         public Builder min(double min) {
             if (min < minValue) {
@@ -253,6 +260,7 @@ public class NumericAggregateCollector implements RecordCollector {
             return this;
         }
 
+        /** Set maximum value. */
         @JsonSetter
         public Builder max(double max) {
             if (max > maxValue) {

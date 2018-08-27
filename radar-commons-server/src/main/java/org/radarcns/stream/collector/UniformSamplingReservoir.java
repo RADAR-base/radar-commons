@@ -3,7 +3,6 @@ package org.radarcns.stream.collector;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;

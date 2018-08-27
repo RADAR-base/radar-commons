@@ -32,6 +32,15 @@ public class AvroRecordWriter<T> implements AvroWriter<T> {
     private final ByteArrayOutputStream out;
     private final DatumWriter<T> writer;
 
+    /**
+     * Writer for a given encoder, schema and writer.
+     * @param encoderFactory encoder factory to use.
+     * @param schema schema to write records with.
+     * @param writer data writer
+     * @param binary true if the data should be serialized with binary Avro encoding, false if it
+     *               should be with JSON encoding.
+     * @throws IOException if an encoder cannot be constructed.
+     */
     public AvroRecordWriter(EncoderFactory encoderFactory, Schema schema, DatumWriter<T> writer,
             boolean binary) throws IOException {
         this.writer = writer;

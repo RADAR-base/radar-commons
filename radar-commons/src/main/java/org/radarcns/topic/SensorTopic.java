@@ -26,8 +26,16 @@ import org.apache.avro.specific.SpecificRecord;
  */
 @SuppressWarnings("PMD.UseUtilityClass")
 public class SensorTopic<K, V> extends AvroTopic<K, V> {
+    /**
+     * AvroTopic that does additional validation on the keys and values.
+     * @param name topic name
+     * @param keySchema key schema
+     * @param valueSchema value schema
+     * @param keyClass actual key class
+     * @param valueClass actual value class
+     */
     public SensorTopic(String name, Schema keySchema, Schema valueSchema,
-            Class<K> keyClass, Class<V> valueClass) {
+            Class<? extends K> keyClass, Class<? extends V> valueClass) {
         super(name, keySchema, valueSchema, keyClass, valueClass);
 
         if (keySchema.getType() != Type.RECORD) {

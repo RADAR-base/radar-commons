@@ -16,6 +16,21 @@
 
 package org.radarcns.mock;
 
+import static org.apache.kafka.clients.producer.ProducerConfig.BOOTSTRAP_SERVERS_CONFIG;
+import static org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG;
+import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG;
+import static org.radarcns.util.serde.AbstractKafkaAvroSerde.SCHEMA_REGISTRY_CONFIG;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Properties;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.avro.SchemaValidationException;
 import org.radarcns.config.ServerConfig;
 import org.radarcns.config.YamlConfigLoader;
 import org.radarcns.kafka.ObservationKey;
@@ -33,27 +48,12 @@ import org.radarcns.producer.BatchedKafkaSender;
 import org.radarcns.producer.KafkaSender;
 import org.radarcns.producer.direct.DirectSender;
 import org.radarcns.producer.rest.ConnectionState;
-import org.radarcns.producer.rest.ManagedConnectionPool;
+import org.radarcns.producer.rest.RestClient;
 import org.radarcns.producer.rest.RestSender;
 import org.radarcns.producer.rest.SchemaRetriever;
 import org.radarcns.util.serde.KafkaAvroSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static org.apache.kafka.clients.producer.ProducerConfig.BOOTSTRAP_SERVERS_CONFIG;
-import static org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG;
-import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG;
-import static org.radarcns.util.serde.AbstractKafkaAvroSerde.SCHEMA_REGISTRY_CONFIG;
 
 /**
  * A Mock Producer class that can be used to stream data. It can use MockFileSender and MockDevice
@@ -130,7 +130,6 @@ public class MockProducer {
                     sender.close();
                 }
             }
-            retriever.close();
             throw ex;
         }
 
@@ -169,19 +168,20 @@ public class MockProducer {
             SchemaRetriever retriever, ServerConfig restProxy, boolean useCompression) {
         List<KafkaSender> result = new ArrayList<>(numDevices);
         ConnectionState sharedState = new ConnectionState(10, TimeUnit.SECONDS);
-        RestSender.Builder restBuilder =
-                new RestSender.Builder()
-                        .server(restProxy)
-                        .schemaRetriever(retriever)
-                        .useCompression(useCompression)
-                        .connectionState(sharedState)
-                        .connectionTimeout(10, TimeUnit.SECONDS);
 
         for (int i = 0; i < numDevices; i++) {
-            RestSender firstSender = restBuilder
-                    .connectionPool(new ManagedConnectionPool())
+            RestClient httpClient = RestClient.newClient()
+                    .server(restProxy)
+                    .gzipCompression(useCompression)
+                    .timeout(10, TimeUnit.SECONDS)
                     .build();
-            result.add(new BatchedKafkaSender(firstSender, 1000, 1000));
+
+            RestSender restSender = new RestSender.Builder()
+                    .schemaRetriever(retriever)
+                    .httpClient(httpClient)
+                    .connectionState(sharedState)
+                    .build();
+            result.add(new BatchedKafkaSender(restSender, 1000, 1000));
         }
         return result;
     }
@@ -197,7 +197,7 @@ public class MockProducer {
     }
 
     /** Stop sending data and clean up all resources. */
-    public void shutdown() throws IOException, InterruptedException {
+    public void shutdown() throws IOException, InterruptedException, SchemaValidationException {
         if (!devices.isEmpty()) {
             logger.info("Shutting down mock devices");
             for (MockDevice device : devices) {
@@ -212,12 +212,9 @@ public class MockProducer {
         for (KafkaSender sender : senders) {
             sender.close();
         }
-        retriever.close();
 
         for (MockDevice device : devices) {
-            if (device.getException() != null) {
-                throw device.getException();
-            }
+            device.checkException();
         }
     }
 
@@ -246,17 +243,17 @@ public class MockProducer {
         } catch (IllegalArgumentException ex) {
             logger.error("{}", ex.getMessage());
             System.exit(1);
-        } catch (IOException ex) {
-            logger.error("Failed to start mock producer", ex);
-            System.exit(1);
         } catch (InterruptedException e) {
             // during shutdown, not that important. Will shutdown again.
+        } catch (Exception ex) {
+            logger.error("Failed to start mock producer", ex);
+            System.exit(1);
         }
     }
 
     /** Wait for given duration and then stop the producer. */
     private static void waitForProducer(final MockProducer producer, long duration)
-            throws IOException, InterruptedException {
+            throws IOException, InterruptedException, SchemaValidationException {
         final AtomicBoolean isShutdown = new AtomicBoolean(false);
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -265,10 +262,10 @@ public class MockProducer {
                     if (!isShutdown.get()) {
                         producer.shutdown();
                     }
-                } catch (IOException ex) {
-                    logger.warn("Failed to shutdown producer", ex);
                 } catch (InterruptedException ex) {
                     logger.warn("Shutdown interrupted", ex);
+                } catch (Exception ex) {
+                    logger.warn("Failed to shutdown producer", ex);
                 }
             }
         });

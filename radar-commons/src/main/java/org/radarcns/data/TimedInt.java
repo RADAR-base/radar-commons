@@ -19,28 +19,47 @@ package org.radarcns.data;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * A single int, with modification times timed with system milliseconds time.
+ * This class can be used from multiple threads.
+ */
 public class TimedInt {
     private final AtomicInteger value = new AtomicInteger();
     private final AtomicLong time = new AtomicLong(-1L);
 
+    /**
+     * Value of the int.
+     */
     public int getValue() {
         return value.get();
     }
 
+    /**
+     * Time that the int got modified.
+     */
     public long getTime() {
         return time.get();
     }
 
+    /**
+     * Add value to the int. This updates the time variable to now.
+     * @param delta value to add.
+     */
     public void add(int delta) {
         value.addAndGet(delta);
         time.set(System.currentTimeMillis());
     }
 
+    /**
+     * Set value to the int. This updates the time variable to now.
+     * @param value new value
+     */
     public void set(int value) {
         this.value.set(value);
         time.set(System.currentTimeMillis());
     }
 
+    @Override
     public synchronized boolean equals(Object other) {
         if (other == null || !getClass().equals(other.getClass())) {
             return false;

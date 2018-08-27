@@ -59,11 +59,9 @@ public abstract class AbstractKafkaAvroSerde<T> implements Serializer<T> {
         }
     }
 
+    @SuppressWarnings("PMD.EmptyMethodInAbstractClassShouldBeAbstract")
     @Override
     public void close() {
-        if (schemaRetriever != null) {
-            schemaRetriever.close();
-            schemaRetriever = null;
-        }
+        // noop
     }
 }

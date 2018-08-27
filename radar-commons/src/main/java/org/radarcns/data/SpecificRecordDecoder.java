@@ -26,7 +26,7 @@ import org.apache.avro.io.DecoderFactory;
 import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.avro.specific.SpecificRecord;
 
-/** An AvroDecoder to decode known SpecificRecord classes */
+/** An AvroDecoder to decode known SpecificRecord classes. */
 public class SpecificRecordDecoder implements AvroDecoder {
     private final DecoderFactory decoderFactory;
     private final boolean binary;
@@ -37,7 +37,7 @@ public class SpecificRecordDecoder implements AvroDecoder {
     }
 
     @Override
-    public <T> AvroReader<T> reader(Schema schema, Class<T> clazz) throws IOException {
+    public <T> AvroReader<T> reader(Schema schema, Class<? extends T> clazz) {
         if (!SpecificRecord.class.isAssignableFrom(clazz)) {
             throw new IllegalArgumentException("Can only create readers for SpecificRecords.");
         }
@@ -49,7 +49,7 @@ public class SpecificRecordDecoder implements AvroDecoder {
         private final Schema schema;
         private Decoder decoder;
 
-        private AvroRecordReader(Schema schema, DatumReader<T> reader) throws IOException {
+        private AvroRecordReader(Schema schema, DatumReader<T> reader) {
             this.reader = reader;
             this.schema = schema;
             this.decoder = null;

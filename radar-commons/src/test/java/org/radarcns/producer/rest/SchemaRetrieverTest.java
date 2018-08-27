@@ -32,8 +32,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.radarcns.config.ServerConfig;
-import org.radarcns.producer.rest.ParsedSchemaMetadata;
-import org.radarcns.producer.rest.SchemaRetriever;
 
 public class SchemaRetrieverTest {
     private MockWebServer server;
@@ -56,7 +54,6 @@ public class SchemaRetrieverTest {
 
     @After
     public void tearDown() throws IOException {
-        retriever.close();
         server.close();
     }
 

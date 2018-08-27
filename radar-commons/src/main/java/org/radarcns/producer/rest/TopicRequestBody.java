@@ -16,9 +16,7 @@
 
 package org.radarcns.producer.rest;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -28,10 +26,10 @@ import okio.BufferedSink;
  * TopicRequestData in a RequestBody.
  */
 class TopicRequestBody extends RequestBody {
-    protected final TopicRequestData data;
+    protected final RecordRequest data;
     private final MediaType mediaType;
 
-    TopicRequestBody(TopicRequestData requestData, MediaType mediaType) {
+    TopicRequestBody(RecordRequest requestData, MediaType mediaType) {
         this.data = requestData;
         this.mediaType = mediaType;
     }
@@ -43,16 +41,7 @@ class TopicRequestBody extends RequestBody {
 
     @Override
     public void writeTo(BufferedSink sink) throws IOException {
-        try (OutputStream out = sink.outputStream()) {
-            data.writeToStream(out);
-        }
-    }
-
-    private String content() throws IOException {
-        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            data.writeToStream(out);
-            return out.toString();
-        }
+        data.writeToSink(sink);
     }
 
     static String topicRequestContent(Request request) throws IOException {
@@ -60,6 +49,6 @@ class TopicRequestBody extends RequestBody {
         if (body == null) {
             return null;
         }
-        return body.content();
+        return body.data.content();
     }
 }

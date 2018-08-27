@@ -26,6 +26,7 @@ import java.util.regex.Pattern;
  */
 public final class Strings {
     private static final Charset UTF_8 = Charset.forName("UTF-8");
+    private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 
     private Strings() {
         // utility class
@@ -74,5 +75,20 @@ public final class Strings {
     /** Whether given value is null or empty. */
     public static boolean isNullOrEmpty(String value) {
         return value == null || value.isEmpty();
+    }
+
+    /**
+     * Converts given bytes to a hex string.
+     * @param bytes bytes to read.
+     * @return String with hex values.
+     */
+    public static String bytesToHex(byte[] bytes) {
+        char[] hexChars = new char[bytes.length * 2];
+        for (int i = 0; i < bytes.length; i++) {
+            int value = bytes[i] & 0xFF;
+            hexChars[i * 2] = HEX_ARRAY[value >>> 4];
+            hexChars[i * 2 + 1] = HEX_ARRAY[value & 0x0F];
+        }
+        return new String(hexChars);
     }
 }

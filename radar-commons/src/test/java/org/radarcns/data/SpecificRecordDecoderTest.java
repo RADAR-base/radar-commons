@@ -20,14 +20,14 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import org.junit.Test;
-import org.radarcns.passive.empatica.EmpaticaE4BloodVolumePulse;
 import org.radarcns.kafka.ObservationKey;
+import org.radarcns.passive.empatica.EmpaticaE4BloodVolumePulse;
 import org.radarcns.topic.AvroTopic;
 
 /**
  * Created by nivethika on 24-2-17.
  */
-public class SpecificRecordDecorderTest {
+public class SpecificRecordDecoderTest {
 
     @Test
     public void decodeJson() throws IOException {
@@ -58,9 +58,9 @@ public class SpecificRecordDecorderTest {
         // note that positive numbers are multiplied by two in avro binary encoding, due to the
         // zig-zag encoding schema used.
         // See http://avro.apache.org/docs/1.8.1/spec.html#binary_encoding
-        // type index 1, length 4, char t, char e, char s, char t, length 1, char a, length 1, char b
+        // union type index 1, length 4, char t, char e, char s, char t, length 1, char a, length 1, char b
         byte[] inputKey = {2, 8, 116, 101, 115, 116, 2, 97, 2, 98};
-        ObservationKey key = keyDecoder.decode( inputKey);
+        ObservationKey key = keyDecoder.decode(inputKey);
         assertEquals(key.get("projectId"), "test");
         assertEquals(key.get("userId"), "a");
         assertEquals(key.get("sourceId"), "b");

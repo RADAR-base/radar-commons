@@ -16,7 +16,7 @@
 
 package org.radarcns.producer.rest;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.radarcns.producer.rest.ConnectionState.State.CONNECTED;
 import static org.radarcns.producer.rest.ConnectionState.State.DISCONNECTED;
 import static org.radarcns.producer.rest.ConnectionState.State.UNKNOWN;

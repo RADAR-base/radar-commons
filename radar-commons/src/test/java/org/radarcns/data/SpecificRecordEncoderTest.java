@@ -16,6 +16,10 @@
 
 package org.radarcns.data;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import junit.framework.TestCase;
 import org.radarcns.kafka.ObservationKey;
 import org.radarcns.passive.empatica.EmpaticaE4BloodVolumePulse;
@@ -23,11 +27,6 @@ import org.radarcns.passive.phone.PhoneAcceleration;
 import org.radarcns.topic.AvroTopic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class SpecificRecordEncoderTest extends TestCase {
     private static final Logger logger = LoggerFactory.getLogger(SpecificRecordEncoderTest.class);
