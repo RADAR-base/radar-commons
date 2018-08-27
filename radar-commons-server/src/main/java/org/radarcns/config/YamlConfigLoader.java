@@ -51,8 +51,8 @@ public class YamlConfigLoader {
     /**
      * Load a YAML file into given class.
      * @param file file to load.
-     * @param configClass class for the server.
-     * @param <T> type of the server.
+     * @param configClass class for the config.
+     * @param <T> type of the config.
      * @return loaded file.
      * @throws IOException if the file cannot be opened or parsed.
      */
@@ -60,7 +60,7 @@ public class YamlConfigLoader {
         return mapper.readValue(file, configClass);
     }
 
-    /** Store server into given YAML file. */
+    /** Store config into given YAML file. */
     public void store(File file, Object config) throws IOException {
         mapper.writeValue(file, config);
     }
@@ -77,7 +77,7 @@ public class YamlConfigLoader {
         try {
             return mapper.writeValueAsString(config);
         } catch (JsonProcessingException ex) {
-            throw new UnsupportedOperationException("Cannot serialize server", ex);
+            throw new UnsupportedOperationException("Cannot serialize config", ex);
         } finally {
             mapper.disable(SerializationFeature.INDENT_OUTPUT);
             mapper.disable(SerializationFeature.WRAP_ROOT_VALUE);

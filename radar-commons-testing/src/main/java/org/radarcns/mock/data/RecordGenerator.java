@@ -51,7 +51,7 @@ public class RecordGenerator<K extends SpecificRecord> {
 
     /**
      * Generates records according to config. Given key class must match the one specified in the
-     * server.
+     * config.
      * @param config configuration to use
      */
     public RecordGenerator(MockDataConfig config, Class<K> keyClass) {

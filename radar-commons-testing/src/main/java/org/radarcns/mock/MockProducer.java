@@ -219,7 +219,7 @@ public class MockProducer {
     }
 
     /**
-     * Runs the MockProducer with given YAML mock server file.
+     * Runs the MockProducer with given YAML mock config file.
      */
     public static void main(String[] args) {
         if (args.length != 1) {

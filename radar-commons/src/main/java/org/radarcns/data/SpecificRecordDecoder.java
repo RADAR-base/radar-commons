@@ -39,7 +39,7 @@ public class SpecificRecordDecoder implements AvroDecoder {
     @Override
     public <T> AvroReader<T> reader(Schema schema, Class<? extends T> clazz) {
         if (!SpecificRecord.class.isAssignableFrom(clazz)) {
-            throw new IllegalArgumentException("Can only newClient readers for SpecificRecords.");
+            throw new IllegalArgumentException("Can only create readers for SpecificRecords.");
         }
         return new AvroRecordReader<>(schema, new SpecificDatumReader<T>(schema));
     }
