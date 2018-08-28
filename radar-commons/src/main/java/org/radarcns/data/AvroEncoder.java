@@ -16,14 +16,13 @@
 
 package org.radarcns.data;
 
+import java.io.IOException;
 import org.apache.avro.Schema;
 
-import java.io.IOException;
-
-/** Encode Avro values with a given encoder */
+/** Encode Avro values with a given encoder. */
 public interface AvroEncoder {
     /** Create a new writer. This method is thread-safe, but the class it returns is not. */
-    <T> AvroWriter<T> writer(Schema schema, Class<T> clazz) throws IOException;
+    <T> AvroWriter<T> writer(Schema schema, Class<? extends T> clazz) throws IOException;
 
     interface AvroWriter<T> {
         /** Encode an object. This method is not thread-safe. */

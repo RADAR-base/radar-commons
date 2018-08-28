@@ -1,8 +1,8 @@
-targetCompatibility = '1.7'
-sourceCompatibility = '1.7'
-
 ext.moduleName = 'radar-commons'
 ext.description = 'RADAR Common utilities library.'
+
+targetCompatibility = '1.7'
+sourceCompatibility = '1.7'
 
 //---------------------------------------------------------------------------//
 // Sources and classpath configurations                                      //

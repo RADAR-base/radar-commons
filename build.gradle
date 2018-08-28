@@ -17,7 +17,7 @@
 plugins {
     // Get bintray version
     id 'com.jfrog.bintray' version '1.8.1' apply false
-    id 'com.jfrog.artifactory' version '4.5.4'
+    id 'com.jfrog.artifactory' version '4.7.5' apply false
 }
 
 subprojects {
@@ -36,14 +36,14 @@ subprojects {
     // Configuration                                                             //
     //---------------------------------------------------------------------------//
 
-    version = '0.9.0'
+    version = '0.10.0'
     group = 'org.radarcns'
     ext.githubRepoName = 'RADAR-CNS/RADAR-Commons'
 
     ext.slf4jVersion = '1.7.25'
-    ext.kafkaVersion = '1.1.1-cp1'
+    ext.kafkaVersion = '2.0.0'
     ext.avroVersion = '1.8.2'
-    ext.confluentVersion = '4.1.1'
+    ext.confluentVersion = '5.0.0'
     ext.jacksonVersion = '2.9.6'
     ext.okhttpVersion = '3.10.0'
     ext.junitVersion = '4.12'
@@ -179,5 +179,5 @@ subprojects {
 }
 
 wrapper {
-    gradleVersion '4.8'
+    gradleVersion '4.9'
 }

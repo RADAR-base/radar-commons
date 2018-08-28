@@ -1,8 +1,8 @@
-targetCompatibility = '1.8'
-sourceCompatibility = '1.8'
-
 ext.moduleName = 'radar-commons-unsafe'
 ext.description = 'RADAR Common unsafe libraries overriding stock Kafka and Confluent code.'
+
+targetCompatibility = '1.8'
+sourceCompatibility = '1.8'
 
 //---------------------------------------------------------------------------//
 // Sources and classpath configurations                                      //
@@ -97,7 +97,7 @@ artifacts {
 
 publishing {
     publications {
-        RadarCommonsPublication(MavenPublication) {
+        RadarCommonsUnsafePublication(MavenPublication) {
             from components.java
             artifact sourcesJar
             artifact javadocJar
@@ -119,7 +119,7 @@ bintray {
     user project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
     key project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
     override false
-    publications 'RadarCommonsPublication'
+    publications 'RadarCommonsUnsafePublication'
     pkg {
         repo = project.group
         name = moduleName
@@ -153,5 +153,5 @@ artifactory {
 }
 
 artifactoryPublish {
-    publications('RadarCommonsPublication')
+    publications('RadarCommonsUnsafePublication')
 }

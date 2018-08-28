@@ -16,15 +16,8 @@
 
 package org.radarcns.mock;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.radarcns.kafka.ObservationKey;
-import org.radarcns.mock.config.MockDataConfig;
-import org.radarcns.mock.data.CsvGenerator;
-import org.radarcns.mock.data.MockRecordValidatorTest;
-import org.radarcns.mock.data.RecordGenerator;
-import org.radarcns.util.CsvParser;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -35,9 +28,15 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.radarcns.kafka.ObservationKey;
+import org.radarcns.mock.config.MockDataConfig;
+import org.radarcns.mock.data.CsvGenerator;
+import org.radarcns.mock.data.MockRecordValidatorTest;
+import org.radarcns.mock.data.RecordGenerator;
+import org.radarcns.util.CsvParser;
 
 public class CsvGeneratorTest {
     @Rule

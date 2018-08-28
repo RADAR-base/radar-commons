@@ -16,6 +16,8 @@
 
 package org.radarcns.topic;
 
+import static org.junit.Assert.assertEquals;
+
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Type;
 import org.apache.avro.SchemaBuilder;
@@ -23,8 +25,6 @@ import org.apache.avro.generic.GenericRecord;
 import org.junit.Test;
 import org.radarcns.kafka.ObservationKey;
 import org.radarcns.passive.phone.PhoneAcceleration;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  * Created by joris on 05/07/2017.

@@ -16,45 +16,73 @@
 
 package org.radarcns.producer.rest;
 
+import static org.radarcns.producer.rest.RestClient.responseBody;
+import static org.radarcns.producer.rest.RestSender.KAFKA_REST_ACCEPT_ENCODING;
+import static org.radarcns.producer.rest.RestSender.KAFKA_REST_ACCEPT_LEGACY_ENCODING;
+import static org.radarcns.producer.rest.RestSender.KAFKA_REST_AVRO_ENCODING;
+import static org.radarcns.producer.rest.RestSender.KAFKA_REST_AVRO_LEGACY_ENCODING;
+import static org.radarcns.producer.rest.RestSender.KAFKA_REST_BINARY_ENCODING;
+import static org.radarcns.producer.rest.UncheckedRequestException.fail;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Objects;
 import okhttp3.HttpUrl;
+import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.Response;
+import org.apache.avro.SchemaValidationException;
+import org.apache.avro.generic.IndexedRecord;
 import org.radarcns.data.AvroRecordData;
-import org.radarcns.data.Record;
 import org.radarcns.data.RecordData;
+import org.radarcns.data.SchemaReadValidator;
 import org.radarcns.producer.AuthenticationException;
 import org.radarcns.producer.KafkaTopicSender;
 import org.radarcns.topic.AvroTopic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Objects;
-
-import static org.radarcns.producer.rest.RestClient.responseBody;
-import static org.radarcns.producer.rest.RestSender.KAFKA_REST_ACCEPT_ENCODING;
-import static org.radarcns.producer.rest.TopicRequestBody.topicRequestContent;
-
-class RestTopicSender<K, V> implements KafkaTopicSender<K, V> {
+class RestTopicSender<K, V>
+        implements KafkaTopicSender<K, V> {
     private static final Logger logger = LoggerFactory.getLogger(RestTopicSender.class);
-    private static final int LOG_CONTENT_LENGTH = 1024;
 
     private final AvroTopic<K, V> topic;
-    private final TopicRequestData requestData;
+    private final SchemaReadValidator schemaValueValidator;
+    private final SchemaReadValidator schemaKeyValidator;
+    private RecordRequest<K, V> requestData;
     private final RestSender sender;
     private final ConnectionState state;
 
-    RestTopicSender(AvroTopic<K, V> topic, RestSender sender, ConnectionState state) {
+    RestTopicSender(AvroTopic<K, V> topic, RestSender sender, ConnectionState state)
+            throws SchemaValidationException {
+        if (!IndexedRecord.class.isAssignableFrom(topic.getKeyClass())
+                || !IndexedRecord.class.isAssignableFrom(topic.getValueClass())) {
+            throw new IllegalArgumentException(
+                    "Cannot assign non-avro records to rest topic sender");
+        }
         this.topic = topic;
+        this.schemaKeyValidator = new SchemaReadValidator(topic.getKeySchema());
+        this.schemaValueValidator = new SchemaReadValidator(topic.getValueSchema());
         this.sender = sender;
         this.state = state;
-        this.requestData = new TopicRequestData();
+
+        if (sender.getRequestContext().properties.binary) {
+            try {
+                requestData = new BinaryRecordRequest<>(topic);
+            } catch (IllegalArgumentException ex) {
+                logger.warn("Cannot use Binary encoding for incompatible topic {}: {}",
+                        topic, ex.toString());
+            }
+        }
+
+        if (requestData == null) {
+            requestData = new JsonRecordRequest<>(topic);
+        }
     }
 
     @Override
-    public void send(K key, V value) throws IOException {
-        send(new AvroRecordData<>(topic, Collections.singleton(new Record<>(key, value))));
+    public void send(K key, V value) throws IOException, SchemaValidationException {
+        send(new AvroRecordData<>(topic, key, Collections.singletonList(value)));
     }
 
     /**
@@ -64,21 +92,12 @@ class RestTopicSender<K, V> implements KafkaTopicSender<K, V> {
      * @throws IOException if records could not be sent
      */
     @Override
-    public void send(RecordData<K, V> records) throws IOException {
-        if (records.isEmpty()) {
-            return;
-        }
-
-        RestClient restClient;
-        RestSender.RequestProperties requestProperties;
-        synchronized (sender) {
-            restClient = sender.getRestClient();
-            requestProperties = sender.getRequestProperties();
-        }
-        Request request = buildRequest(restClient, requestProperties, records);
+    public void send(RecordData<K, V> records) throws IOException, SchemaValidationException {
+        RestSender.RequestContext context = sender.getRequestContext();
+        Request request = buildRequest(context, records);
 
         boolean doResend = false;
-        try (Response response = restClient.request(request)) {
+        try (Response response = context.client.request(request)) {
             if (response.isSuccessful()) {
                 state.didConnect();
                 if (logger.isDebugEnabled()) {
@@ -87,18 +106,18 @@ class RestTopicSender<K, V> implements KafkaTopicSender<K, V> {
                 }
             } else if (response.code() == 401 || response.code() == 403) {
                 state.wasUnauthorized();
-            } else if (response.code() == 415
-                    && Objects.equals(request.header("Accept"), KAFKA_REST_ACCEPT_ENCODING)) {
-                state.didConnect();
-                logger.warn("Latest Avro encoding is not supported. Switching to legacy "
-                        + "encoding.");
-                sender.useLegacyEncoding();
+            } else if (response.code() == 415) {
+                downgradeConnection(request, response);
                 doResend = true;
             } else {
-                logFailure(request, response, null);
+                throw fail(request, response, null);
             }
         } catch (IOException ex) {
-            logFailure(request, null, ex);
+            state.didDisconnect();
+            fail(request, null, ex).rethrow();
+        } catch (UncheckedRequestException ex) {
+            state.didDisconnect();
+            ex.rethrow();
         } finally {
             requestData.reset();
         }
@@ -112,65 +131,74 @@ class RestTopicSender<K, V> implements KafkaTopicSender<K, V> {
         }
     }
 
-    private Request buildRequest(RestClient restClient, RestSender.RequestProperties properties,
-            RecordData<K, V> records)
-            throws IOException {
-        HttpUrl sendToUrl = updateRequestData(restClient, records);
-
-        TopicRequestBody requestBody;
-        Request.Builder requestBuilder = new Request.Builder()
-                .url(sendToUrl)
-                .headers(properties.headers)
-                .header("Accept", properties.acceptType);
-
-        if (properties.useCompression) {
-            requestBody = new GzipTopicRequestBody(requestData, properties.contentType);
-            requestBuilder.addHeader("Content-Encoding", "gzip");
-        } else {
-            requestBody = new TopicRequestBody(requestData, properties.contentType);
+    private void updateRecords(RestSender.RequestContext context, RecordData<K, V> records)
+            throws IOException, SchemaValidationException {
+        if (!context.properties.binary && requestData instanceof BinaryRecordRequest) {
+            requestData = new JsonRecordRequest<>(topic);
         }
 
-        return requestBuilder.post(requestBody).build();
-    }
-
-    private HttpUrl updateRequestData(RestClient restClient, RecordData<K, V> records)
-            throws IOException {
-        // Get schema IDs
         String sendTopic = topic.getName();
-
         SchemaRetriever retriever = sender.getSchemaRetriever();
-        try {
-            ParsedSchemaMetadata metadata = retriever.getOrSetSchemaMetadata(
-                    sendTopic, false, topic.getKeySchema(), -1);
-            requestData.setKeySchemaId(metadata.getId());
 
-            metadata = retriever.getOrSetSchemaMetadata(
+        ParsedSchemaMetadata keyMetadata;
+        ParsedSchemaMetadata valueMetadata;
+
+        try {
+            keyMetadata = retriever.getOrSetSchemaMetadata(
+                    sendTopic, false, topic.getKeySchema(), -1);
+            schemaKeyValidator.validate(keyMetadata);
+
+            valueMetadata = retriever.getOrSetSchemaMetadata(
                     sendTopic, true, topic.getValueSchema(), -1);
-            requestData.setValueSchemaId(metadata.getId());
+            schemaValueValidator.validate(valueMetadata);
         } catch (IOException ex) {
             throw new IOException("Failed to get schemas for topic " + topic, ex);
         }
 
-        requestData.setRecords(records);
-
-        return restClient.getRelativeUrl("topics/" + sendTopic);
+        requestData.prepare(keyMetadata, valueMetadata, records);
     }
 
-    @SuppressWarnings("ConstantConditions")
-    private void logFailure(Request request, Response response, Exception ex)
-            throws IOException {
-        state.didDisconnect();
-        String content = response == null ? null : responseBody(response);
-        int code = response == null ? -1 : response.code();
-        String requestContent = topicRequestContent(request);
-        if (requestContent != null) {
-            requestContent = requestContent.substring(0,
-                    Math.min(requestContent.length(), LOG_CONTENT_LENGTH));
+    private void downgradeConnection(Request request, Response response) throws IOException {
+        if (this.requestData instanceof BinaryRecordRequest) {
+            state.didConnect();
+            logger.warn("Binary Avro encoding is not supported."
+                    + " Switching to JSON encoding.");
+            sender.useLegacyEncoding(KAFKA_REST_ACCEPT_ENCODING, KAFKA_REST_AVRO_ENCODING,
+                    false);
+            requestData = new JsonRecordRequest<>(topic);
+        } else if (Objects.equals(request.header("Accept"),
+                KAFKA_REST_ACCEPT_ENCODING)) {
+            state.didConnect();
+            logger.warn("Latest Avro encoding is not supported. Switching to legacy "
+                    + "encoding.");
+            sender.useLegacyEncoding(
+                    KAFKA_REST_ACCEPT_LEGACY_ENCODING, KAFKA_REST_AVRO_LEGACY_ENCODING,
+                    false);
         }
-        logger.error("FAILED to transmit message: {} -> {}...",
-                content, requestContent);
-        throw new IOException("Failed to submit (HTTP status code " + code
-                + "): " + content, ex);
+
+        throw fail(request, response, new IOException("Content-Type not accepted"));
+    }
+
+    private Request buildRequest(RestSender.RequestContext context, RecordData<K, V> records)
+            throws IOException, SchemaValidationException {
+        updateRecords(context, records);
+
+        HttpUrl sendToUrl = context.client.getRelativeUrl("topics/" + topic.getName());
+
+        TopicRequestBody requestBody;
+        Request.Builder requestBuilder = new Request.Builder()
+                .url(sendToUrl)
+                .headers(context.properties.headers)
+                .header("Accept", context.properties.acceptType);
+
+        MediaType contentType = context.properties.contentType;
+        if (contentType.equals(KAFKA_REST_BINARY_ENCODING)
+                && !(requestData instanceof BinaryRecordRequest)) {
+            contentType = KAFKA_REST_AVRO_ENCODING;
+        }
+        requestBody = new TopicRequestBody(requestData, contentType);
+
+        return requestBuilder.post(requestBody).build();
     }
 
     @Override
@@ -179,7 +207,7 @@ class RestTopicSender<K, V> implements KafkaTopicSender<K, V> {
     }
 
     @Override
-    public void flush() throws IOException {
+    public void flush() {
         // nothing
     }
 

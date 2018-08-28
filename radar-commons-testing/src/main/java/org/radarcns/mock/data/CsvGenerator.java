@@ -18,7 +18,6 @@ package org.radarcns.mock.data;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import org.radarcns.kafka.ObservationKey;
 import org.radarcns.mock.config.MockDataConfig;
 import org.radarcns.util.CsvWriter;
@@ -52,12 +51,7 @@ public final class CsvGenerator {
             throws IOException {
         File file = config.getDataFile(root);
 
-        try {
-            generate(new RecordGenerator<>(config, ObservationKey.class), duration, file);
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException
-                | ClassNotFoundException ex) {
-            throw new IOException("Failed to generate data", ex);
-        }
+        generate(new RecordGenerator<>(config, ObservationKey.class), duration, file);
     }
 
     /**

@@ -26,6 +26,12 @@ public class ParsedSchemaMetadata {
     private Integer id;
     private final Schema schema;
 
+    /**
+     * Schema metadata.
+     * @param id schema ID, may be null.
+     * @param version schema version, may be null.
+     * @param schema parsed schema.
+     */
     public ParsedSchemaMetadata(Integer id, Integer version, Schema schema) {
         this.id = id;
         this.version = version;

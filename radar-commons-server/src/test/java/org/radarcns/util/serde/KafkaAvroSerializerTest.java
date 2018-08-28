@@ -34,8 +34,8 @@ import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.Test;
 import org.radarcns.kafka.ObservationKey;
-import org.radarcns.producer.rest.SchemaRetriever;
 import org.radarcns.producer.rest.ParsedSchemaMetadata;
+import org.radarcns.producer.rest.SchemaRetriever;
 
 public class KafkaAvroSerializerTest {
 

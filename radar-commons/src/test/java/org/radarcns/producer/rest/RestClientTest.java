@@ -16,10 +16,11 @@
 
 package org.radarcns.producer.rest;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
-import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.concurrent.TimeUnit;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -39,7 +40,10 @@ public class RestClientTest {
     public void setUp() {
         server = new MockWebServer();
         config = new ServerConfig(server.url("base").url());
-        client = new RestClient(config, 1, new ManagedConnectionPool());
+        client = RestClient.newClient()
+                .server(config)
+                .timeout(1, TimeUnit.SECONDS)
+                .build();
     }
 
     @Test

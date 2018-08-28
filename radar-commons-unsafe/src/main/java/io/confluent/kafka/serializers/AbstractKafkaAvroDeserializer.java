@@ -17,6 +17,14 @@
 package io.confluent.kafka.serializers;
 
 import io.confluent.kafka.schemaregistry.client.SchemaMetadata;
+import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import kafka.utils.VerifiableProperties;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericContainer;
 import org.apache.avro.generic.GenericDatumReader;
@@ -28,16 +36,6 @@ import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.common.errors.SerializationException;
 import org.codehaus.jackson.node.JsonNodeFactory;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
-import kafka.utils.VerifiableProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -15,7 +15,6 @@
  */
 
 apply plugin: 'application'
-apply plugin: 'com.jfrog.artifactory'
 
 mainClassName = 'org.radarcns.mock.MockProducer'
 
