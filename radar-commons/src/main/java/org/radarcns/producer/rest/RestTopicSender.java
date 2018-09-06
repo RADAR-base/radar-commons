@@ -178,13 +178,13 @@ class RestTopicSender<K, V>
         } else {
             RequestBody body = request.body();
             MediaType contentType = body != null ? body.contentType() : null;
-            // the connection may have been downgraded already
-            if (contentType != null && !contentType.equals(KAFKA_REST_AVRO_LEGACY_ENCODING)) {
-                state.didConnect();
-                logger.warn("Content-Type changed during request");
-            } else {
+            if (contentType == null || contentType.equals(KAFKA_REST_AVRO_LEGACY_ENCODING)) {
                 throw fail(request, response,
                     new IOException("Content-Type " + contentType + " not accepted by server."));
+            } else {
+                // the connection may have been downgraded already
+                state.didConnect();
+                logger.warn("Content-Type changed during request");
             }
         }
     }
