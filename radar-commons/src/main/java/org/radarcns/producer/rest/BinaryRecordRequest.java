@@ -84,8 +84,9 @@ public class BinaryRecordRequest<K, V> implements RecordRequest<K, V> {
         binaryEncoder.writeInt(keyVersion);
         binaryEncoder.writeInt(valueVersion);
 
-        // do not send project ID and user ID; those are encoded in the serialization
+        // do not send project ID; it is encoded in the serialization
         binaryEncoder.writeIndex(0);
+        // do not send user ID; it is encoded in the serialization
         binaryEncoder.writeIndex(0);
         String sourceId = ((IndexedRecord) records.getKey()).get(sourceIdPos).toString();
         binaryEncoder.writeString(sourceId);
