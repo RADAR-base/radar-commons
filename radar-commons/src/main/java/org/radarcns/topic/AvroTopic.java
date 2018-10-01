@@ -147,14 +147,12 @@ public class AvroTopic<K, V> extends KafkaTopic {
 
         AvroTopic topic = (AvroTopic) o;
 
-        return keyClass == topic.getKeyClass() && valueClass == topic.getValueClass();
+        return keyClass == topic.getKeyClass() && valueClass == topic.getValueClass()
+            && keySchema.equals(topic.getKeySchema()) && valueSchema.equals(topic.getValueSchema());
     }
 
     @Override
     public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + keyClass.hashCode();
-        result = 31 * result + valueClass.hashCode();
-        return result;
+        return Objects.hash(getName(), keyClass, valueClass, keySchema, valueSchema);
     }
 }
