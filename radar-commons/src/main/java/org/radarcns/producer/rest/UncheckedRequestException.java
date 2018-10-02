@@ -46,7 +46,7 @@ public class UncheckedRequestException extends RuntimeException {
         if (getCause() instanceof IOException) {
             throw (IOException)getCause();
         } else {
-            throw this;
+            throw new IOException(this);
         }
     }
 

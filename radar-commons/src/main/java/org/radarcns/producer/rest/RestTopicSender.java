@@ -30,6 +30,7 @@ import java.util.Objects;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.apache.avro.SchemaValidationException;
 import org.apache.avro.generic.IndexedRecord;
@@ -174,9 +175,18 @@ class RestTopicSender<K, V>
             sender.useLegacyEncoding(
                     KAFKA_REST_ACCEPT_LEGACY_ENCODING, KAFKA_REST_AVRO_LEGACY_ENCODING,
                     false);
+        } else {
+            RequestBody body = request.body();
+            MediaType contentType = body != null ? body.contentType() : null;
+            if (contentType == null || contentType.equals(KAFKA_REST_AVRO_LEGACY_ENCODING)) {
+                throw fail(request, response,
+                    new IOException("Content-Type " + contentType + " not accepted by server."));
+            } else {
+                // the connection may have been downgraded already
+                state.didConnect();
+                logger.warn("Content-Type changed during request");
+            }
         }
-
-        throw fail(request, response, new IOException("Content-Type not accepted"));
     }
 
     private Request buildRequest(RestSender.RequestContext context, RecordData<K, V> records)

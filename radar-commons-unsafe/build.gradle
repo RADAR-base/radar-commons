@@ -43,25 +43,11 @@ pmd {
     sourceSets = []
 }
 
-jacocoTestReport {
-    reports {
-        xml.enabled true
-        csv.enabled false
-        html.enabled false
-    }
-}
-
 task downloadDependencies(type: Exec) {
     configurations.testRuntime.files
     configurations.codacy.files
     configurations.jacocoAnt.files
     commandLine 'echo', 'Downloaded all dependencies'
-}
-
-task sendCoverageToCodacy(type: JavaExec, dependsOn: jacocoTestReport) {
-    main = 'com.codacy.CodacyCoverageReporter'
-    classpath = configurations.codacy
-    args = ['-l', 'Java', '-r', "${buildDir}/reports/jacoco/test/jacocoTestReport.xml"]
 }
 
 //---------------------------------------------------------------------------//

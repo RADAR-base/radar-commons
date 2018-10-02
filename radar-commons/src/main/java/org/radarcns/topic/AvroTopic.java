@@ -152,9 +152,6 @@ public class AvroTopic<K, V> extends KafkaTopic {
 
     @Override
     public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + keyClass.hashCode();
-        result = 31 * result + valueClass.hashCode();
-        return result;
+        return Objects.hash(getName(), keyClass, valueClass);
     }
 }
