@@ -66,6 +66,8 @@ public final class AvroDataMapperFactory {
                 default:
                     break;
             }
+            // TODO: bytes -> string conversion using Base64
+            // TODO: more testing of fixed -> bytes and back and their default values
             switch (from.getType()) {
                 case RECORD:
                     return mapRecord(from, to);
