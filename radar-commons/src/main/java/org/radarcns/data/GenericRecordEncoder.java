@@ -19,7 +19,6 @@ package org.radarcns.data;
 import java.io.IOException;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumWriter;
-import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.EncoderFactory;
 
 /** An AvroEncoder to encode GenericRecord classes. */
@@ -38,9 +37,6 @@ public class GenericRecordEncoder implements AvroEncoder {
 
     @Override
     public <T> AvroWriter<T> writer(Schema schema, Class<? extends T> clazz) throws IOException {
-        if (!GenericRecord.class.isAssignableFrom(clazz)) {
-            throw new IllegalArgumentException("Can only newClient readers for SpecificRecords.");
-        }
         return new AvroRecordWriter<>(
                 encoderFactory, schema, new GenericDatumWriter<T>(schema), binary);
     }

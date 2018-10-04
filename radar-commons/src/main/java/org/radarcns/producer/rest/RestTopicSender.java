@@ -36,7 +36,6 @@ import org.apache.avro.SchemaValidationException;
 import org.apache.avro.generic.IndexedRecord;
 import org.radarcns.data.AvroRecordData;
 import org.radarcns.data.RecordData;
-import org.radarcns.data.SchemaReadValidator;
 import org.radarcns.producer.AuthenticationException;
 import org.radarcns.producer.KafkaTopicSender;
 import org.radarcns.topic.AvroTopic;
@@ -48,8 +47,6 @@ class RestTopicSender<K, V>
     private static final Logger logger = LoggerFactory.getLogger(RestTopicSender.class);
 
     private final AvroTopic<K, V> topic;
-    private final SchemaReadValidator schemaValueValidator;
-    private final SchemaReadValidator schemaKeyValidator;
     private RecordRequest<K, V> requestData;
     private final RestSender sender;
     private final ConnectionState state;
@@ -62,8 +59,6 @@ class RestTopicSender<K, V>
                     "Cannot assign non-avro records to rest topic sender");
         }
         this.topic = topic;
-        this.schemaKeyValidator = new SchemaReadValidator(topic.getKeySchema());
-        this.schemaValueValidator = new SchemaReadValidator(topic.getValueSchema());
         this.sender = sender;
         this.state = state;
 
@@ -147,11 +142,8 @@ class RestTopicSender<K, V>
         try {
             keyMetadata = retriever.getOrSetSchemaMetadata(
                     sendTopic, false, topic.getKeySchema(), -1);
-            schemaKeyValidator.validate(keyMetadata);
-
             valueMetadata = retriever.getOrSetSchemaMetadata(
                     sendTopic, true, topic.getValueSchema(), -1);
-            schemaValueValidator.validate(valueMetadata);
         } catch (IOException ex) {
             throw new IOException("Failed to get schemas for topic " + topic, ex);
         }

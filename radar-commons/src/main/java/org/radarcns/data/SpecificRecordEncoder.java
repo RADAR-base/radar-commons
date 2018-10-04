@@ -20,7 +20,6 @@ import java.io.IOException;
 import org.apache.avro.Schema;
 import org.apache.avro.io.EncoderFactory;
 import org.apache.avro.specific.SpecificDatumWriter;
-import org.apache.avro.specific.SpecificRecord;
 
 /** An AvroEncoder to encode known SpecificRecord classes. */
 public class SpecificRecordEncoder implements AvroEncoder {
@@ -38,9 +37,6 @@ public class SpecificRecordEncoder implements AvroEncoder {
 
     @Override
     public <T> AvroWriter<T> writer(Schema schema, Class<? extends T> clazz) throws IOException {
-        if (!SpecificRecord.class.isAssignableFrom(clazz)) {
-            throw new IllegalArgumentException("Can only create writers for SpecificRecords.");
-        }
         return new AvroRecordWriter<>(encoderFactory, schema, new SpecificDatumWriter<T>(schema),
                 binary);
     }
