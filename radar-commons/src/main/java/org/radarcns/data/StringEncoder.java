@@ -18,12 +18,16 @@ package org.radarcns.data;
 
 import java.io.IOException;
 import org.apache.avro.Schema;
+import org.apache.avro.Schema.Type;
+import org.apache.avro.SchemaValidationException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectWriter;
+import org.radarcns.producer.rest.ParsedSchemaMetadata;
 
 /** Encodes a String as Avro. */
 public class StringEncoder implements AvroEncoder, AvroEncoder.AvroWriter<String> {
     private static final ObjectWriter JSON_ENCODER = new ObjectMapper().writer();
+    private ParsedSchemaMetadata readerSchema;
 
     @SuppressWarnings("unchecked")
     @Override
@@ -39,5 +43,23 @@ public class StringEncoder implements AvroEncoder, AvroEncoder.AvroWriter<String
     @Override
     public byte[] encode(String object) throws IOException {
         return JSON_ENCODER.writeValueAsBytes(object);
+    }
+
+    @Override
+    public void setReaderSchema(ParsedSchemaMetadata readerSchema)
+            throws SchemaValidationException {
+        if (readerSchema.getSchema().getType() != Type.STRING) {
+            throw new SchemaValidationException(
+                    Schema.create(Type.STRING),
+                    readerSchema.getSchema(),
+                    new IllegalArgumentException("Cannot convert type to STRING"));
+        }
+        this.readerSchema = readerSchema;
+
+    }
+
+    @Override
+    public ParsedSchemaMetadata getReaderSchema() {
+        return readerSchema;
     }
 }

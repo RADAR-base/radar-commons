@@ -1,12 +1,8 @@
 package org.radarcns.data;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.topic.AvroTopic;
 
 /**
@@ -51,30 +47,6 @@ public class AvroRecordData<K, V> implements RecordData<K, V> {
     @Override
     public Iterator<V> iterator() {
         return records.iterator();
-    }
-
-    /**
-     * Get an Avro encoder for given settings. This only works for
-     * {@link org.apache.avro.generic.IndexedRecord} instances.
-     * @param schema schema to encode with.
-     * @param cls class type to encode.
-     * @param binary true if the converter should yield binary data, false otherwise.
-     * @param <T> type of data
-     * @return new Avro writer.
-     * @throws IOException if the record converter could not be created.
-     * @throws IllegalArgumentException if the supplied class is not an IndexedRecord.
-     */
-    public static <T> AvroEncoder.AvroWriter<T> getEncoder(
-            Schema schema, Class<? extends T> cls, boolean binary) throws IOException {
-        AvroEncoder encoder;
-        if (SpecificRecord.class.isAssignableFrom(cls)) {
-            encoder = new SpecificRecordEncoder(binary);
-        } else if (GenericRecord.class.isAssignableFrom(cls)) {
-            encoder = new GenericRecordEncoder(binary);
-        } else {
-            throw new IllegalArgumentException("Cannot get encoder for non-avro records");
-        }
-        return encoder.writer(schema, cls);
     }
 
     @Override

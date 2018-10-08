@@ -23,6 +23,7 @@ import org.apache.avro.io.DatumWriter;
 import org.apache.avro.io.Encoder;
 import org.apache.avro.io.EncoderFactory;
 import org.radarcns.data.AvroEncoder.AvroWriter;
+import org.radarcns.producer.rest.ParsedSchemaMetadata;
 
 /**
  * Encodes Avro records to bytes.
@@ -31,6 +32,7 @@ public class AvroRecordWriter<T> implements AvroWriter<T> {
     private final Encoder encoder;
     private final ByteArrayOutputStream out;
     private final DatumWriter<T> writer;
+    private ParsedSchemaMetadata serverSchema;
 
     /**
      * Writer for a given encoder, schema and writer.
@@ -61,5 +63,15 @@ public class AvroRecordWriter<T> implements AvroWriter<T> {
         } finally {
             out.reset();
         }
+    }
+
+    @Override
+    public void setReaderSchema(ParsedSchemaMetadata readerSchema) {
+        this.serverSchema = readerSchema;
+    }
+
+    @Override
+    public ParsedSchemaMetadata getReaderSchema() {
+        return serverSchema;
     }
 }

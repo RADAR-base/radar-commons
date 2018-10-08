@@ -26,7 +26,9 @@ import org.apache.avro.SchemaValidationException;
 import org.apache.avro.generic.IndexedRecord;
 import org.apache.avro.io.BinaryEncoder;
 import org.apache.avro.io.EncoderFactory;
+import org.radarcns.data.AvroEncoder.AvroWriter;
 import org.radarcns.data.RecordData;
+import org.radarcns.data.RemoteSchemaEncoder;
 import org.radarcns.topic.AvroTopic;
 
 /**
@@ -39,8 +41,8 @@ public class BinaryRecordRequest<K, V> implements RecordRequest<K, V> {
     private int valueVersion;
     private RecordData<K, V> records;
     private BinaryEncoder binaryEncoder;
+    private final AvroWriter<V> valueEncoder;
     private int sourceIdPos;
-    private final SchemaEncoder<V> valueAvro;
 
     /**
      * Binary record request for given topic.
@@ -65,7 +67,8 @@ public class BinaryRecordRequest<K, V> implements RecordRequest<K, V> {
         } else {
             sourceIdPos = sourceIdField.pos();
         }
-        valueAvro = new SchemaEncoder<>(topic.getValueSchema(), topic.getValueClass(), true);
+        valueEncoder = new RemoteSchemaEncoder(true)
+                .writer(topic.getValueSchema(), topic.getValueClass());
     }
 
     @Override
@@ -87,7 +90,7 @@ public class BinaryRecordRequest<K, V> implements RecordRequest<K, V> {
 
         for (V record : records) {
             binaryEncoder.startItem();
-            binaryEncoder.writeBytes(valueAvro.convertAndEncode(record));
+            binaryEncoder.writeBytes(valueEncoder.encode(record));
         }
         binaryEncoder.writeArrayEnd();
         binaryEncoder.flush();
@@ -100,11 +103,11 @@ public class BinaryRecordRequest<K, V> implements RecordRequest<K, V> {
 
     @Override
     public void prepare(ParsedSchemaMetadata keySchema, ParsedSchemaMetadata valueSchema,
-            RecordData<K, V> records) throws SchemaValidationException, IOException {
+            RecordData<K, V> records) throws SchemaValidationException {
         keyVersion = keySchema.getVersion() == null ? 0 : keySchema.getVersion();
         valueVersion = valueSchema.getVersion() == null ? 0 : valueSchema.getVersion();
 
-        valueAvro.updateServerSchema(valueSchema);
+        valueEncoder.setReaderSchema(valueSchema);
 
         this.records = records;
     }

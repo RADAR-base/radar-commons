@@ -23,7 +23,9 @@ import okio.Buffer;
 import okio.BufferedSink;
 import org.apache.avro.SchemaValidationException;
 import org.json.JSONObject;
+import org.radarcns.data.AvroEncoder.AvroWriter;
 import org.radarcns.data.RecordData;
+import org.radarcns.data.RemoteSchemaEncoder;
 import org.radarcns.topic.AvroTopic;
 
 /**
@@ -37,8 +39,8 @@ public class JsonRecordRequest<K, V> implements RecordRequest<K, V> {
     public static final byte[] VALUE = utf8(",\"value\":");
     public static final byte[] END = utf8("]}");
 
-    private final SchemaEncoder<K> keyAvro;
-    private final SchemaEncoder<V> valueAvro;
+    private final AvroWriter<K> keyEncoder;
+    private final AvroWriter<V> valueEncoder;
 
     private RecordData<K, V> records;
 
@@ -48,8 +50,10 @@ public class JsonRecordRequest<K, V> implements RecordRequest<K, V> {
      * @throws IllegalStateException if key or value encoders could not be made.
      */
     public JsonRecordRequest(AvroTopic<K, V> topic) {
-        this.keyAvro = new SchemaEncoder<>(topic.getKeySchema(), topic.getKeyClass(), false);
-        this.valueAvro = new SchemaEncoder<>(topic.getValueSchema(), topic.getValueClass(), false);
+        RemoteSchemaEncoder schemaEncoder = new RemoteSchemaEncoder(false);
+
+        this.keyEncoder = schemaEncoder.writer(topic.getKeySchema(), topic.getKeyClass());
+        this.valueEncoder = schemaEncoder.writer(topic.getValueSchema(), topic.getValueClass());
     }
 
     /**
@@ -63,13 +67,13 @@ public class JsonRecordRequest<K, V> implements RecordRequest<K, V> {
     public void writeToSink(BufferedSink sink) throws IOException {
         sink.writeByte('{');
         sink.write(KEY_SCHEMA_ID);
-        sink.write(utf8(String.valueOf(keyAvro.getServerSchema().getId())));
+        sink.write(utf8(String.valueOf(keyEncoder.getReaderSchema().getId())));
         sink.write(VALUE_SCHEMA_ID);
-        sink.write(utf8(String.valueOf(valueAvro.getServerSchema().getId())));
+        sink.write(utf8(String.valueOf(valueEncoder.getReaderSchema().getId())));
 
         sink.write(RECORDS);
 
-        byte[] key = keyAvro.convertAndEncode(records.getKey());
+        byte[] key = keyEncoder.encode(records.getKey());
 
         boolean first = true;
         for (V record : records) {
@@ -82,7 +86,7 @@ public class JsonRecordRequest<K, V> implements RecordRequest<K, V> {
             sink.write(key);
 
             sink.write(VALUE);
-            sink.write(valueAvro.convertAndEncode(record));
+            sink.write(valueEncoder.encode(record));
             sink.writeByte('}');
         }
         sink.write(END);
@@ -95,10 +99,9 @@ public class JsonRecordRequest<K, V> implements RecordRequest<K, V> {
 
     @Override
     public void prepare(ParsedSchemaMetadata keySchema, ParsedSchemaMetadata valueSchema,
-            RecordData<K, V> records)
-        throws IOException, SchemaValidationException {
-        keyAvro.updateServerSchema(keySchema);
-        valueAvro.updateServerSchema(valueSchema);
+            RecordData<K, V> records) throws SchemaValidationException {
+        keyEncoder.setReaderSchema(keySchema);
+        valueEncoder.setReaderSchema(valueSchema);
         this.records = records;
     }
 

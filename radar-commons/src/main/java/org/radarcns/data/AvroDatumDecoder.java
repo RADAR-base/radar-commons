@@ -19,29 +19,36 @@ package org.radarcns.data;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericData;
 import org.apache.avro.io.BinaryDecoder;
 import org.apache.avro.io.DatumReader;
 import org.apache.avro.io.Decoder;
 import org.apache.avro.io.DecoderFactory;
-import org.apache.avro.specific.SpecificDatumReader;
-import org.apache.avro.specific.SpecificRecord;
 
 /** An AvroDecoder to decode known SpecificRecord classes. */
-public class SpecificRecordDecoder implements AvroDecoder {
+public class AvroDatumDecoder implements AvroDecoder {
     private final DecoderFactory decoderFactory;
     private final boolean binary;
+    private final GenericData genericData;
 
-    public SpecificRecordDecoder(boolean binary) {
+    /**
+     * Decoder for Avro data.
+     * @param genericData instance of GenericData or SpecificData that should implement
+     *                    {@link GenericData#createDatumReader(Schema)}.
+     * @param binary true if the read data has Avro binary encoding, false if it has Avro JSON
+     *               encoding.
+     */
+    public AvroDatumDecoder(GenericData genericData, boolean binary) {
+        this.genericData = genericData;
         this.decoderFactory = DecoderFactory.get();
         this.binary = binary;
     }
 
     @Override
     public <T> AvroReader<T> reader(Schema schema, Class<? extends T> clazz) {
-        if (!SpecificRecord.class.isAssignableFrom(clazz)) {
-            throw new IllegalArgumentException("Can only create readers for SpecificRecords.");
-        }
-        return new AvroRecordReader<>(schema, new SpecificDatumReader<T>(schema));
+        @SuppressWarnings("unchecked")
+        DatumReader<T> reader = genericData.createDatumReader(schema);
+        return new AvroRecordReader<>(schema, reader);
     }
 
     private class AvroRecordReader<T> implements AvroReader<T> {
