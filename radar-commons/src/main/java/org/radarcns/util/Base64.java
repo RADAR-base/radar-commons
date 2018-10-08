@@ -35,15 +35,13 @@ import java.util.Arrays;
  * <a href="http://www.ietf.org/rfc/rfc4648.txt">RFC 4648</a> and
  * <a href="http://www.ietf.org/rfc/rfc2045.txt">RFC 2045</a>.
  *
- * <ul>
- * <li><a name="basic"><b>Basic</b></a>
- * <p> Uses "The Base64 Alphabet" as specified in Table 1 of
+ * <p>Uses "The Base64 Alphabet" as specified in Table 1 of
  *     RFC 4648 and RFC 2045 for encoding and decoding operation.
  *     The encoder does not add any line feed (line separator)
  *     character. The decoder rejects data that contains characters
- *     outside the base64 alphabet.</p></li>
+ *     outside the base64 alphabet.</p>
  *
- * <p> Unless otherwise noted, passing a {@code null} argument to a
+ * <p>Unless otherwise noted, passing a {@code null} argument to a
  * method of this class will cause a {@link java.lang.NullPointerException
  * NullPointerException} to be thrown.
  *
@@ -69,10 +67,10 @@ public class Base64 {
      * This class implements an encoder for encoding byte data using
      * the Base64 encoding scheme as specified in RFC 4648 and RFC 2045.
      *
-     * <p> Instances of {@link Encoder} class are safe for use by
+     * <p>Instances of {@link Encoder} class are safe for use by
      * multiple concurrent threads.
      *
-     * <p> Unless otherwise noted, passing a {@code null} argument to
+     * <p>Unless otherwise noted, passing a {@code null} argument to
      * a method of this class will cause a
      * {@link java.lang.NullPointerException NullPointerException} to
      * be thrown.
@@ -80,15 +78,12 @@ public class Base64 {
      * @since   1.8
      */
     public static class Encoder {
-        private Encoder() {
-        }
-
         /**
          * This array is a lookup table that translates 6-bit positive integer
          * index values into their "Base64 Alphabet" equivalents as specified
          * in "Table 1: The Base64 Alphabet" of RFC 2045 (and RFC 4648).
          */
-        private static final char[] toBase64 = {
+        private static final byte[] BASE_64_BYTE = {
                 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
                 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
                 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
@@ -97,6 +92,9 @@ public class Base64 {
         };
 
         static final Encoder RFC4648 = new Encoder();
+
+        private Encoder() {
+        }
 
         private int outLength(int srclen) {
             return 4 * ((srclen + 2) / 3);
@@ -116,53 +114,27 @@ public class Base64 {
             int len = outLength(src.length);          // dst array size
             byte[] dst = new byte[len];
             int ret = encode0(src, src.length, dst);
-            if (ret != dst.length)
+            if (ret != dst.length) {
                 return Arrays.copyOf(dst, ret);
+            }
             return dst;
         }
 
-        /**
-         * Encodes all bytes from the specified byte array using the
-         * {@link Base64} encoding scheme, writing the resulting bytes to the
-         * given output byte array, starting at offset 0.
-         *
-         * <p> It is the responsibility of the invoker of this method to make
-         * sure the output byte array {@code dst} has enough space for encoding
-         * all bytes from the input byte array. No bytes will be written to the
-         * output byte array if the output byte array is not big enough.
-         *
-         * @param   src
-         *          the byte array to encode
-         * @param   dst
-         *          the output byte array
-         * @return  The number of bytes written to the output byte array
-         *
-         * @throws  IllegalArgumentException if {@code dst} does not have enough
-         *          space for encoding all input bytes.
-         */
-        public int encode(byte[] src, byte[] dst) {
-            int len = outLength(src.length);         // dst array size
-            if (dst.length < len)
-                throw new IllegalArgumentException(
-                        "Output byte array is too small for encoding all input bytes");
-            return encode0(src, src.length, dst);
-        }
-
         private int encode0(byte[] src, int end, byte[] dst) {
-            char[] base64 = toBase64;
             int sp = 0;
             int slen = end / 3 * 3;
             int dp = 0;
             while (sp < slen) {
                 int sl0 = Math.min(sp + slen, slen);
-                for (int sp0 = sp, dp0 = dp ; sp0 < sl0; ) {
-                    int bits = (src[sp0++] & 0xff) << 16 |
-                            (src[sp0++] & 0xff) <<  8 |
-                            (src[sp0++] & 0xff);
-                    dst[dp0++] = (byte)base64[(bits >>> 18) & 0x3f];
-                    dst[dp0++] = (byte)base64[(bits >>> 12) & 0x3f];
-                    dst[dp0++] = (byte)base64[(bits >>> 6)  & 0x3f];
-                    dst[dp0++] = (byte)base64[bits & 0x3f];
+                int dp0 = dp;
+                for (int sp0 = sp; sp0 < sl0; ) {
+                    int bits = (src[sp0++] & 0xff) << 16
+                            | (src[sp0++] & 0xff) <<  8
+                            | (src[sp0++] & 0xff);
+                    dst[dp0++] = BASE_64_BYTE[(bits >>> 18) & 0x3f];
+                    dst[dp0++] = BASE_64_BYTE[(bits >>> 12) & 0x3f];
+                    dst[dp0++] = BASE_64_BYTE[(bits >>> 6)  & 0x3f];
+                    dst[dp0++] = BASE_64_BYTE[bits & 0x3f];
                 }
                 int dlen = (sl0 - sp) / 3 * 4;
                 dp += dlen;
@@ -170,15 +142,15 @@ public class Base64 {
             }
             if (sp < end) {               // 1 or 2 leftover bytes
                 int b0 = src[sp++] & 0xff;
-                dst[dp++] = (byte)base64[b0 >> 2];
+                dst[dp++] = BASE_64_BYTE[b0 >> 2];
                 if (sp == end) {
-                    dst[dp++] = (byte)base64[(b0 << 4) & 0x3f];
+                    dst[dp++] = BASE_64_BYTE[(b0 << 4) & 0x3f];
                     dst[dp++] = '=';
                     dst[dp++] = '=';
                 } else {
                     int b1 = src[sp] & 0xff;
-                    dst[dp++] = (byte)base64[(b0 << 4) & 0x3f | (b1 >> 4)];
-                    dst[dp++] = (byte)base64[(b1 << 2) & 0x3f];
+                    dst[dp++] = BASE_64_BYTE[(b0 << 4) & 0x3f | (b1 >> 4)];
+                    dst[dp++] = BASE_64_BYTE[(b1 << 2) & 0x3f];
                     dst[dp++] = '=';
                 }
             }
