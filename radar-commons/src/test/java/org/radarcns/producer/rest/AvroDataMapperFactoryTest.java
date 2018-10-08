@@ -77,6 +77,11 @@ public class AvroDataMapperFactoryTest {
                     + "{\"name\": \"se3\", \"type\": \"string\"},"
                     + "{\"name\": \"a\", \"type\": {\"type\":\"array\", \"items\": {\"type\": \"int\"}}},"
                     + "{\"name\": \"m\", \"type\": {\"type\":\"map\", \"values\": {\"type\": \"int\"}}},"
+                    + "{\"name\": \"fS\", \"type\": {\"name\": \"f1\", \"type\":\"fixed\", \"size\": 2}},"
+                    + "{\"name\": \"bS\", \"type\": \"bytes\"},"
+                    + "{\"name\": \"fb\", \"type\": {\"name\": \"f2\",\"type\": \"fixed\", \"size\": 2}},"
+                    + "{\"name\": \"bf\", \"type\": \"bytes\"},"
+                    + "{\"name\": \"bfd\", \"type\": \"bytes\"},"
                     + "{\"name\": \"unmapped\", \"type\": \"int\"}"
                     + "]}");
     private static final Schema ALL_TYPES_ALT_SCHEMA = new Schema.Parser().parse(
@@ -95,7 +100,12 @@ public class AvroDataMapperFactoryTest {
                     + "{\"name\": \"se2\", \"type\": {\"name\": \"SE2\", \"type\": \"enum\", \"symbols\": [\"A\", \"B\"]}, \"default\": \"A\"},"
                     + "{\"name\": \"se3\", \"type\": {\"name\": \"SE3\", \"type\": \"enum\", \"symbols\": [\"A\", \"B\"]}, \"default\": \"A\"},"
                     + "{\"name\": \"a\", \"type\": {\"type\":\"array\", \"items\": {\"type\": \"float\"}}},"
-                    + "{\"name\": \"m\", \"type\": {\"type\":\"map\", \"values\": {\"type\": \"float\"}}}"
+                    + "{\"name\": \"m\", \"type\": {\"type\":\"map\", \"values\": {\"type\": \"float\"}}},"
+                    + "{\"name\": \"fS\", \"type\": \"string\"},"
+                    + "{\"name\": \"bS\", \"type\": \"string\"},"
+                    + "{\"name\": \"fb\", \"type\": \"bytes\"},"
+                    + "{\"name\": \"bf\", \"type\": {\"name\": \"f3\",\"type\":\"fixed\", \"size\": 2}, \"default\": \"aa\"},"
+                    + "{\"name\": \"bfd\", \"type\": {\"name\": \"f4\",\"type\":\"fixed\", \"size\": 2}, \"default\": \"aa\"}"
                     + "]}");
     private AvroDataMapperFactory factory;
 
@@ -158,6 +168,11 @@ public class AvroDataMapperFactoryTest {
                 "\"se3\":\"g\"," +
                 "\"a\":[1,2]," +
                 "\"m\":{\"a\":9}," +
+                "\"fS\":\"ab\"," +
+                "\"bS\":\"ab\"," +
+                "\"fb\":\"ab\"," +
+                "\"bf\":\"ab\"," +
+                "\"bfd\":\"abc\"," +
                 "\"unmapped\":10}");
 
         assertEquals("{" +
@@ -175,8 +190,13 @@ public class AvroDataMapperFactoryTest {
                 "\"se2\":\"B\"," +
                 "\"se3\":\"A\"," +
                 "\"a\":[1.0,2.0]," +
-                "\"m\":{\"a\":9.0}}", actual);
-
+                "\"m\":{\"a\":9.0}," +
+                "\"fS\":\"YWI=\"," +
+                "\"bS\":\"YWI=\"," +
+                "\"fb\":\"ab\"," +
+                "\"bf\":\"ab\"," +
+                "\"bfd\":\"aa\"" +
+                "}", actual);
     }
 
     private String doMap(Schema from, Schema to, String value)

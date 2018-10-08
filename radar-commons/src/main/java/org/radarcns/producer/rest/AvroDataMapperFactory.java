@@ -2,18 +2,24 @@ package org.radarcns.producer.rest;
 
 import static org.apache.avro.JsonProperties.NULL_VALUE;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.avro.Schema;
+import org.apache.avro.Schema.Type;
 import org.apache.avro.SchemaValidationException;
 import org.apache.avro.generic.GenericData;
+import org.apache.avro.generic.GenericData.Fixed;
 import org.apache.avro.generic.GenericEnumSymbol;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericRecordBuilder;
 import org.apache.avro.generic.IndexedRecord;
+import org.radarcns.util.Base64;
+import org.radarcns.util.Base64.Encoder;
 
 @SuppressWarnings({"PMD"})
 public final class AvroDataMapperFactory {
@@ -66,8 +72,6 @@ public final class AvroDataMapperFactory {
                 default:
                     break;
             }
-            // TODO: bytes -> string conversion using Base64
-            // TODO: more testing of fixed -> bytes and back and their default values
             switch (from.getType()) {
                 case RECORD:
                     return mapRecord(from, to);
@@ -76,7 +80,8 @@ public final class AvroDataMapperFactory {
                 case MAP:
                     return mapMap(from, to);
                 case FIXED:
-                    return mapFixed(from, to);
+                case BYTES:
+                    return mapBytes(from, to, defaultVal);
                 case INT:
                 case LONG:
                 case DOUBLE:
@@ -381,12 +386,54 @@ public final class AvroDataMapperFactory {
         };
     }
 
-    private AvroDataMapper mapFixed(Schema from, Schema to)
+    private AvroDataMapper mapBytes(Schema from, final Schema to, final Object defaultVal)
             throws SchemaValidationException {
-        if (to.getType() == Schema.Type.BYTES
-                || to.getType() == Schema.Type.FIXED
-                && to.getFixedSize() == from.getFixedSize()) {
+        if (from.getType() == to.getType()
+                && (from.getType() == Type.BYTES
+                || (from.getType() == Type.FIXED && from.getFixedSize() == to.getFixedSize()))) {
             return IDENTITY_MAPPER;
+        } else if (from.getType() == Type.FIXED && to.getType() == Schema.Type.BYTES) {
+            return new AvroDataMapper() {
+                @Override
+                public Object convertAvro(Object object) {
+                    return ByteBuffer.wrap(((Fixed)object).bytes());
+                }
+            };
+        } else if (from.getType() == Type.BYTES && to.getType() == Type.FIXED) {
+            if (defaultVal == null) {
+                throw new SchemaValidationException(to, from, new IllegalArgumentException(
+                        "Cannot map bytes to fixed without default value"));
+            }
+            return new AvroDataMapper() {
+                @Override
+                public Object convertAvro(Object object) {
+                    byte[] bytes = ((ByteBuffer) object).array();
+                    if (bytes.length == to.getFixedSize()) {
+                        return GenericData.get().createFixed(null, bytes, to);
+                    } else {
+                        return GenericData.get().createFixed(null, (byte[]) defaultVal, to);
+                    }
+                }
+            };
+        } else if (to.getType() == Type.STRING) {
+            final Encoder encoder = Base64.getEncoder();
+            if (from.getType() == Type.FIXED) {
+                return new AvroDataMapper() {
+                    @Override
+                    public Object convertAvro(Object object) {
+                        return new String(encoder.encode(((Fixed) object).bytes()),
+                                StandardCharsets.UTF_8);
+                    }
+                };
+            } else {
+                return new AvroDataMapper() {
+                    @Override
+                    public Object convertAvro(Object object) {
+                        return new String(encoder.encode(((ByteBuffer) object).array()),
+                                StandardCharsets.UTF_8);
+                    }
+                };
+            }
         } else {
             throw new SchemaValidationException(to, from,
                     new IllegalArgumentException(
