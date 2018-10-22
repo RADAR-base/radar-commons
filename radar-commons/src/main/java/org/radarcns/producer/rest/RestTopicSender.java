@@ -33,7 +33,6 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.apache.avro.SchemaValidationException;
-import org.apache.avro.generic.IndexedRecord;
 import org.radarcns.data.AvroRecordData;
 import org.radarcns.data.RecordData;
 import org.radarcns.producer.AuthenticationException;
@@ -53,11 +52,6 @@ class RestTopicSender<K, V>
 
     RestTopicSender(AvroTopic<K, V> topic, RestSender sender, ConnectionState state)
             throws SchemaValidationException {
-        if (!IndexedRecord.class.isAssignableFrom(topic.getKeyClass())
-                || !IndexedRecord.class.isAssignableFrom(topic.getValueClass())) {
-            throw new IllegalArgumentException(
-                    "Cannot assign non-avro records to rest topic sender");
-        }
         this.topic = topic;
         this.sender = sender;
         this.state = state;

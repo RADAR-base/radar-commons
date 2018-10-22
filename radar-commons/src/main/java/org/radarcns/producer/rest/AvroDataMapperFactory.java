@@ -20,9 +20,13 @@ import org.apache.avro.generic.GenericRecordBuilder;
 import org.apache.avro.generic.IndexedRecord;
 import org.radarcns.util.Base64;
 import org.radarcns.util.Base64.Encoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @SuppressWarnings({"PMD"})
 public final class AvroDataMapperFactory {
+    private static final Logger logger = LoggerFactory.getLogger(AvroDataMapperFactory.class);
+
     public static final AvroDataMapper IDENTITY_MAPPER = new AvroDataMapper() {
         @Override
         public Object convertAvro(Object obj) {
@@ -52,9 +56,11 @@ public final class AvroDataMapperFactory {
     public AvroDataMapper createMapper(Schema from, Schema to, final Object defaultVal)
             throws SchemaValidationException {
         if (from.equals(to)) {
+            logger.debug("Using identity schema mapping from {} to {}", from, to);
             return IDENTITY_MAPPER;
         }
 
+        logger.debug("Computing custom mapping from {} to {}", from, to);
         try {
             if (to.getType() == Schema.Type.UNION || from.getType() == Schema.Type.UNION) {
                 return mapUnion(from, to, defaultVal);

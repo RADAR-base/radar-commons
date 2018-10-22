@@ -228,7 +228,7 @@ public class SchemaRetriever {
         private final long expiry;
 
         TimedSchemaMetadata(ParsedSchemaMetadata metadata) {
-            expiry = System.currentTimeMillis() + MAX_VALIDITY;
+            expiry = System.currentTimeMillis() + MAX_VALIDITY * 1000L;
             this.metadata = Objects.requireNonNull(metadata);
         }
 

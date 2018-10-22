@@ -40,9 +40,13 @@ import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import org.radarcns.config.ServerConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** REST client using OkHttp3. This class is not thread-safe. */
 public class RestClient {
+    private static final Logger logger = LoggerFactory.getLogger(RestClient.class);
+
     public static final long DEFAULT_TIMEOUT = 30;
     private static WeakReference<OkHttpClient> globalHttpClient = new WeakReference<>(null);
 
@@ -73,7 +77,7 @@ public class RestClient {
      * Make a blocking request.
      * @param request request, possibly built with {@link #requestBuilder(String)}
      * @return response to the request
-     * @throws IOException if the request failes
+     * @throws IOException if the request fails
      * @throws NullPointerException if the request is null
      */
     public Response request(Request request) throws IOException {
@@ -250,8 +254,10 @@ public class RestClient {
                 }
             }
             if (compression && gzip == null) {
+                logger.debug("Enabling GZIP compression");
                 client.addInterceptor(new GzipRequestInterceptor());
             } else if (!compression && gzip != null) {
+                logger.debug("Disabling GZIP compression");
                 client.interceptors().remove(gzip);
             }
             return this;
