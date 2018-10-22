@@ -19,6 +19,7 @@ package org.radarcns.data;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
+import org.apache.avro.specific.SpecificData;
 import org.junit.Test;
 import org.radarcns.kafka.ObservationKey;
 import org.radarcns.passive.empatica.EmpaticaE4BloodVolumePulse;
@@ -27,11 +28,11 @@ import org.radarcns.topic.AvroTopic;
 /**
  * Created by nivethika on 24-2-17.
  */
-public class SpecificRecordDecoderTest {
+public class AvroDatumDecoderTest {
 
     @Test
     public void decodeJson() throws IOException {
-        SpecificRecordDecoder decoder = new SpecificRecordDecoder(false);
+        AvroDatumDecoder decoder = new AvroDatumDecoder(SpecificData.get(), false);
         AvroTopic<ObservationKey, EmpaticaE4BloodVolumePulse> topic = new AvroTopic<>("keeeeys", ObservationKey.getClassSchema(), EmpaticaE4BloodVolumePulse.getClassSchema(), ObservationKey.class, EmpaticaE4BloodVolumePulse.class);
         AvroDecoder.AvroReader<ObservationKey> keyDecoder = decoder.reader(topic.getKeySchema(), topic.getKeyClass());
         AvroDecoder.AvroReader<EmpaticaE4BloodVolumePulse> valueDecoder = decoder.reader(topic.getValueSchema(), topic.getValueClass());
@@ -50,7 +51,7 @@ public class SpecificRecordDecoderTest {
     @Test
     public void decodeBinary() throws IOException {
 
-        SpecificRecordDecoder decoder = new SpecificRecordDecoder(true);
+        AvroDatumDecoder decoder = new AvroDatumDecoder(SpecificData.get(), true);
         AvroTopic<ObservationKey, EmpaticaE4BloodVolumePulse> topic = new AvroTopic<>("keeeeys", ObservationKey.getClassSchema(), EmpaticaE4BloodVolumePulse.getClassSchema(), ObservationKey.class, EmpaticaE4BloodVolumePulse.class);
         AvroDecoder.AvroReader<ObservationKey> keyDecoder = decoder.reader(topic.getKeySchema(), topic.getKeyClass());
         AvroDecoder.AvroReader<EmpaticaE4BloodVolumePulse> valueDecoder = decoder.reader(topic.getValueSchema(), topic.getValueClass());

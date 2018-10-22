@@ -2,10 +2,16 @@ package org.radarcns.producer.rest;
 
 import static org.junit.Assert.assertArrayEquals;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
+import java.util.zip.GZIPOutputStream;
 import okio.Buffer;
 import org.apache.avro.SchemaValidationException;
 import org.apache.avro.io.BinaryEncoder;
@@ -16,6 +22,7 @@ import org.radarcns.data.AvroRecordData;
 import org.radarcns.kafka.ObservationKey;
 import org.radarcns.kafka.RecordSet;
 import org.radarcns.passive.empatica.EmpaticaE4BloodVolumePulse;
+import org.radarcns.passive.phone.PhoneAcceleration;
 import org.radarcns.topic.AvroTopic;
 
 public class BinaryRecordRequestTest {
@@ -74,5 +81,59 @@ public class BinaryRecordRequestTest {
         encoder.flush();
 
         assertArrayEquals(EXPECTED, out.toByteArray());
+    }
+
+    @Test
+    public void testSize() throws IOException {
+
+
+        SpecificDatumWriter<PhoneAcceleration> writer = new SpecificDatumWriter<>(PhoneAcceleration.SCHEMA$);
+
+        List<ByteBuffer> records = new ArrayList<>(540);
+        try (InputStream stream = BinaryRecordRequestTest.class.getResourceAsStream("android_phone_acceleration.csv");
+                InputStreamReader reader = new InputStreamReader(stream);
+                BufferedReader br = new BufferedReader(reader)) {
+
+            String line = br.readLine();
+            BinaryEncoder encoder = null;
+
+            while (line != null) {
+                String[] values = line.split(",");
+                PhoneAcceleration acc = new PhoneAcceleration(Double.parseDouble(values[0]),
+                        Double.parseDouble(values[1]), Float.parseFloat(values[2]),
+                        Float.parseFloat(values[3]), Float.parseFloat(values[4]));
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                encoder = EncoderFactory.get().binaryEncoder(out, encoder);
+                writer.write(acc, encoder);
+                encoder.flush();
+                records.add(ByteBuffer.wrap(out.toByteArray()));
+
+                line = br.readLine();
+            }
+        }
+
+        RecordSet recordSet = RecordSet.newBuilder()
+                .setKeySchemaVersion(1)
+                .setValueSchemaVersion(2)
+                .setData(records)
+                .setProjectId(null)
+                .setUserId(null)
+                .setSourceId("596740ca-5875-4c97-87ab-a08405f36aff")
+                .build();
+
+        SpecificDatumWriter<RecordSet> recordWriter = new SpecificDatumWriter<>(RecordSet.SCHEMA$);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        BinaryEncoder encoder = EncoderFactory.get().binaryEncoder(out, null);
+        recordWriter.write(recordSet, encoder);
+        encoder.flush();
+
+        System.out.println("Size of record set with " + records.size() + " entries: " + out.size());
+
+        ByteArrayOutputStream gzippedOut = new ByteArrayOutputStream();
+        GZIPOutputStream gzipOut = new GZIPOutputStream(gzippedOut);
+        gzipOut.write(out.size());
+        gzipOut.close();
+
+        System.out.println("Gzipped size of record set with " + records.size() + " entries: " + gzippedOut.size());
     }
 }
