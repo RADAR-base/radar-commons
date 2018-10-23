@@ -234,6 +234,8 @@ public class RestSender implements KafkaSender {
      */
     public synchronized void useLegacyEncoding(String acceptEncoding,
             MediaType contentEncoding, boolean binary) {
+        logger.debug("Reverting to encoding {} -> {} (binary: {})",
+                contentEncoding, acceptEncoding, binary);
         this.requestProperties = new RequestProperties(acceptEncoding,
                 contentEncoding,
                 requestProperties.headers, binary);

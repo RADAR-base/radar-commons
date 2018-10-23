@@ -21,10 +21,11 @@ import static org.radarcns.util.Strings.utf8;
 import java.io.IOException;
 import okio.Buffer;
 import okio.BufferedSink;
+import org.apache.avro.SchemaValidationException;
 import org.json.JSONObject;
-import org.radarcns.data.AvroEncoder;
-import org.radarcns.data.AvroRecordData;
+import org.radarcns.data.AvroEncoder.AvroWriter;
 import org.radarcns.data.RecordData;
+import org.radarcns.data.RemoteSchemaEncoder;
 import org.radarcns.topic.AvroTopic;
 
 /**
@@ -38,11 +39,9 @@ public class JsonRecordRequest<K, V> implements RecordRequest<K, V> {
     public static final byte[] VALUE = utf8(",\"value\":");
     public static final byte[] END = utf8("]}");
 
-    private final AvroEncoder.AvroWriter<K> keyEncoder;
-    private final AvroEncoder.AvroWriter<V> valueEncoder;
+    private final AvroWriter<K> keyEncoder;
+    private final AvroWriter<V> valueEncoder;
 
-    private int keySchemaId;
-    private int valueSchemaId;
     private RecordData<K, V> records;
 
     /**
@@ -51,14 +50,10 @@ public class JsonRecordRequest<K, V> implements RecordRequest<K, V> {
      * @throws IllegalStateException if key or value encoders could not be made.
      */
     public JsonRecordRequest(AvroTopic<K, V> topic) {
-        try {
-            keyEncoder = AvroRecordData.getEncoder(
-                    topic.getKeySchema(), topic.getKeyClass(), false);
-            valueEncoder = AvroRecordData.getEncoder(
-                    topic.getValueSchema(), topic.getValueClass(), false);
-        } catch (IOException ex) {
-            throw new IllegalArgumentException("Cannot newClient encoder of schema.", ex);
-        }
+        RemoteSchemaEncoder schemaEncoder = new RemoteSchemaEncoder(false);
+
+        this.keyEncoder = schemaEncoder.writer(topic.getKeySchema(), topic.getKeyClass());
+        this.valueEncoder = schemaEncoder.writer(topic.getValueSchema(), topic.getValueClass());
     }
 
     /**
@@ -72,9 +67,9 @@ public class JsonRecordRequest<K, V> implements RecordRequest<K, V> {
     public void writeToSink(BufferedSink sink) throws IOException {
         sink.writeByte('{');
         sink.write(KEY_SCHEMA_ID);
-        sink.write(utf8(String.valueOf(keySchemaId)));
+        sink.write(utf8(String.valueOf(keyEncoder.getReaderSchema().getId())));
         sink.write(VALUE_SCHEMA_ID);
-        sink.write(utf8(String.valueOf(valueSchemaId)));
+        sink.write(utf8(String.valueOf(valueEncoder.getReaderSchema().getId())));
 
         sink.write(RECORDS);
 
@@ -104,9 +99,9 @@ public class JsonRecordRequest<K, V> implements RecordRequest<K, V> {
 
     @Override
     public void prepare(ParsedSchemaMetadata keySchema, ParsedSchemaMetadata valueSchema,
-            RecordData<K, V> records) {
-        keySchemaId = keySchema.getId() == null ? 0 : keySchema.getId();
-        valueSchemaId = valueSchema.getId() == null ? 0 : valueSchema.getId();
+            RecordData<K, V> records) throws SchemaValidationException {
+        keyEncoder.setReaderSchema(keySchema);
+        valueEncoder.setReaderSchema(valueSchema);
         this.records = records;
     }
 

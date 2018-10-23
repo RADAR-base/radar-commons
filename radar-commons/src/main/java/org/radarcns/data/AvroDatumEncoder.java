@@ -18,30 +18,30 @@ package org.radarcns.data;
 
 import java.io.IOException;
 import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericData;
+import org.apache.avro.io.DatumWriter;
 import org.apache.avro.io.EncoderFactory;
-import org.apache.avro.specific.SpecificDatumWriter;
-import org.apache.avro.specific.SpecificRecord;
 
 /** An AvroEncoder to encode known SpecificRecord classes. */
-public class SpecificRecordEncoder implements AvroEncoder {
+public class AvroDatumEncoder implements AvroEncoder {
     private final EncoderFactory encoderFactory;
     private final boolean binary;
+    private final GenericData genericData;
 
     /**
      * Create a SpecificRecordEncoder.
      * @param binary whether to use binary encoding or JSON.
      */
-    public SpecificRecordEncoder(boolean binary) {
+    public AvroDatumEncoder(GenericData genericData, boolean binary) {
+        this.genericData = genericData;
         this.encoderFactory = EncoderFactory.get();
         this.binary = binary;
     }
 
     @Override
     public <T> AvroWriter<T> writer(Schema schema, Class<? extends T> clazz) throws IOException {
-        if (!SpecificRecord.class.isAssignableFrom(clazz)) {
-            throw new IllegalArgumentException("Can only create writers for SpecificRecords.");
-        }
-        return new AvroRecordWriter<>(encoderFactory, schema, new SpecificDatumWriter<T>(schema),
-                binary);
+        @SuppressWarnings("unchecked")
+        DatumWriter<T> writer = (DatumWriter<T>)genericData.createDatumWriter(schema);
+        return new AvroRecordWriter<>(encoderFactory, schema, writer, binary);
     }
 }

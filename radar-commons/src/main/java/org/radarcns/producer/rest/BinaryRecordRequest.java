@@ -26,9 +26,9 @@ import org.apache.avro.SchemaValidationException;
 import org.apache.avro.generic.IndexedRecord;
 import org.apache.avro.io.BinaryEncoder;
 import org.apache.avro.io.EncoderFactory;
-import org.radarcns.data.AvroEncoder;
-import org.radarcns.data.AvroRecordData;
+import org.radarcns.data.AvroEncoder.AvroWriter;
 import org.radarcns.data.RecordData;
+import org.radarcns.data.RemoteSchemaEncoder;
 import org.radarcns.topic.AvroTopic;
 
 /**
@@ -41,7 +41,7 @@ public class BinaryRecordRequest<K, V> implements RecordRequest<K, V> {
     private int valueVersion;
     private RecordData<K, V> records;
     private BinaryEncoder binaryEncoder;
-    private AvroEncoder.AvroWriter<V> valueEncoder;
+    private final AvroWriter<V> valueEncoder;
     private int sourceIdPos;
 
     /**
@@ -67,13 +67,8 @@ public class BinaryRecordRequest<K, V> implements RecordRequest<K, V> {
         } else {
             sourceIdPos = sourceIdField.pos();
         }
-
-        try {
-            valueEncoder = AvroRecordData.getEncoder(
-                    topic.getValueSchema(), topic.getValueClass(), true);
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Cannot newClient encoder", e);
-        }
+        valueEncoder = new RemoteSchemaEncoder(true)
+                .writer(topic.getValueSchema(), topic.getValueClass());
     }
 
     @Override
@@ -108,9 +103,12 @@ public class BinaryRecordRequest<K, V> implements RecordRequest<K, V> {
 
     @Override
     public void prepare(ParsedSchemaMetadata keySchema, ParsedSchemaMetadata valueSchema,
-            RecordData<K, V> records) {
+            RecordData<K, V> records) throws SchemaValidationException {
         keyVersion = keySchema.getVersion() == null ? 0 : keySchema.getVersion();
         valueVersion = valueSchema.getVersion() == null ? 0 : valueSchema.getVersion();
+
+        valueEncoder.setReaderSchema(valueSchema);
+
         this.records = records;
     }
 

@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import junit.framework.TestCase;
+import org.apache.avro.specific.SpecificData;
 import org.radarcns.kafka.ObservationKey;
 import org.radarcns.passive.empatica.EmpaticaE4BloodVolumePulse;
 import org.radarcns.passive.phone.PhoneAcceleration;
@@ -28,11 +29,11 @@ import org.radarcns.topic.AvroTopic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SpecificRecordEncoderTest extends TestCase {
-    private static final Logger logger = LoggerFactory.getLogger(SpecificRecordEncoderTest.class);
+public class AvroDatumEncoderTest extends TestCase {
+    private static final Logger logger = LoggerFactory.getLogger(AvroDatumEncoderTest.class);
 
     public void testJson() throws IOException {
-        SpecificRecordEncoder encoder = new SpecificRecordEncoder(false);
+        AvroDatumEncoder encoder = new AvroDatumEncoder(SpecificData.get(), false);
         AvroTopic<ObservationKey, EmpaticaE4BloodVolumePulse> topic = new AvroTopic<>("keeeeys", ObservationKey.getClassSchema(), EmpaticaE4BloodVolumePulse.getClassSchema(), ObservationKey.class, EmpaticaE4BloodVolumePulse.class);
         AvroEncoder.AvroWriter<ObservationKey> keyEncoder = encoder.writer(topic.getKeySchema(), topic.getKeyClass());
         AvroEncoder.AvroWriter<EmpaticaE4BloodVolumePulse> valueEncoder = encoder.writer(topic.getValueSchema(), topic.getValueClass());
@@ -44,7 +45,7 @@ public class SpecificRecordEncoderTest extends TestCase {
     }
 
     public void testBinary() throws IOException {
-        SpecificRecordEncoder encoder = new SpecificRecordEncoder(true);
+        AvroDatumEncoder encoder = new AvroDatumEncoder(SpecificData.get(), true);
         AvroTopic<ObservationKey, EmpaticaE4BloodVolumePulse> topic = new AvroTopic<>("keeeeys", ObservationKey.getClassSchema(), EmpaticaE4BloodVolumePulse.getClassSchema(), ObservationKey.class, EmpaticaE4BloodVolumePulse.class);
         AvroEncoder.AvroWriter<ObservationKey> keyEncoder = encoder.writer(topic.getKeySchema(), topic.getKeyClass());
         AvroEncoder.AvroWriter<EmpaticaE4BloodVolumePulse> valueEncoder = encoder.writer(topic.getValueSchema(), topic.getValueClass());
@@ -81,7 +82,7 @@ public class SpecificRecordEncoderTest extends TestCase {
         ObservationKey key = new ObservationKey("my project", UUID.randomUUID().toString(), UUID.randomUUID().toString());
         double now = System.currentTimeMillis() / 1000d;
 
-        SpecificRecordEncoder binEncoder = new SpecificRecordEncoder(true);
+        AvroDatumEncoder binEncoder = new AvroDatumEncoder(SpecificData.get(), true);
         AvroEncoder.AvroWriter<ObservationKey> binKeyEncoder = binEncoder.writer(topic.getKeySchema(), topic.getKeyClass());
         AvroEncoder.AvroWriter<PhoneAcceleration> binValueEncoder = binEncoder.writer(topic.getValueSchema(), topic.getValueClass());
 
@@ -91,7 +92,7 @@ public class SpecificRecordEncoderTest extends TestCase {
             now += 0.001;
         }
 
-        SpecificRecordEncoder encoder = new SpecificRecordEncoder(false);
+        AvroDatumEncoder encoder = new AvroDatumEncoder(SpecificData.get(), false);
         AvroEncoder.AvroWriter<ObservationKey> keyEncoder = encoder.writer(topic.getKeySchema(), topic.getKeyClass());
         AvroEncoder.AvroWriter<PhoneAcceleration> valueEncoder = encoder.writer(topic.getValueSchema(), topic.getValueClass());
 

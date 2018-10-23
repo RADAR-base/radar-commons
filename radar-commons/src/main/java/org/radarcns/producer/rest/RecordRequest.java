@@ -18,6 +18,7 @@ package org.radarcns.producer.rest;
 
 import java.io.IOException;
 import okio.BufferedSink;
+import org.apache.avro.SchemaValidationException;
 import org.radarcns.data.RecordData;
 
 /**
@@ -37,7 +38,7 @@ public interface RecordRequest<K, V> {
 
     /** Set the records to be sent. */
     void prepare(ParsedSchemaMetadata keySchema, ParsedSchemaMetadata valueSchema,
-            RecordData<K, V> records);
+            RecordData<K, V> records) throws IOException, SchemaValidationException;
 
     /**
      * Return the content of the record as a string. To avoid dual reading of data for RecordData
