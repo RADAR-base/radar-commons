@@ -166,19 +166,14 @@ public class SchemaRetriever {
      */
     public ParsedSchemaMetadata getOrSetSchemaMetadata(String topic, boolean ofValue, Schema schema,
             int version) throws IOException {
-        ParsedSchemaMetadata metadata;
         try {
-            metadata = getSchemaMetadata(topic, ofValue, version);
-            if (metadata.getSchema().equals(schema)) {
-                return metadata;
-            }
+            return getSchemaMetadata(topic, ofValue, version);
         } catch (IOException ex) {
             logger.warn("Schema for {} value was not yet added to the schema registry.", topic);
+            ParsedSchemaMetadata metadata = new ParsedSchemaMetadata(null, null, schema);
+            addSchemaMetadata(topic, ofValue, metadata);
+            return metadata;
         }
-
-        metadata = new ParsedSchemaMetadata(null, null, schema);
-        addSchemaMetadata(topic, ofValue, metadata);
-        return metadata;
     }
 
     private class SchemaRequestBody extends RequestBody {
