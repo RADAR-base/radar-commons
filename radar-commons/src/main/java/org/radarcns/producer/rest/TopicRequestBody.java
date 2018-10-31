@@ -44,11 +44,11 @@ class TopicRequestBody extends RequestBody {
         data.writeToSink(sink);
     }
 
-    static String topicRequestContent(Request request) throws IOException {
+    static String topicRequestContent(Request request, int maxLength) throws IOException {
         TopicRequestBody body = (TopicRequestBody) request.body();
         if (body == null) {
             return null;
         }
-        return body.data.content();
+        return body.data.content(maxLength);
     }
 }

@@ -65,6 +65,10 @@ public class JsonRecordRequest<K, V> implements RecordRequest<K, V> {
      */
     @Override
     public void writeToSink(BufferedSink sink) throws IOException {
+        writeToSink(sink, Integer.MAX_VALUE);
+    }
+
+    private void writeToSink(BufferedSink sink, int maxLength) throws IOException {
         sink.writeByte('{');
         sink.write(KEY_SCHEMA_ID);
         sink.write(utf8(String.valueOf(keyEncoder.getReaderSchema().getId())));
@@ -75,8 +79,13 @@ public class JsonRecordRequest<K, V> implements RecordRequest<K, V> {
 
         byte[] key = keyEncoder.encode(records.getKey());
 
+        int curLength = KEY_SCHEMA_ID.length + VALUE_SCHEMA_ID.length + 7;
+
         boolean first = true;
         for (V record : records) {
+            if (curLength >= maxLength) {
+                return;
+            }
             if (first) {
                 first = false;
             } else {
@@ -86,8 +95,10 @@ public class JsonRecordRequest<K, V> implements RecordRequest<K, V> {
             sink.write(key);
 
             sink.write(VALUE);
-            sink.write(valueEncoder.encode(record));
+            byte[] valueBytes = valueEncoder.encode(record);
+            sink.write(valueBytes);
             sink.writeByte('}');
+            curLength += 2 + key.length + KEY.length + VALUE.length + valueBytes.length;
         }
         sink.write(END);
     }
@@ -106,7 +117,7 @@ public class JsonRecordRequest<K, V> implements RecordRequest<K, V> {
     }
 
     @Override
-    public String content() throws IOException {
+    public String content(int maxLength) throws IOException {
         Buffer buffer = new Buffer();
         writeToSink(buffer);
         return buffer.readUtf8();
