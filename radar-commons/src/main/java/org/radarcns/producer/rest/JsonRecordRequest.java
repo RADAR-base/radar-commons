@@ -19,6 +19,7 @@ package org.radarcns.producer.rest;
 import static org.radarcns.util.Strings.utf8;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import okio.Buffer;
 import okio.BufferedSink;
 import org.apache.avro.SchemaValidationException;
@@ -120,6 +121,6 @@ public class JsonRecordRequest<K, V> implements RecordRequest<K, V> {
     public String content(int maxLength) throws IOException {
         Buffer buffer = new Buffer();
         writeToSink(buffer, maxLength);
-        return buffer.readUtf8();
+        return buffer.readString(maxLength, StandardCharsets.UTF_8);
     }
 }
