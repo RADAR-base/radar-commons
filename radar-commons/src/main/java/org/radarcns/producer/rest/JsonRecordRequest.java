@@ -119,7 +119,7 @@ public class JsonRecordRequest<K, V> implements RecordRequest<K, V> {
     @Override
     public String content(int maxLength) throws IOException {
         Buffer buffer = new Buffer();
-        writeToSink(buffer);
+        writeToSink(buffer, maxLength);
         return buffer.readUtf8();
     }
 }
