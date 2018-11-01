@@ -73,6 +73,10 @@ public class BinaryRecordRequest<K, V> implements RecordRequest<K, V> {
 
     @Override
     public void writeToSink(BufferedSink sink) throws IOException {
+        writeToSink(sink, Integer.MAX_VALUE);
+    }
+
+    private void writeToSink(BufferedSink sink, int maxLength) throws IOException {
         binaryEncoder = EncoderFactory.get().directBinaryEncoder(
                 sink.outputStream(), binaryEncoder);
         binaryEncoder.startItem();
@@ -88,9 +92,16 @@ public class BinaryRecordRequest<K, V> implements RecordRequest<K, V> {
         binaryEncoder.writeArrayStart();
         binaryEncoder.setItemCount(records.size());
 
+        int curLength = 18 + sourceId.length();
+
         for (V record : records) {
+            if (curLength >= maxLength) {
+                return;
+            }
             binaryEncoder.startItem();
-            binaryEncoder.writeBytes(valueEncoder.encode(record));
+            byte[] valueBytes = valueEncoder.encode(record);
+            binaryEncoder.writeBytes(valueBytes);
+            curLength += 4 + valueBytes.length;
         }
         binaryEncoder.writeArrayEnd();
         binaryEncoder.flush();
@@ -113,9 +124,9 @@ public class BinaryRecordRequest<K, V> implements RecordRequest<K, V> {
     }
 
     @Override
-    public String content() throws IOException {
+    public String content(int maxLength) throws IOException {
         Buffer buffer = new Buffer();
-        writeToSink(buffer);
-        return "0x" + bytesToHex(buffer.readByteArray());
+        writeToSink(buffer, maxLength / 2 - 2);
+        return "0x" + bytesToHex(buffer.readByteArray(maxLength - 2));
     }
 }

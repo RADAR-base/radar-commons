@@ -43,8 +43,9 @@ public interface RecordRequest<K, V> {
     /**
      * Return the content of the record as a string. To avoid dual reading of data for RecordData
      * that does not store the results, prepare and reset may be called around this method.
+     * @param maxLength maximum returned length
      * @return the content.
      * @throws IOException if the content cannot be written.
      */
-    String content() throws IOException;
+    String content(int maxLength) throws IOException;
 }

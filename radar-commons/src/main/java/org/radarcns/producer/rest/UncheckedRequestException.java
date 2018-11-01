@@ -74,15 +74,14 @@ public class UncheckedRequestException extends RuntimeException {
             content = null;
         }
 
-        String requestContent = topicRequestContent(request);
+        String requestContent = topicRequestContent(request, LOG_CONTENT_LENGTH);
         if (requestContent != null || content != null) {
             message.append(':');
         }
 
         if (requestContent != null) {
             message.append("\n    ")
-                    .append(requestContent, 0,
-                            Math.min(requestContent.length(), LOG_CONTENT_LENGTH));
+                    .append(requestContent);
         }
 
         if (content != null) {
