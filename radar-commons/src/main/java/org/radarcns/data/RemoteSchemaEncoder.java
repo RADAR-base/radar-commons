@@ -63,7 +63,6 @@ public class RemoteSchemaEncoder implements AvroEncoder {
                     && readerSchema.getSchema().equals(this.serverSchema.getSchema())) {
                 return;
             }
-            this.serverSchema = readerSchema;
             try {
                 if (!isGeneric) {
                     this.mapper = AvroDataMapperFactory.IDENTITY_MAPPER;
@@ -74,6 +73,7 @@ public class RemoteSchemaEncoder implements AvroEncoder {
                                     null);
                     encoder = recordEncoder.writer(readerSchema.getSchema(), Object.class);
                 }
+                this.serverSchema = readerSchema;
             } catch (IOException ex) {
                 throw new IllegalStateException("Cannot construct Avro writer", ex);
             }

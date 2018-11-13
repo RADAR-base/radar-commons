@@ -14,7 +14,7 @@ repositories {
 }
 
 dependencies {
-    implementation group: 'org.radarcns', name: 'radar-commons', version: '0.11.2'
+    implementation group: 'org.radarcns', name: 'radar-commons', version: '0.11.3'
 }
 ```
 
@@ -26,7 +26,7 @@ repositories {
 }
 
 dependencies {
-    implementation group: 'org.radarcns', name: 'radar-commons-server', version: '0.11.2'
+    implementation group: 'org.radarcns', name: 'radar-commons-server', version: '0.11.3'
 }
 ```
 
@@ -40,7 +40,7 @@ repositories {
 }
 
 dependencies {
-    testImplementation group: 'org.radarcns', name: 'radar-commons-testing', version: '0.11.2'
+    testImplementation group: 'org.radarcns', name: 'radar-commons-testing', version: '0.11.3'
 }
 ```
 
@@ -53,7 +53,7 @@ repositories {
 }
 
 dependencies {
-    runtimeOnly group: 'org.radarcns', name: 'radar-commons-unsafe', version: '0.11.2'
+    runtimeOnly group: 'org.radarcns', name: 'radar-commons-unsafe', version: '0.11.3'
 }
 ```
 
@@ -78,7 +78,7 @@ configurations.all {
 }
 
 dependencies {
-    compile group: 'org.radarcns', name: 'radar-commons', version: '0.11.3-SNAPSHOT', changing: true
+    compile group: 'org.radarcns', name: 'radar-commons', version: '0.11.4-SNAPSHOT', changing: true
 }
 ```
 
