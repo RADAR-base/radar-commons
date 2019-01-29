@@ -126,7 +126,7 @@ public abstract class AbstractKafkaAvroDeserializer extends AbstractKafkaAvroSer
     try {
       ByteBuffer buffer = getByteBuffer(payload);
       id = buffer.getInt();
-      String subject = includeSchemaAndVersion ? getSubjectName(topic, isKey, null) : null;
+      String subject = includeSchemaAndVersion ? getSubjectName(topic, isKey, null, null) : null;
       Schema schema;
       SchemaMetadata schemaMetadata = null;
       Map<Integer, Integer> subjectIdMap = oldToNewIdMap.get(subject);
@@ -265,7 +265,8 @@ public abstract class AbstractKafkaAvroDeserializer extends AbstractKafkaAvroSer
   }
 
   private DatumReader getDatumReader(Schema writerSchema, Schema readerSchema) {
-    boolean writerSchemaIsPrimitive = getPrimitiveSchemas().values().contains(writerSchema);
+    boolean writerSchemaIsPrimitive =
+        AvroSchemaUtils.getPrimitiveSchemas().values().contains(writerSchema);
     // do not use SpecificDatumReader if writerSchema is a primitive
     if (useSpecificAvroReader && !writerSchemaIsPrimitive) {
       if (readerSchema == null) {
