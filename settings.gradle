@@ -18,4 +18,3 @@ include ':radar-commons'
 include ':radar-commons-testing'
 include ':radar-commons-server'
 include ':radar-commons-unsafe'
-enableFeaturePreview('STABLE_PUBLISHING')
