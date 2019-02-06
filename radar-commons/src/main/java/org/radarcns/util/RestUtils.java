@@ -16,8 +16,6 @@
 
 package org.radarcns.util;
 
-import static okhttp3.internal.Util.assertionError;
-
 import java.security.GeneralSecurityException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
@@ -109,7 +107,7 @@ public final class RestUtils {
             }
             return (X509TrustManager) trustManagers[0];
         } catch (GeneralSecurityException e) {
-            throw assertionError("No System TLS", e); // The system has no TLS. Just give up.
+            throw new IllegalStateException("No System TLS", e);
         }
     }
 
@@ -123,7 +121,7 @@ public final class RestUtils {
             sslContext.init(null, new TrustManager[] { trustManager }, null);
             return sslContext.getSocketFactory();
         } catch (GeneralSecurityException e) {
-            throw assertionError("No System TLS", e); // The system has no TLS. Just give up.
+            throw new IllegalStateException("No System TLS", e);
         }
     }
 }
