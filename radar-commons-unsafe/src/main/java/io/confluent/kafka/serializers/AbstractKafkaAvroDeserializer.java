@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import kafka.utils.VerifiableProperties;
 import org.apache.avro.Schema;
@@ -52,7 +53,6 @@ public abstract class AbstractKafkaAvroDeserializer extends AbstractKafkaAvroSer
   private final DecoderFactory decoderFactory = DecoderFactory.get();
   protected boolean useSpecificAvroReader = false;
   private final Map<String, Schema> readerSchemaCache = new ConcurrentHashMap<String, Schema>();
-
 
   /**
    * Sets properties for this deserializer without overriding the schema registry client itself.
@@ -126,7 +126,10 @@ public abstract class AbstractKafkaAvroDeserializer extends AbstractKafkaAvroSer
     try {
       ByteBuffer buffer = getByteBuffer(payload);
       id = buffer.getInt();
-      String subject = includeSchemaAndVersion ? getSubjectName(topic, isKey, null, null) : null;
+      String subject = null;
+      if (includeSchemaAndVersion) {
+	subject = subjectName(topic, isKey, null);
+      }
       Schema schema;
       SchemaMetadata schemaMetadata = null;
       Map<Integer, Integer> subjectIdMap = oldToNewIdMap.get(subject);
@@ -159,6 +162,7 @@ public abstract class AbstractKafkaAvroDeserializer extends AbstractKafkaAvroSer
           throw ex;
         }
       }
+
       int length = buffer.limit() - 1 - idSize;
       final Object result;
       if (schema.getType().equals(Schema.Type.BYTES)) {
@@ -231,8 +235,7 @@ public abstract class AbstractKafkaAvroDeserializer extends AbstractKafkaAvroSer
             }
           }
         } else {
-          schema.addProp(SCHEMA_REGISTRY_SCHEMA_VERSION_PROP,
-                         JsonNodeFactory.instance.numberNode(version));
+          setVersionProp(schema, version);
         }
         if (schema.getType().equals(Schema.Type.RECORD)) {
           return result;
@@ -247,6 +250,40 @@ public abstract class AbstractKafkaAvroDeserializer extends AbstractKafkaAvroSer
       throw new SerializationException("Error deserializing Avro message for id " + id, e);
     } catch (RestClientException e) {
       throw new SerializationException("Error retrieving Avro schema for id " + id, e);
+    }
+  }
+
+  private Integer schemaVersion(String topic,
+                                Boolean isKey,
+                                int id,
+                                String subject,
+                                Schema schema,
+                                Object result) throws IOException, RestClientException {
+    Integer version;
+    if (isDeprecatedSubjectNameStrategy(isKey)) {
+      subject = getSubjectName(topic, isKey, result, schema);
+      Schema subjectSchema = schemaRegistry.getBySubjectAndId(subject, id);
+      version = schemaRegistry.getVersion(subject, subjectSchema);
+    } else {
+      //we already got the subject name
+      version = schemaRegistry.getVersion(subject, schema);
+    }
+    return version;
+  }
+
+  private String subjectName(String topic, Boolean isKey, Schema schemaFromRegistry) {
+    return isDeprecatedSubjectNameStrategy(isKey)
+        ? null
+        : getSubjectName(topic, isKey, null, schemaFromRegistry);
+  }
+
+  private void setVersionProp(Schema schema, int version) {
+    // Only set the property if it isn't already set. Setting the property resets
+    // the hashcode, which can lead to an expensive hashcode computation in the caller
+    if (!Objects.equals(schema.getObjectProp(SCHEMA_REGISTRY_SCHEMA_VERSION_PROP), version)) {
+      schema.addProp(
+          SCHEMA_REGISTRY_SCHEMA_VERSION_PROP,
+          JsonNodeFactory.instance.numberNode(version));
     }
   }
 
