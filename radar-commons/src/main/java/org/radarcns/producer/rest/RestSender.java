@@ -274,7 +274,7 @@ public class RestSender implements KafkaSender {
         }
 
         public Builder addHeader(String header, String value) {
-            additionalHeaders.add(header, value);
+            additionalHeaders.add(header + ": " + value);
             return this;
         }
 

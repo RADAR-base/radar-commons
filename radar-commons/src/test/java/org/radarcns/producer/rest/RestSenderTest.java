@@ -83,8 +83,8 @@ public class RestSenderTest {
         AvroTopic<ObservationKey, PhoneLight> topic = new AvroTopic<>("test",
                 keySchema, valueSchema, ObservationKey.class, PhoneLight.class);
         Headers headers = new Headers.Builder()
-                .add("Cookie", "ab")
-                .add("Cookie", "bc")
+                .add("Cookie: ab")
+                .add("Cookie: bc")
                 .build();
         sender.setHeaders(headers);
         KafkaTopicSender<ObservationKey, PhoneLight> topicSender = sender.sender(topic);
