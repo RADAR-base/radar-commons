@@ -23,6 +23,9 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 import org.junit.Before;
 import org.junit.Test;
 import org.radarcns.kafka.AggregateKey;
@@ -39,8 +42,7 @@ public class NumericAggregateCollectorTest {
 
     @Before
     public void setUp() {
-        this.valueCollector = new NumericAggregateCollector.Builder("test")
-                .build();
+        this.valueCollector = new NumericAggregateCollector("test", true);
     }
 
     @Test
@@ -116,32 +118,32 @@ public class NumericAggregateCollectorTest {
     @Test(expected = IllegalArgumentException.class)
     public void testWrongRecordType() {
         this.valueCollector = new NumericAggregateCollector("isPlugged",
-                PhoneBatteryLevel.getClassSchema());
+                PhoneBatteryLevel.getClassSchema(), false);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testWrongFieldName() {
         this.valueCollector = new NumericAggregateCollector("doesNotExist",
-                PhoneBatteryLevel.getClassSchema());
+                PhoneBatteryLevel.getClassSchema(), false);
     }
 
     @Test
     public void testRecordType() {
         this.valueCollector = new NumericAggregateCollector("batteryLevel",
-                PhoneBatteryLevel.getClassSchema());
+                PhoneBatteryLevel.getClassSchema(), false);
         this.valueCollector = new NumericAggregateCollector("time",
-                PhoneBatteryLevel.getClassSchema());
+                PhoneBatteryLevel.getClassSchema(), false);
         this.valueCollector = new NumericAggregateCollector("recordsSent",
-                ApplicationRecordCounts.getClassSchema());
+                ApplicationRecordCounts.getClassSchema(), false);
         this.valueCollector = new NumericAggregateCollector("recordsCached",
-                ApplicationRecordCounts.getClassSchema());
+                ApplicationRecordCounts.getClassSchema(), false);
         this.valueCollector = new NumericAggregateCollector("timeStart",
-                AggregateKey.getClassSchema());
+                AggregateKey.getClassSchema(), false);
     }
 
     @Test
     public void testAddRecord() {
-        this.valueCollector = new NumericAggregateCollector("bloodVolumePulse", EmpaticaE4BloodVolumePulse.getClassSchema());
+        this.valueCollector = new NumericAggregateCollector("bloodVolumePulse", EmpaticaE4BloodVolumePulse.getClassSchema(), false);
         valueCollector.add(new EmpaticaE4BloodVolumePulse(0d, 0d, 0f));
         assertEquals(1, valueCollector.getCount());
         assertEquals(0d, valueCollector.getMean(), 0d);
@@ -149,7 +151,7 @@ public class NumericAggregateCollectorTest {
 
     @Test
     public void testAddRecordWithNull() {
-        this.valueCollector = new NumericAggregateCollector("recordsCached", ApplicationRecordCounts.getClassSchema());
+        this.valueCollector = new NumericAggregateCollector("recordsCached", ApplicationRecordCounts.getClassSchema(), false);
         valueCollector.add(new ApplicationRecordCounts(0d, 1, 0, 1));
         assertEquals(1, valueCollector.getCount());
         assertEquals(1d, valueCollector.getMean(), 1e-5d);
@@ -163,36 +165,47 @@ public class NumericAggregateCollectorTest {
 
     @Test
     public void testSerialization() throws IOException {
-        ObjectMapper mapper = new ObjectMapper();
-
-        mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
-        mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-
-        valueCollector = new NumericAggregateCollector.Builder("test")
-                .history(new double[] {-1d, 15d})
-                .sum(BigDecimal.valueOf(14))
-                .build();
-
-        String valueString = mapper.writeValueAsString(valueCollector);
-        System.out.println(valueString);
-        assertEquals(valueCollector, mapper.readValue(valueString, NumericAggregateCollector.class));
+        valueCollector = new NumericAggregateCollector();
+        NumericAggregateState state = new NumericAggregateState();
+        state.setName("test");
+        state.setCount(2L);
+        state.setMin(-1d);
+        state.setMax(15d);
+        state.setSum(new BigDecimalState(ByteBuffer.wrap(BigInteger.valueOf(14).toByteArray()), 0));
+        state.setReservoir(new SamplingReservoirState(Arrays.asList(-1d, 15d), 2L, 999));
+        valueCollector.fromAvro(state);
+        assertEquals(state, valueCollector.toAvro());
     }
 
     @Test
     public void testReservoirBuilder() {
-        valueCollector = new NumericAggregateCollector.Builder("test")
-                .reservoir(new UniformSamplingReservoir(new double[] {-1d, 15d}, 2, 1))
-                .build();
+        valueCollector = new NumericAggregateCollector();
+        NumericAggregateState state = new NumericAggregateState();
+        state.setName("test");
+        state.setCount(2L);
+        state.setMin(-1d);
+        state.setMax(15d);
+        state.setSum(new BigDecimalState(ByteBuffer.wrap(BigInteger.valueOf(14).toByteArray()), 0));
+        state.setReservoir(new SamplingReservoirState(Arrays.asList(-1d, 15d), 2L, 1));
+        valueCollector.fromAvro(state);
 
         assertEquals(2, valueCollector.getCount());
         assertEquals(1, valueCollector.getReservoir().getSamples().size());
+        assertEquals(2, valueCollector.getReservoir().getCount());
+        assertEquals(1, valueCollector.getReservoir().getMaxSize());
     }
 
     @Test
     public void testReservoirBuilderUnlimited() {
-        valueCollector = new NumericAggregateCollector.Builder("name")
-                .reservoir(new UniformSamplingReservoir(new double[] {-1d, 15d}, 2, 1000))
-                .build();
+        valueCollector = new NumericAggregateCollector();
+        NumericAggregateState state = new NumericAggregateState();
+        state.setName("test");
+        state.setCount(2L);
+        state.setMin(-1d);
+        state.setMax(15d);
+        state.setSum(new BigDecimalState(ByteBuffer.wrap(BigInteger.valueOf(14).toByteArray()), 0));
+        state.setReservoir(new SamplingReservoirState(Arrays.asList(-1d, 15d), 2L, 1000));
+        valueCollector.fromAvro(state);
 
         assertEquals(2, valueCollector.getCount());
         assertEquals(2, valueCollector.getReservoir().getSamples().size());

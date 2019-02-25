@@ -1,0 +1,9 @@
+{
+     "namespace": "org.radarcns.stream.collector",
+     "name": "BigDecimalState",
+     "type": "record",
+     "fields": [
+        {"name": "intVal", "type": "bytes", "doc": "java BigInteger integer value."},
+        {"name": "scale", "type": "int", "doc": "java BigDecimal scale."}
+     ]
+}

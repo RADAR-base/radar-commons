@@ -18,55 +18,48 @@ package org.radarcns.stream.collector;
 
 import static org.radarcns.util.Serialization.floatToDouble;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSetter;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Objects;
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Field;
 import org.apache.avro.Schema.Type;
 import org.apache.avro.specific.SpecificRecord;
+import org.radarcns.util.SpecificAvroConvertible;
 
 /**
  * Java class to aggregate data using Kafka Streams. Double is the base type.
  * Only the sum and sorted history are collected, other getSamples are calculated on request.
  */
-@JsonDeserialize(builder = NumericAggregateCollector.Builder.class)
-public class NumericAggregateCollector implements RecordCollector {
-    private final String name;
-    private final int pos;
-    private final Type fieldType;
+public class NumericAggregateCollector implements RecordCollector, SpecificAvroConvertible {
+    private String name;
+    private int pos;
+    private Type fieldType;
     private double min;
     private double max;
+    private long count;
     private BigDecimal sum;
-    private final UniformSamplingReservoir reservoir;
+    private UniformSamplingReservoir reservoir;
 
-    /** Aggregate collector from builder. */
-    private NumericAggregateCollector(Builder builder) {
-        this.name = builder.nameValue;
-        this.pos = builder.posValue;
-        this.fieldType = builder.fieldTypeValue;
-        this.min = builder.minValue;
-        this.max = builder.maxValue;
-        this.sum = builder.sumValue;
-        this.reservoir = builder.reservoirValue;
+    /** Aggregate collector with only a field name. */
+    public NumericAggregateCollector() {
+        this(null, null, false);
     }
 
     /** Aggregate collector with only a field name. */
-    public NumericAggregateCollector(String fieldName) {
-        this(fieldName, null);
+    public NumericAggregateCollector(String fieldName, boolean useReservoir) {
+        this(fieldName, null, useReservoir);
     }
 
     /** Aggregate collector with a field name and accompanying schema containing the name. */
-    public NumericAggregateCollector(String fieldName, Schema schema) {
+    public NumericAggregateCollector(String fieldName, Schema schema, boolean useReservoir) {
         sum = BigDecimal.ZERO;
         min = Double.POSITIVE_INFINITY;
         max = Double.NEGATIVE_INFINITY;
-        reservoir = new UniformSamplingReservoir();
+        count = 0;
+        reservoir = useReservoir ? new UniformSamplingReservoir() : null;
 
         name = fieldName;
         if (schema == null) {
@@ -139,13 +132,16 @@ public class NumericAggregateCollector implements RecordCollector {
      */
     public NumericAggregateCollector add(double value) {
         sum = sum.add(BigDecimal.valueOf(value));
-        reservoir.add(value);
+        if (reservoir != null) {
+            reservoir.add(value);
+        }
         if (value > max) {
             max = value;
         }
         if (value < min) {
             min = value;
         }
+        count++;
 
         return this;
     }
@@ -159,6 +155,7 @@ public class NumericAggregateCollector implements RecordCollector {
                 + ", sum=" + getSum()
                 + ", mean=" + getMean()
                 + ", quartile=" + getQuartile()
+                + ", count=" + getCount()
                 + ", reservoir=" + reservoir + '}';
     }
 
@@ -174,15 +171,22 @@ public class NumericAggregateCollector implements RecordCollector {
         return sum.doubleValue();
     }
 
-    public int getCount() {
-        return reservoir.getCount();
+    public long getCount() {
+        return count;
     }
 
     public double getMean() {
         return sum.doubleValue() / getCount();
     }
 
+    public boolean hasReservoir() {
+        return reservoir != null;
+    }
+
     public List<Double> getQuartile() {
+        if (!hasReservoir()) {
+            throw new IllegalStateException("Cannot query quartiles without reservoir");
+        }
         return reservoir.getQuartiles();
     }
 
@@ -211,6 +215,7 @@ public class NumericAggregateCollector implements RecordCollector {
         }
         NumericAggregateCollector that = (NumericAggregateCollector) o;
         return pos == that.pos
+                && count == that.count
                 && Double.compare(that.min, min) == 0
                 && Double.compare(that.max, max) == 0
                 && Objects.equals(name, that.name)
@@ -224,81 +229,67 @@ public class NumericAggregateCollector implements RecordCollector {
         return Objects.hash(name, pos, fieldType, min, max, sum, reservoir);
     }
 
-    @JsonPOJOBuilder(withPrefix = "")
-    public static class Builder {
-        private double maxValue = Double.NEGATIVE_INFINITY;
-        private double minValue = Double.POSITIVE_INFINITY;
-        private final String nameValue;
-        private int posValue = -1;
-        private Type fieldTypeValue = null;
-        private BigDecimal sumValue = BigDecimal.ZERO;
-        private UniformSamplingReservoir reservoirValue = new UniformSamplingReservoir();
+    @Override
+    public SpecificRecord toAvro() {
+        NumericAggregateState state = new NumericAggregateState();
+        state.setCount(count);
+        if (count > 0) {
+            state.setMin(min);
+            state.setMax(max);
+            state.setSum(new BigDecimalState(
+                    ByteBuffer.wrap(sum.unscaledValue().toByteArray()),
+                    sum.scale()));
+        } else {
+            state.setMin(null);
+            state.setMax(null);
+            state.setSum(null);
+        }
+        if (pos != -1) {
+            state.setPos(pos);
+            state.setFieldType(fieldType.name());
+        } else {
+            state.setPos(null);
+            state.setFieldType(null);
+        }
+        state.setName(name);
+        state.setReservoir(reservoir != null ? reservoir.toAvro() : null);
+        return state;
+    }
 
-        @JsonCreator
-        public Builder(@JsonProperty("name") String name) {
-            this.nameValue = Objects.requireNonNull(name);
+    @Override
+    public void fromAvro(SpecificRecord record) {
+        if (!(record instanceof NumericAggregateState)) {
+            throw new IllegalArgumentException("Cannot deserialize from non NumericAggregateState");
+        }
+        NumericAggregateState state = (NumericAggregateState) record;
+
+        name = state.getName();
+        if (state.getPos() != null) {
+            pos = state.getPos();
+            fieldType = Schema.Type.valueOf(state.getFieldType());
+        } else {
+            pos = -1;
+            fieldType = null;
+        }
+        count = state.getCount();
+
+        if (count > 0) {
+            min = state.getMin();
+            max = state.getMax();
+            sum = new BigDecimal(
+                    new BigInteger(state.getSum().getIntVal().array()),
+                    state.getSum().getScale());
+        } else {
+            min = Double.MAX_VALUE;
+            max = Double.MIN_VALUE;
+            sum = BigDecimal.ZERO;
         }
 
-        @JsonSetter
-        public Builder pos(int pos) {
-            posValue = pos;
-            return this;
-        }
-
-        @JsonSetter
-        public Builder fieldType(Type fieldType) {
-            fieldTypeValue = fieldType;
-            return this;
-        }
-
-        /** Set minimum value. */
-        @JsonSetter
-        public Builder min(double min) {
-            if (min < minValue) {
-                minValue = min;
-            }
-            return this;
-        }
-
-        /** Set maximum value. */
-        @JsonSetter
-        public Builder max(double max) {
-            if (max > maxValue) {
-                maxValue = max;
-            }
-            return this;
-        }
-
-        @JsonSetter
-        public Builder sum(BigDecimal sum) {
-            sumValue = sum;
-            return this;
-        }
-
-        @JsonSetter
-        public Builder reservoir(UniformSamplingReservoir reservoir) {
-            this.reservoirValue = reservoir;
-            return this;
-        }
-
-        /**
-         * For backwards compatibility purposes, convert a full history to a reservoir.
-         * @param history stored history.
-         * @return the current builder.
-         * @deprecated use reservoir instead.
-         */
-        @Deprecated
-        @JsonSetter
-        public Builder history(double[] history) {
-            min(history[0]);
-            max(history[history.length - 1]);
-            reservoir(new UniformSamplingReservoir(history));
-            return this;
-        }
-
-        /** Build the aggregator. */
-        public NumericAggregateCollector build() {
-            return new NumericAggregateCollector(this);
+        if (state.getReservoir() == null) {
+            reservoir = null;
+        } else {
+            reservoir = new UniformSamplingReservoir(new double[0], 0, 1);
+            reservoir.fromAvro(state.getReservoir());
         }
     }
 }

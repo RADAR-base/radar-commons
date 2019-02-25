@@ -21,7 +21,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
+import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
 import java.io.IOException;
@@ -32,6 +34,7 @@ import org.apache.avro.Schema.Field;
 import org.apache.avro.Schema.Type;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
+import org.json.JSONException;
 import org.junit.Test;
 import org.radarcns.kafka.ObservationKey;
 import org.radarcns.producer.rest.ParsedSchemaMetadata;
@@ -58,7 +61,7 @@ public class KafkaAvroSerializerTest {
     }
 
     private void testSerialization(Object data, Schema schema)
-            throws IOException, RestClientException {
+            throws IOException, RestClientException, JSONException {
         SchemaRetriever retriever = mock(SchemaRetriever.class);
         KafkaAvroSerializer serializer = new KafkaAvroSerializer(retriever);
         serializer.configure(Collections.<String,Object>emptyMap(), true);
@@ -68,7 +71,8 @@ public class KafkaAvroSerializerTest {
 
         verify(retriever, times(1)).getOrSetSchemaMetadata("bla", false, schema, -1);
 
-        SchemaRegistryClient registryClient = mock(SchemaRegistryClient.class);
+        SchemaRegistryClient registryClient = mock(CachedSchemaRegistryClient.class, withSettings()
+                .useConstructor("http://example.com:8081", 10));
         io.confluent.kafka.serializers.KafkaAvroSerializer altSerializer = new io.confluent.kafka.serializers.KafkaAvroSerializer(
                 registryClient);
         altSerializer.configure(Collections.singletonMap("schema.registry.url", "http://example.com:8081"), true);

@@ -54,6 +54,14 @@ checkstyle {
     ignoreFailures = false
 }
 
+tasks.withType(Pmd) {
+    exclude '**/org/radarcns/stream/collector/*State.java'
+}
+
+tasks.withType(Checkstyle) {
+    exclude '**/org/radarcns/stream/collector/*State.java'
+}
+
 pmd {
     // ignore tests
     sourceSets = [sourceSets.main]
@@ -66,21 +74,21 @@ ext.sharedManifest = manifest {
 }
 
 jar {
-    baseName moduleName
+    archiveBaseName.set(moduleName)
     manifest.from sharedManifest
 }
 
 // custom tasks for creating source/javadoc jars
 task sourcesJar(type: Jar, dependsOn: classes) {
-    baseName moduleName
-    classifier = 'sources'
+    archiveBaseName.set(moduleName)
+    archiveClassifier.set('sources')
     from sourceSets.main.allSource
     manifest.from sharedManifest
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    baseName moduleName
-    classifier = 'javadoc'
+    archiveBaseName.set(moduleName)
+    archiveClassifier.set('javadoc')
     from javadoc.destinationDir
     manifest.from sharedManifest
 }

@@ -35,6 +35,6 @@ public class ExpectedDoubleValue extends ExpectedValue<NumericAggregateCollector
 
     @Override
     protected NumericAggregateCollector createCollector() {
-        return new NumericAggregateCollector(fieldNames[0], schema);
+        return new NumericAggregateCollector(fieldNames[0], schema, true);
     }
 }

@@ -33,6 +33,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.apache.avro.SchemaValidationException;
+import org.json.JSONException;
 import org.radarcns.data.AvroRecordData;
 import org.radarcns.data.RecordData;
 import org.radarcns.producer.AuthenticationException;
@@ -138,7 +139,7 @@ class RestTopicSender<K, V>
                     sendTopic, false, topic.getKeySchema(), -1);
             valueMetadata = retriever.getOrSetSchemaMetadata(
                     sendTopic, true, topic.getValueSchema(), -1);
-        } catch (IOException ex) {
+        } catch (JSONException | IOException ex) {
             throw new IOException("Failed to get schemas for topic " + topic, ex);
         }
 

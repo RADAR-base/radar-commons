@@ -35,6 +35,6 @@ public class ExpectedArrayValue extends ExpectedValue<AggregateListCollector> {
 
     @Override
     protected AggregateListCollector createCollector() {
-        return new AggregateListCollector(fieldNames, schema);
+        return new AggregateListCollector(fieldNames, schema, true);
     }
 }

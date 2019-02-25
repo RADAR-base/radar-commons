@@ -1,0 +1,16 @@
+{
+    "namespace": "org.radarcns.stream.collector",
+    "name": "NumericAggregateState",
+    "type": "record",
+    "doc": "State of the NumericAggregateCollector",
+    "fields": [
+        { "name": "name", "type": ["null", "string"], "doc": "Name of field or null if not belonging to a specific field.", "default": null },
+        { "name": "pos", "type": ["null", "int"], "doc": "Position of field or null if not belonging to a specific field.", "default": null },
+        { "name": "fieldType", "type": ["null", "string"], "doc": "Type of field or null if not belonging to a specific field.", "default": null },
+        { "name": "count", "type": "long", "doc": "Number of values encountered." },
+        { "name": "min", "type": ["null", "double"], "doc": "Minimum value encountered or null if no value has been encountered.", "default": null },
+        { "name": "max", "type": ["null", "double"], "doc": "Maximum value encountered or null if no value has been encountered.", "default": null },
+        { "name": "sum", "type": ["null", "BigDecimalState"], "doc": "Sum encoded as Java BigDecimal bytes or null if no value has been encountered.", "default": null },
+        { "name": "reservoir", "type": ["null", "SamplingReservoirState"], "doc": "Uniform sampling reservoir of values encountered. Null if reservoir sampling is disabled or no value has been encountered.", "default": null}
+    ]
+}

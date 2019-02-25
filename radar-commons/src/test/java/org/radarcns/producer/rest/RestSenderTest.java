@@ -40,6 +40,7 @@ import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaValidationException;
+import org.json.JSONException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -227,7 +228,7 @@ public class RestSenderTest {
 
     @Test
     public void withCompression()
-            throws IOException, InterruptedException, SchemaValidationException {
+            throws IOException, InterruptedException, SchemaValidationException, JSONException {
         sender.setCompression(true);
         webServer.enqueue(new MockResponse()
                 .setHeader("Content-Type", "application/json; charset=utf-8")

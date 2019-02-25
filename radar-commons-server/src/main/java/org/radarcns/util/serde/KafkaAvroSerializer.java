@@ -25,6 +25,7 @@ import org.apache.avro.io.DatumWriter;
 import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.common.errors.SerializationException;
+import org.json.JSONException;
 import org.radarcns.producer.rest.ParsedSchemaMetadata;
 import org.radarcns.producer.rest.SchemaRetriever;
 import org.radarcns.util.Serialization;
@@ -80,7 +81,7 @@ public class KafkaAvroSerializer extends AbstractKafkaAvroSerde<Object> {
                     return out.toByteArray();
                 }
             }
-        } catch (IOException ex) {
+        } catch (JSONException | IOException ex) {
             throw new SerializationException("Cannot match data with schema registry", ex);
         }
     }

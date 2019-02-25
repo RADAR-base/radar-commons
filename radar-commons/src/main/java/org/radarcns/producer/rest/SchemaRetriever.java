@@ -32,6 +32,7 @@ import okio.BufferedSink;
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Type;
 import org.apache.avro.generic.GenericContainer;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.radarcns.config.ServerConfig;
 import org.slf4j.Logger;
@@ -99,7 +100,7 @@ public class SchemaRetriever {
 
     /** Retrieve schema metadata from server. */
     protected ParsedSchemaMetadata retrieveSchemaMetadata(String subject, int version)
-            throws IOException {
+            throws JSONException, IOException {
         String path = "/subjects/" + subject + "/versions/";
         if (version > 0) {
             path += version;
@@ -121,7 +122,7 @@ public class SchemaRetriever {
 
     /** Get schema metadata. Cached schema metadata will be used if present. */
     public ParsedSchemaMetadata getSchemaMetadata(String topic, boolean ofValue, int version)
-            throws IOException {
+            throws JSONException, IOException {
         String subject = subject(topic, ofValue);
         TimedSchemaMetadata value = cache.get(subject);
         if (value == null || value.isExpired()) {
@@ -141,7 +142,7 @@ public class SchemaRetriever {
      * Add schema metadata to the retriever. This implementation only adds it to the cache.
      */
     public void addSchemaMetadata(String topic, boolean ofValue, ParsedSchemaMetadata metadata)
-            throws IOException {
+            throws JSONException, IOException {
         String subject = subject(topic, ofValue);
         if (metadata.getId() == null) {
             RestClient restClient = getRestClient();
@@ -165,7 +166,7 @@ public class SchemaRetriever {
      * @param version version to get or 0 if the latest version can be used.
      */
     public ParsedSchemaMetadata getOrSetSchemaMetadata(String topic, boolean ofValue, Schema schema,
-            int version) throws IOException {
+            int version) throws JSONException, IOException {
         try {
             return getSchemaMetadata(topic, ofValue, version);
         } catch (IOException ex) {

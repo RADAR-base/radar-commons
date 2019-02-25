@@ -28,7 +28,7 @@ public class AggregateListCollectorTest {
     @Test
     public void add() {
         AggregateListCollector arrayCollector = new AggregateListCollector(
-                new String[]{"a", "b", "c", "d"});
+                new String[]{"a", "b", "c", "d"}, false);
         double[] arrayvalues = {0.15d, 1.0d, 2.0d, 3.0d};
         arrayCollector.add(arrayvalues);
         assertEquals(4, arrayCollector.getCollectors().size());
@@ -41,7 +41,7 @@ public class AggregateListCollectorTest {
     @Test
     public void addRecord() {
         AggregateListCollector arrayCollector = new AggregateListCollector(new String[] {"x", "y", "z"},
-                EmpaticaE4Acceleration.getClassSchema());
+                EmpaticaE4Acceleration.getClassSchema(), false);
         arrayCollector.add(new EmpaticaE4Acceleration(0d, 0d, 0.15f, 1.0f, 2.0f));
 
         assertEquals(3, arrayCollector.getCollectors().size());

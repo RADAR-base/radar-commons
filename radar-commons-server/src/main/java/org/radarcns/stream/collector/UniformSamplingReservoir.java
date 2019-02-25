@@ -1,8 +1,6 @@
 package org.radarcns.stream.collector;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -11,6 +9,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import org.apache.avro.specific.SpecificRecord;
+import org.radarcns.util.SpecificAvroConvertible;
 
 /**
  * Uniform sampling reservoir for streaming. This should capture the input distribution in order
@@ -20,10 +20,10 @@ import java.util.concurrent.ThreadLocalRandom;
  * As long as the number of samples is lower than the maximum size of the reservoir, the quartiles
  * are computed exactly.
  */
-public class UniformSamplingReservoir {
-    private final double[] samples;
-    private final int maxSize;
-    private int count;
+public class UniformSamplingReservoir implements SpecificAvroConvertible {
+    private double[] samples;
+    private int maxSize;
+    private long count;
     private transient int currentLength;
     private static final int MAX_SIZE_DEFAULT = 999;
 
@@ -48,35 +48,38 @@ public class UniformSamplingReservoir {
      * @param maxSize maximum reservoir size.
      * @throws NullPointerException if given allValues are {@code null}
      */
-    @JsonCreator
-    public UniformSamplingReservoir(
-            @JsonProperty("samples") double[] samples,
-            @JsonProperty("count") int count,
-            @JsonProperty("maxSize") int maxSize) {
-        if (samples == null) {
-            throw new IllegalArgumentException("Samples may not be null");
-        }
-        if (maxSize <= 0) {
-            throw new IllegalArgumentException("Reservoir maximum size must be strictly positive");
-        }
-        if (count < 0) {
-            throw new IllegalArgumentException("Reservoir size must be positive");
-        }
-        this.samples = new double[maxSize];
-        this.maxSize = maxSize;
-        this.count = count;
-        initializeReservoir(samples);
+    public UniformSamplingReservoir(double[] samples, long count, int maxSize) {
+        initializeReservoir(samples, count, maxSize);
     }
 
     /** Sample from given list of samples to initialize the reservoir. */
-    private void initializeReservoir(double[] initSamples) {
-        int length = Math.min(initSamples.length, count);
+    private void initializeReservoir(double[] initSamples, long initCount, int initMaxSize) {
+        if (initSamples == null) {
+            throw new IllegalArgumentException("Samples may not be null");
+        }
+        if (initMaxSize <= 0) {
+            throw new IllegalArgumentException("Reservoir maximum size must be strictly positive");
+        }
+        if (initCount < initSamples.length) {
+            throw new IllegalArgumentException(
+                    "Reservoir count must be larger or equal than number of samples.");
+        }
+        this.maxSize = initMaxSize;
+        this.samples = new double[initMaxSize];
+        this.count = initCount;
+
+        int length = (int)Math.min(initSamples.length, count);
 
         if (length == 0) {
             currentLength = 0;
             return;
         }
 
+        subsample(initSamples, length);
+        Arrays.sort(this.samples, 0, currentLength);
+    }
+
+    private void subsample(double[] initSamples, int length) {
         ThreadLocalRandom random = ThreadLocalRandom.current();
 
         // There are much more samples than the size permits. Random sample from the
@@ -113,15 +116,14 @@ public class UniformSamplingReservoir {
             System.arraycopy(initSamples, 0, this.samples, 0, length);
             currentLength = length;
         }
-        Arrays.sort(this.samples, 0, currentLength);
     }
 
     /** Add a sample to the reservoir. */
     public void add(double value) {
         if (currentLength == maxSize) {
-            int removeIndex = ThreadLocalRandom.current().nextInt(count);
+            long removeIndex = ThreadLocalRandom.current().nextLong(count);
             if (removeIndex < maxSize) {
-                removeAndAdd(removeIndex, value);
+                removeAndAdd((int)removeIndex, value);
             }
         } else {
             removeAndAdd(currentLength, value);
@@ -214,7 +216,7 @@ public class UniformSamplingReservoir {
     }
 
     /** Get the number of samples that are being represented by the reservoir. */
-    public int getCount() {
+    public long getCount() {
         return count;
     }
 
@@ -244,5 +246,39 @@ public class UniformSamplingReservoir {
                 + ", maxSize=" + maxSize
                 + ", count=" + count
                 + '}';
+    }
+
+    @Override
+    public SamplingReservoirState toAvro() {
+        SamplingReservoirState state = new SamplingReservoirState();
+        state.setCount(count);
+        state.setMaxSize(maxSize);
+
+        int length = (int) Math.min(maxSize, count);
+        List<Double> sampleList = new ArrayList<>(length);
+        for (int i = 0; i < length; i++) {
+            sampleList.add(samples[i]);
+        }
+        state.setSamples(sampleList);
+
+        return state;
+    }
+
+    @Override
+    public void fromAvro(SpecificRecord record) {
+        if (!(record instanceof SamplingReservoirState)) {
+            throw new IllegalArgumentException("Cannot initialize from non-samplingreservoirstate");
+        }
+        SamplingReservoirState state = (SamplingReservoirState) record;
+        List<Double> stateSamples = state.getSamples();
+
+        if (stateSamples == null) {
+            throw new IllegalArgumentException("Samples may not be null");
+        }
+        double[] newSamples = new double[stateSamples.size()];
+        for (int i = 0; i < newSamples.length; i++) {
+            newSamples[i] = stateSamples.get(i);
+        }
+        initializeReservoir(newSamples, state.getCount(), state.getMaxSize());
     }
 }

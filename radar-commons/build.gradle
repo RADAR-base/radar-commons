@@ -33,8 +33,7 @@ dependencies {
 
     // to implement producers and consumers
     api group: 'com.squareup.okhttp3', name: 'okhttp', version: okhttpVersion
-
-    implementation group: 'org.json', name: 'json', version: orgJsonVersion
+    api group: 'org.json', name: 'json', version: orgJsonVersion
 
     // The production code uses the SLF4J logging API at compile time
     implementation group: 'org.slf4j', name:'slf4j-api', version: slf4jVersion
