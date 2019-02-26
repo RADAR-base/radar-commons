@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Confluent Inc.
+ * Copyright 2018 Confluent Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,6 @@
 
 package io.confluent.kafka.serializers;
 
-import io.confluent.kafka.schemaregistry.client.SchemaMetadata;
-import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import kafka.utils.VerifiableProperties;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericContainer;
 import org.apache.avro.generic.GenericDatumReader;
@@ -35,14 +26,18 @@ import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.common.errors.SerializationException;
-import org.codehaus.jackson.node.JsonNodeFactory;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
+import kafka.utils.VerifiableProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class AbstractKafkaAvroDeserializer extends AbstractKafkaAvroSerDe {
-
-  public static final String SCHEMA_REGISTRY_SCHEMA_VERSION_PROP =
-      "schema.registry.schema.version";
 
   private final ConcurrentMap<String, ConcurrentMap<Integer, Integer>> oldToNewIdMap = new ConcurrentHashMap<>();
   private final ConcurrentMap<String, ConcurrentMap<Schema, Integer>> oldToNewVersionMap = new ConcurrentHashMap<>();
@@ -125,16 +120,16 @@ public abstract class AbstractKafkaAvroDeserializer extends AbstractKafkaAvroSer
     try {
       ByteBuffer buffer = getByteBuffer(payload);
       id = buffer.getInt();
+      Schema schema;
       String subject = null;
       if (includeSchemaAndVersion) {
-	    subject = subjectName(topic, isKey);
+        subject = subjectName(topic, isKey, null);
       }
-      Schema schema;
       SchemaMetadata schemaMetadata = null;
       ConcurrentMap<Integer, Integer> subjectIdMap = oldToNewIdMap.computeIfAbsent(subject, sub -> new ConcurrentHashMap<>());
       try {
         id = subjectIdMap.getOrDefault(id, id);
-        schema = getBySubjectAndId(subject, id);
+        schema = schemaForDeserialize(id, null, subject, isKey);
       } catch (RestClientException ex) {
         if (ex.getErrorCode() == 40403) {
           logger.debug("Trying to get id from Latest SchemaMetadata from schemaRegistry for subject {}", subject);
@@ -159,7 +154,8 @@ public abstract class AbstractKafkaAvroDeserializer extends AbstractKafkaAvroSer
       } else {
         int start = buffer.position() + buffer.arrayOffset();
         DatumReader reader = getDatumReader(schema, readerSchema);
-        Object object =
+        Object
+            object =
             reader.read(null, decoderFactory.binaryDecoder(buffer.array(), start, length, null));
 
         if (schema.getType().equals(Schema.Type.STRING)) {
@@ -203,23 +199,10 @@ public abstract class AbstractKafkaAvroDeserializer extends AbstractKafkaAvroSer
           }
         }
 
-        if (schema.getType() == Schema.Type.UNION) {
-          // Can't set additional properties on a union schema since it's just a list, so set it
-          // on the first non-null entry
-          for (Schema memberSchema : schema.getTypes()) {
-            if (memberSchema.getType() != Schema.Type.NULL) {
-              memberSchema.addProp(SCHEMA_REGISTRY_SCHEMA_VERSION_PROP,
-                                   JsonNodeFactory.instance.numberNode(version));
-              break;
-            }
-          }
-        } else {
-          setVersionProp(schema, version);
-        }
         if (schema.getType().equals(Schema.Type.RECORD)) {
-          return result;
+          return new GenericContainerWithVersion((GenericContainer) result, version);
         } else {
-          return new NonRecordContainer(schema, result);
+          return new GenericContainerWithVersion(new NonRecordContainer(schema, result), version);
         }
       } else {
         return result;
@@ -232,20 +215,37 @@ public abstract class AbstractKafkaAvroDeserializer extends AbstractKafkaAvroSer
     }
   }
 
-  private String subjectName(String topic, Boolean isKey) {
-    return isDeprecatedSubjectNameStrategy(isKey)
-        ? null
-        : getSubjectName(topic, isKey, null, null);
+  private Integer schemaVersion(String topic,
+                                Boolean isKey,
+                                int id,
+                                String subject,
+                                Schema schema,
+                                Object result) throws IOException, RestClientException {
+    Integer version;
+    if (isDeprecatedSubjectNameStrategy(isKey)) {
+      subject = getSubjectName(topic, isKey, result, schema);
+      Schema subjectSchema = schemaRegistry.getBySubjectAndId(subject, id);
+      version = schemaRegistry.getVersion(subject, subjectSchema);
+    } else {
+      //we already got the subject name
+      version = schemaRegistry.getVersion(subject, schema);
+    }
+    return version;
   }
 
-  private void setVersionProp(Schema schema, int version) {
-    // Only set the property if it isn't already set. Setting the property resets
-    // the hashcode, which can lead to an expensive hashcode computation in the caller
-    if (!Objects.equals(schema.getObjectProp(SCHEMA_REGISTRY_SCHEMA_VERSION_PROP), version)) {
-      schema.addProp(
-          SCHEMA_REGISTRY_SCHEMA_VERSION_PROP,
-          JsonNodeFactory.instance.numberNode(version));
-    }
+  private String subjectName(String topic, Boolean isKey, Schema schemaFromRegistry) {
+    return isDeprecatedSubjectNameStrategy(isKey)
+        ? null
+        : getSubjectName(topic, isKey, null, schemaFromRegistry);
+  }
+
+  private Schema schemaForDeserialize(int id,
+                                      Schema schemaFromRegistry,
+                                      String subject,
+                                      Boolean isKey) throws IOException, RestClientException {
+    return isDeprecatedSubjectNameStrategy(isKey)
+        ? AvroSchemaUtils.copyOf(schemaFromRegistry)
+        : schemaRegistry.getBySubjectAndId(subject, id);
   }
 
   /**
@@ -256,10 +256,10 @@ public abstract class AbstractKafkaAvroDeserializer extends AbstractKafkaAvroSer
    * @return a GenericContainer with the schema and data, either as a {@link NonRecordContainer},
    * {@link org.apache.avro.generic.GenericRecord}, or {@link SpecificRecord}
    */
-  protected GenericContainer deserializeWithSchemaAndVersion(String topic, boolean isKey,
+  protected GenericContainerWithVersion deserializeWithSchemaAndVersion(String topic, boolean isKey,
                                                              byte[] payload)
       throws SerializationException {
-    return (GenericContainer) deserialize(true, topic, isKey, payload, null);
+    return (GenericContainerWithVersion) deserialize(true, topic, isKey, payload, null);
   }
 
   private DatumReader getDatumReader(Schema writerSchema, Schema readerSchema) {
@@ -308,5 +308,4 @@ public abstract class AbstractKafkaAvroDeserializer extends AbstractKafkaAvroSer
     }
     return readerSchema;
   }
-
 }

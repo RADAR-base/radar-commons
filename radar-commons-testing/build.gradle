@@ -44,6 +44,10 @@ dependencies {
 
     implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
     implementation group: 'org.apache.kafka', name: 'kafka-clients', version: kafkaVersion
+    implementation (group: 'io.confluent', name: 'kafka-avro-serializer', version: confluentVersion) {
+        exclude group: 'com.101tec'
+        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    }
 
     runtimeOnly group: 'org.slf4j', name: 'slf4j-simple', version: slf4jVersion
 

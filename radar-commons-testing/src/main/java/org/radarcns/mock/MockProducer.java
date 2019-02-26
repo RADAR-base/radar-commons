@@ -16,11 +16,12 @@
 
 package org.radarcns.mock;
 
+import static io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.BOOTSTRAP_SERVERS_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG;
-import static org.radarcns.util.serde.AbstractKafkaAvroSerde.SCHEMA_REGISTRY_CONFIG;
 
+import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -51,7 +52,6 @@ import org.radarcns.producer.rest.ConnectionState;
 import org.radarcns.producer.rest.RestClient;
 import org.radarcns.producer.rest.RestSender;
 import org.radarcns.producer.rest.SchemaRetriever;
-import org.radarcns.util.serde.KafkaAvroSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -140,7 +140,8 @@ public class MockProducer {
             BasicMockConfig mockConfig, int numDevices) {
 
         if (mockConfig.isDirectProducer()) {
-            return createDirectSenders(numDevices, retriever, mockConfig.getBrokerPaths());
+            return createDirectSenders(numDevices, mockConfig.getSchemaRegistry().getUrlString(),
+                    mockConfig.getBrokerPaths());
         } else {
             return createRestSenders(numDevices, retriever, mockConfig.getRestProxy(),
                     mockConfig.hasCompression());
@@ -149,13 +150,13 @@ public class MockProducer {
 
     /** Create senders that directly produce data to Kafka. */
     private List<KafkaSender> createDirectSenders(int numDevices,
-            SchemaRetriever retriever, String brokerPaths) {
+            String retrieverUrl, String brokerPaths) {
         List<KafkaSender> result = new ArrayList<>(numDevices);
         for (int i = 0; i < numDevices; i++) {
             Properties properties = new Properties();
             properties.put(KEY_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
             properties.put(VALUE_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
-            properties.put(SCHEMA_REGISTRY_CONFIG, retriever);
+            properties.put(SCHEMA_REGISTRY_URL_CONFIG, retrieverUrl);
             properties.put(BOOTSTRAP_SERVERS_CONFIG, brokerPaths);
 
             result.add(new DirectSender(properties));
