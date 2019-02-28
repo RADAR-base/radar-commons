@@ -16,9 +16,8 @@
 
 package org.radarcns.mock.data;
 
-import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Path;
 import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.data.Record;
 import org.radarcns.kafka.ObservationKey;
@@ -34,13 +33,13 @@ public class MockRecordValidator {
     private static final Logger logger = LoggerFactory.getLogger(MockRecordValidator.class);
     private final MockDataConfig config;
     private final long duration;
-    private final File root;
+    private final Path root;
     private int timePos;
     private double time;
     private double startTime;
 
     /** Create a new validator for given configuration. */
-    public MockRecordValidator(MockDataConfig config, long duration, File root) {
+    public MockRecordValidator(MockDataConfig config, long duration, Path root) {
         this.config = config;
         this.duration = duration;
         this.root = root;
@@ -74,14 +73,6 @@ public class MockRecordValidator {
             checkFrequency(line);
         } catch (IOException e) {
             error("Cannot open file", -1, e);
-        } catch (InvocationTargetException e) {
-            error("Cannot instantiate mock type", -1, e);
-        } catch (NoSuchMethodException e) {
-            error("Mock type is not a SpecificRecord", -1, e);
-        } catch (IllegalAccessException e) {
-            error("Mock type is not accessible", -1, e);
-        } catch (ClassNotFoundException e) {
-            error("Mock type class does not exist", -1, e);
         }
     }
 
@@ -107,13 +98,23 @@ public class MockRecordValidator {
     }
 
     private void error(String message, long line, Exception ex) {
-        String mex = config.getDataFile() + " with topic " + config.getTopic() + " is invalid";
+        StringBuilder messageBuilder = new StringBuilder(150);
+        messageBuilder
+                .append(config.getDataFile())
+                .append(" with topic ")
+                .append(config.getTopic())
+                .append(" is invalid");
         if (line > 0L) {
-            mex += " on line " + line;
+            messageBuilder
+                    .append(" on line ")
+                    .append(line);
         }
-        mex += ". " + message;
-        logger.error(mex);
-        throw new IllegalArgumentException(mex, ex);
+        String fullMessage = messageBuilder
+                .append(". ")
+                .append(message)
+                .toString();
+        logger.error(fullMessage);
+        throw new IllegalArgumentException(fullMessage, ex);
     }
 
     private void checkDuration() {

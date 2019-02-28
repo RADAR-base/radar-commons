@@ -22,6 +22,8 @@ import java.io.IOException;
  * Failed to authenticate to server.
  */
 public class AuthenticationException extends IOException {
+    private static final long serialVersionUID = 1;
+
     public AuthenticationException() {
         super();
     }

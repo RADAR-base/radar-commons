@@ -16,17 +16,16 @@
 
 package org.radarcns.mock;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
+import com.opencsv.CSVReader;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
+import java.io.Reader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,7 +35,6 @@ import org.radarcns.mock.config.MockDataConfig;
 import org.radarcns.mock.data.CsvGenerator;
 import org.radarcns.mock.data.MockRecordValidatorTest;
 import org.radarcns.mock.data.RecordGenerator;
-import org.radarcns.util.CsvParser;
 
 public class CsvGeneratorTest {
     @Rule
@@ -51,31 +49,31 @@ public class CsvGeneratorTest {
         CsvGenerator generator = new CsvGenerator();
 
         MockDataConfig config = makeConfig();
-        generator.generate(config, 100_000L, folder.getRoot());
+        generator.generate(config, 100_000L, folder.getRoot().toPath());
 
-        CsvParser parser = new CsvParser(new BufferedReader(new FileReader(config.getDataFile())));
-        List<String> headers = Arrays.asList(
-                "projectId", "userId", "sourceId", "time", "timeReceived", "light");
-        assertEquals(headers, parser.parseLine());
+        Path p = Paths.get(config.getDataFile());
+        try (Reader reader = Files.newBufferedReader(p);
+                CSVReader parser = new CSVReader(reader)) {
+            String[] headers = {"projectId", "userId", "sourceId", "time", "timeReceived", "light"};
+            assertArrayEquals(headers, parser.readNext());
 
-        int n = 0;
-        List<String> line;
-        while ((line = parser.parseLine()) != null) {
-            String value = line.get(5);
-            assertNotEquals("NaN", value);
-            assertNotEquals("Infinity", value);
-            assertNotEquals("-Infinity", value);
-            // no decimals lost or appended
-            assertEquals(value, Float.valueOf(value).toString());
-            n++;
+            int n = 0;
+            String[] line;
+            while ((line = parser.readNext()) != null) {
+                String value = line[5];
+                assertNotEquals("NaN", value);
+                assertNotEquals("Infinity", value);
+                assertNotEquals("-Infinity", value);
+                // no decimals lost or appended
+                assertEquals(value, Float.valueOf(value).toString());
+                n++;
+            }
+            assertEquals(100, n);
         }
-        assertEquals(100, n);
     }
 
     @Test
-    public void generateGenerator()
-            throws IOException, ClassNotFoundException, NoSuchMethodException,
-            IllegalAccessException, InvocationTargetException {
+    public void generateGenerator() throws IOException {
         CsvGenerator generator = new CsvGenerator();
 
         MockDataConfig config = makeConfig();
@@ -84,21 +82,29 @@ public class CsvGeneratorTest {
 
         RecordGenerator<ObservationKey> recordGenerator = new RecordGenerator<ObservationKey>(
                 config, ObservationKey.class) {
+
             @Override
-            public Iterator<List<String>> iterateRawValues(ObservationKey key, long duration) {
-                return Collections.singletonList(
-                        Arrays.asList("test", "UserID_0", "SourceID_0", time, time,
-                                Float.valueOf((float)0.123112412410423518).toString()))
-                        .iterator();
+            public Iterable<String[]> iteratableRawValues(ObservationKey key, long duration) {
+                return List.<String[]>of(new String[] {
+                        "test", "UserID_0", "SourceID_0", time, time,
+                        Float.valueOf((float)0.123112412410423518).toString()
+                });
             }
         };
 
-        generator.generate(recordGenerator, 1000L, new File(config.getDataFile()));
+        generator.generate(recordGenerator, 1000L, Paths.get(config.getDataFile()));
 
-        CsvParser parser = new CsvParser(new BufferedReader(new FileReader(config.getDataFile())));
-        assertEquals(recordGenerator.getHeader(), parser.parseLine());
-        // float will cut off a lot of decimals
-        assertEquals(Arrays.asList("test", "UserID_0", "SourceID_0", time, time, "0.12311241"),
-                parser.parseLine());
+        Path p = Paths.get(config.getDataFile());
+
+        try (Reader reader = Files.newBufferedReader(p);
+                CSVReader parser = new CSVReader(reader)) {
+            assertArrayEquals(
+                    recordGenerator.getHeader().toArray(new String[0]),
+                    parser.readNext());
+            // float will cut off a lot of decimals
+            assertArrayEquals(
+                    new String[] { "test", "UserID_0", "SourceID_0", time, time, "0.12311241" },
+                    parser.readNext());
+        }
     }
 }

@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 /** Serialization utility class. */
+@SuppressWarnings("PMD.ClassNamingConventions")
 public final class Serialization {
 
     private Serialization() {

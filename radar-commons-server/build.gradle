@@ -23,8 +23,8 @@ ext {
     description = 'RADAR Common server library utilities.'
 }
 
-targetCompatibility = '1.8'
-sourceCompatibility = '1.8'
+targetCompatibility = '11.0'
+sourceCompatibility = '11.0'
 
 repositories {
     maven { url 'https://oss.jfrog.org/artifactory/oss-snapshot-local' }

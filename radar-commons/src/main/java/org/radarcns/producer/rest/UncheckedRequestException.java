@@ -25,6 +25,7 @@ import okhttp3.Response;
 
 /** Unchecked exception for failures during request handling. */
 public class UncheckedRequestException extends RuntimeException {
+    private static final long serialVersionUID = 1;
     private static final int LOG_CONTENT_LENGTH = 1024;
 
     /**

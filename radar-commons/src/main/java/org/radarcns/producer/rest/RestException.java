@@ -22,6 +22,8 @@ import java.io.IOException;
  * Exception when a HTTP REST request fails.
  */
 public class RestException extends IOException {
+    private static final long serialVersionUID = 1;
+
     private final int statusCode;
     private final String body;
 

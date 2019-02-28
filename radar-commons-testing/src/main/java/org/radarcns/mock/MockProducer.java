@@ -22,9 +22,9 @@ import static org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CL
 import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG;
 
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
-import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -59,6 +59,7 @@ import org.slf4j.LoggerFactory;
  * A Mock Producer class that can be used to stream data. It can use MockFileSender and MockDevice
  * for testing purposes, with direct or indirect streaming.
  */
+@SuppressWarnings("PMD.DoNotCallSystemExit")
 public class MockProducer {
 
     private static final Logger logger = LoggerFactory.getLogger(MockProducer.class);
@@ -84,7 +85,7 @@ public class MockProducer {
      * @param root root directory of where mock files are located
      * @throws IOException if data could not be sent
      */
-    public MockProducer(BasicMockConfig mockConfig, File root) throws IOException {
+    public MockProducer(BasicMockConfig mockConfig, Path root) throws IOException {
         int numDevices = mockConfig.getNumberOfDevices();
 
         retriever = new SchemaRetriever(mockConfig.getSchemaRegistry(), 10);
@@ -101,13 +102,8 @@ public class MockProducer {
 
             List<RecordGenerator<ObservationKey>> generators;
             List<MockCsvParser<ObservationKey>> mockFiles;
-            try {
-                generators = createGenerators(dataConfigs);
-                mockFiles = createMockFiles(dataConfigs, root);
-            } catch (NoSuchMethodException | IllegalAccessException | ClassNotFoundException
-                    | InvocationTargetException ex) {
-                throw new IllegalStateException("Configuration invalid", ex);
-            }
+            generators = createGenerators(dataConfigs);
+            mockFiles = createMockFiles(dataConfigs, root);
 
             tmpSenders = createSenders(mockConfig, numDevices + mockFiles.size());
 
@@ -228,7 +224,7 @@ public class MockProducer {
             System.exit(1);
         }
 
-        File mockFile = new File(args[0]).getAbsoluteFile();
+        Path mockFile = Paths.get(args[0]).toAbsolutePath();
         BasicMockConfig config = null;
         try {
             config = new YamlConfigLoader().load(mockFile, BasicMockConfig.class);
@@ -238,7 +234,7 @@ public class MockProducer {
         }
 
         try {
-            MockProducer producer = new MockProducer(config, mockFile.getParentFile());
+            MockProducer producer = new MockProducer(config, mockFile.getParent());
             producer.start();
             waitForProducer(producer, config.getDuration());
         } catch (IllegalArgumentException ex) {
@@ -257,19 +253,17 @@ public class MockProducer {
             throws IOException, InterruptedException, SchemaValidationException {
         final AtomicBoolean isShutdown = new AtomicBoolean(false);
 
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                try {
-                    if (!isShutdown.get()) {
-                        producer.shutdown();
-                    }
-                } catch (InterruptedException ex) {
-                    logger.warn("Shutdown interrupted", ex);
-                } catch (Exception ex) {
-                    logger.warn("Failed to shutdown producer", ex);
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                if (!isShutdown.get()) {
+                    producer.shutdown();
                 }
+            } catch (InterruptedException ex) {
+                logger.warn("Shutdown interrupted", ex);
+            } catch (Exception ex) {
+                logger.warn("Failed to shutdown producer", ex);
             }
-        });
+        }));
 
         if (duration <= 0L) {
             try {
@@ -337,9 +331,7 @@ public class MockProducer {
         return Arrays.asList(acceleration, battery, bvp, eda, ibi, temperature);
     }
 
-    private List<RecordGenerator<ObservationKey>> createGenerators(List<MockDataConfig> configs)
-            throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException,
-            InvocationTargetException {
+    private List<RecordGenerator<ObservationKey>> createGenerators(List<MockDataConfig> configs) {
 
         List<RecordGenerator<ObservationKey>> result = new ArrayList<>(configs.size());
 
@@ -353,20 +345,18 @@ public class MockProducer {
     }
 
     private List<MockCsvParser<ObservationKey>> createMockFiles(List<MockDataConfig> configs,
-            File dataRoot)
-            throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException,
-            InvocationTargetException, IOException {
+            Path dataRoot) throws IOException {
 
         List<MockCsvParser<ObservationKey>> result = new ArrayList<>(configs.size());
 
-        File parent = dataRoot;
+        Path parent = dataRoot;
         if (parent == null) {
-            parent = new File(".").getAbsoluteFile();
+            parent = Paths.get(".").toAbsolutePath();
         }
 
         for (MockDataConfig config : configs) {
             if (config.getDataFile() != null) {
-                result.add(new MockCsvParser<ObservationKey>(config, parent));
+                result.add(new MockCsvParser<>(config, parent));
             }
         }
 

@@ -32,9 +32,7 @@ public class AvroRecordData<K, V> implements RecordData<K, V> {
         }
     }
 
-    /**
-     * Get the topic that the keys belong to.
-     */
+    @Override
     public AvroTopic<K, V> getTopic() {
         return topic;
     }

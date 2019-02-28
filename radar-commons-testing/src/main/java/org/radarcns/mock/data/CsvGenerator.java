@@ -16,11 +16,13 @@
 
 package org.radarcns.mock.data;
 
-import java.io.File;
+import com.opencsv.CSVWriter;
 import java.io.IOException;
+import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.radarcns.kafka.ObservationKey;
 import org.radarcns.mock.config.MockDataConfig;
-import org.radarcns.util.CsvWriter;
 
 /**
  * It generates a CVS file that can be used to stream data and
@@ -47,9 +49,9 @@ public final class CsvGenerator {
      * @param root directory relative to which the output csv file is generated
      * @throws IOException if the CSV file cannot be written to
      */
-    public void generate(MockDataConfig config, long duration, File root)
+    public void generate(MockDataConfig config, long duration, Path root)
             throws IOException {
-        File file = config.getDataFile(root);
+        Path file = config.getDataFile(root);
 
         generate(new RecordGenerator<>(config, ObservationKey.class), duration, file);
     }
@@ -62,10 +64,12 @@ public final class CsvGenerator {
      * @param csvFile CSV file to write data to
      * @throws IOException if the CSV file cannot be written to
      */
-    public void generate(RecordGenerator<ObservationKey> generator, long duration, File csvFile)
+    public void generate(RecordGenerator<ObservationKey> generator, long duration, Path csvFile)
             throws IOException {
-        try (CsvWriter writer = new CsvWriter(csvFile, generator.getHeader())) {
-            writer.writeRows(generator.iterateRawValues(key, duration));
+        try (Writer writer = Files.newBufferedWriter(csvFile);
+                CSVWriter csvWriter = new CSVWriter(writer)) {
+            csvWriter.writeNext(generator.getHeader().toArray(new String[0]));
+            csvWriter.writeAll(generator.iteratableRawValues(key, duration));
         }
     }
 }

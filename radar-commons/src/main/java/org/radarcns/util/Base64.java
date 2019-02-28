@@ -49,6 +49,7 @@ import java.util.Arrays;
  * @since   1.8
  */
 
+@SuppressWarnings("PMD.ClassNamingConventions")
 public class Base64 {
 
     private Base64() {}
@@ -127,10 +128,10 @@ public class Base64 {
             while (sp < slen) {
                 int sl0 = Math.min(sp + slen, slen);
                 int dp0 = dp;
-                for (int sp0 = sp; sp0 < sl0; ) {
-                    int bits = (src[sp0++] & 0xff) << 16
-                            | (src[sp0++] & 0xff) <<  8
-                            | (src[sp0++] & 0xff);
+                for (int sp0 = sp; sp0 < sl0; sp0 += 3) {
+                    int bits = (src[sp0] & 0xff) << 16
+                            | (src[sp0 + 1] & 0xff) <<  8
+                            | (src[sp0 + 2] & 0xff);
                     dst[dp0++] = BASE_64_BYTE[(bits >>> 18) & 0x3f];
                     dst[dp0++] = BASE_64_BYTE[(bits >>> 12) & 0x3f];
                     dst[dp0++] = BASE_64_BYTE[(bits >>> 6)  & 0x3f];

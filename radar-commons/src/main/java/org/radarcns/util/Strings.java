@@ -24,6 +24,7 @@ import java.util.regex.Pattern;
 /**
  * String utilities.
  */
+@SuppressWarnings("PMD.ClassNamingConventions")
 public final class Strings {
     private static final Charset UTF_8 = Charset.forName("UTF-8");
     private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();

@@ -17,7 +17,8 @@
 package org.radarcns.mock.config;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import org.apache.avro.specific.SpecificRecord;
@@ -64,13 +65,13 @@ public class MockDataConfig extends AvroTopicConfig {
      * @return absolute path to the data file
      * @throws NullPointerException if root is null
      */
-    public File getDataFile(File root) {
-        File directDataFile = new File(dataFile);
+    public Path getDataFile(Path root) {
+        Path directDataFile = Paths.get(dataFile);
         if (directDataFile.isAbsolute()) {
             return directDataFile;
         } else {
-            File absoluteFile = new File(root, dataFile);
-            this.absolutePath = absoluteFile.getAbsolutePath();
+            Path absoluteFile = root.resolve(dataFile).toAbsolutePath();
+            this.absolutePath = absoluteFile.toString();
             return absoluteFile;
         }
     }

@@ -16,12 +16,12 @@
 
 package org.radarcns.mock.data;
 
+import com.opencsv.CSVReader;
 import java.io.BufferedReader;
 import java.io.Closeable;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -33,7 +33,6 @@ import org.apache.avro.specific.SpecificRecord;
 import org.radarcns.data.Record;
 import org.radarcns.mock.config.MockDataConfig;
 import org.radarcns.topic.AvroTopic;
-import org.radarcns.util.CsvParser;
 
 /**
  * Parse mock data from a CSV file
@@ -46,10 +45,9 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
 
     private final AvroTopic<K, SpecificRecord> topic;
     private final Map<String, Integer> headerMap;
-    private final CsvParser csvReader;
+    private final CSVReader csvReader;
     private final BufferedReader bufferedReader;
-    private final FileReader fileReader;
-    private List<String> currentLine;
+    private String[] currentLine;
 
     /**
      * Base constructor.
@@ -57,21 +55,18 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
      * @param root parent directory of the data file.
      * @throws IllegalArgumentException if the second row has the wrong number of columns
      */
-    public MockCsvParser(MockDataConfig config, File root)
-            throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
-            IllegalAccessException, IOException {
+    public MockCsvParser(MockDataConfig config, Path root) throws IOException {
         //noinspection unchecked
         topic = config.parseAvroTopic();
 
-        fileReader = new FileReader(config.getDataFile(root));
-        bufferedReader = new BufferedReader(fileReader);
-        csvReader = new CsvParser(bufferedReader);
-        List<String> header = csvReader.parseLine();
+        bufferedReader = Files.newBufferedReader(config.getDataFile(root));
+        csvReader = new CSVReader(bufferedReader);
+        String[] header = csvReader.readNext();
         headerMap = new HashMap<>();
-        for (int i = 0; i < header.size(); i++) {
-            headerMap.put(header.get(i), i);
+        for (int i = 0; i < header.length; i++) {
+            headerMap.put(header[i], i);
         }
-        currentLine = csvReader.parseLine();
+        currentLine = csvReader.readNext();
     }
 
     public AvroTopic getTopic() {
@@ -95,7 +90,7 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
         SpecificRecord value = parseRecord(currentLine, headerMap,
                 topic.getValueClass(), topic.getValueSchema());
 
-        currentLine = csvReader.parseLine();
+        currentLine = csvReader.readNext();
 
         return new Record<>(key, value);
     }
@@ -107,13 +102,13 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
         return currentLine != null;
     }
 
-    private <V extends SpecificRecord> V parseRecord(List<String> rawValues,
+    private <V extends SpecificRecord> V parseRecord(String[] rawValues,
             Map<String, Integer> header, Class<V> recordClass, Schema schema) {
         @SuppressWarnings("unchecked")
         V record = (V) SpecificData.newInstance(recordClass, schema);
 
         for (Field field : schema.getFields()) {
-            String fieldString = rawValues.get(header.get(field.name()));
+            String fieldString = rawValues[header.get(field.name())];
             Object fieldValue = parseValue(field.schema(), fieldString);
             record.put(field.pos(), fieldValue);
         }
@@ -208,6 +203,5 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
     public void close() throws IOException {
         csvReader.close();
         bufferedReader.close();
-        fileReader.close();
     }
 }

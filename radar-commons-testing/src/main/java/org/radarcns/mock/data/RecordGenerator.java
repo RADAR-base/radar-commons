@@ -125,10 +125,11 @@ public class RecordGenerator<K extends SpecificRecord> {
      * @param key key to generate data with
      * @return list containing simulated values
      */
-    public Iterator<List<String>> iterateRawValues(K key, long duration) {
-        final Iterator<Record<K, SpecificRecord>> baseIterator = iterateValues(key,
-                duration);
-        return new RecordListIterator<>(baseIterator);
+    public Iterable<String[]> iteratableRawValues(K key, long duration) {
+        return () -> {
+            final Iterator<Record<K, SpecificRecord>> baseIterator = iterateValues(key, duration);
+            return new RecordArrayIterator<>(baseIterator);
+        };
     }
 
     /**
@@ -159,12 +160,12 @@ public class RecordGenerator<K extends SpecificRecord> {
         return time + ThreadLocalRandom.current().nextLong(1 , 10);
     }
 
-    private static class RecordListIterator<K extends SpecificRecord>
-            implements Iterator<List<String>> {
+    private static class RecordArrayIterator<K extends SpecificRecord>
+            implements Iterator<String[]> {
 
         private final Iterator<Record<K, SpecificRecord>> baseIterator;
 
-        private RecordListIterator(Iterator<Record<K, SpecificRecord>> baseIterator) {
+        private RecordArrayIterator(Iterator<Record<K, SpecificRecord>> baseIterator) {
             this.baseIterator = baseIterator;
         }
 
@@ -174,18 +175,18 @@ public class RecordGenerator<K extends SpecificRecord> {
         }
 
         @Override
-        public List<String> next() {
+        public String[] next() {
             Record<K, SpecificRecord> record = baseIterator.next();
 
             int keyFieldsSize = record.key.getSchema().getFields().size();
             int valueFieldsSize = record.value.getSchema().getFields().size();
-            List<String> result = new ArrayList<>(keyFieldsSize + valueFieldsSize);
 
+            String[] result = new String[keyFieldsSize + valueFieldsSize];
             for (int i = 0; i < keyFieldsSize; i++) {
-                result.add(record.key.get(i).toString());
+                result[i] = record.key.get(i).toString();
             }
             for (int i = 0; i < valueFieldsSize; i++) {
-                result.add(record.value.get(i).toString());
+                result[i + keyFieldsSize] = record.value.get(i).toString();
             }
             return result;
         }

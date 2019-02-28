@@ -101,14 +101,17 @@ public class SchemaRetriever {
     /** Retrieve schema metadata from server. */
     protected ParsedSchemaMetadata retrieveSchemaMetadata(String subject, int version)
             throws JSONException, IOException {
-        String path = "/subjects/" + subject + "/versions/";
+        StringBuilder pathBuilder = new StringBuilder(50)
+                .append("/subjects/")
+                .append(subject)
+                .append("/versions/");
         if (version > 0) {
-            path += version;
+            pathBuilder.append(String.valueOf(version));
         } else {
-            path += "latest";
+            pathBuilder.append("latest");
         }
         RestClient restClient = getRestClient();
-        Request request = restClient.requestBuilder(path)
+        Request request = restClient.requestBuilder(pathBuilder.toString())
                 .addHeader("Accept", "application/json")
                 .build();
 

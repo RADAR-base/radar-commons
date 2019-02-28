@@ -16,8 +16,8 @@
 
 package org.radarcns.mock.model;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,14 +35,17 @@ import org.slf4j.LoggerFactory;
  * <li>singleton {@code Double}
  * </ul>
  */
-public final class MockAggregator {
+public class MockAggregator {
     private static final Logger logger = LoggerFactory.getLogger(MockAggregator.class);
+    private final List<MockDataConfig> mockDataConfigs;
+    private final Path root;
 
     /**
      * Default constructor.
      */
-    private MockAggregator() {
-        // utility class
+    public MockAggregator(List<MockDataConfig> mockDataConfigs, Path root) {
+        this.mockDataConfigs = mockDataConfigs;
+        this.root = root;
     }
 
     /**
@@ -51,8 +54,8 @@ public final class MockAggregator {
      * @return {@code Map} of key {@code MockDataConfig} and value {@code ExpectedValue}. {@link
      * ExpectedDoubleValue}.
      **/
-    public static Map<MockDataConfig, ExpectedValue> getSimulations(
-            List<MockDataConfig> mockDataConfigs, File root) throws IOException {
+    @SuppressWarnings("unused")
+    public Map<MockDataConfig, ExpectedValue> simulate() throws IOException {
 
         Map<MockDataConfig, ExpectedValue> expectedValue = new HashMap<>();
 
@@ -78,8 +81,6 @@ public final class MockAggregator {
                 }
 
                 expectedValue.put(config, value);
-            } catch (ReflectiveOperationException ex) {
-                throw new IllegalArgumentException("Could not read topic", ex);
             }
         }
 

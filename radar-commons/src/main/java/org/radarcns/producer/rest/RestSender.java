@@ -59,7 +59,7 @@ public class RestSender implements KafkaSender {
             MediaType.parse("application/vnd.kafka.avro.v1+json; charset=utf-8");
     private RequestProperties requestProperties;
 
-    private Request.Builder isConnectedRequest;
+    private Request.Builder connectionTestRequest;
     private SchemaRetriever schemaRetriever;
     private RestClient httpClient;
     private final ConnectionState state;
@@ -110,7 +110,7 @@ public class RestSender implements KafkaSender {
      */
     private void setRestClient(RestClient newClient) {
         try {
-            isConnectedRequest = newClient.requestBuilder("").head();
+            connectionTestRequest = newClient.requestBuilder("").head();
         } catch (MalformedURLException ex) {
             throw new IllegalArgumentException("Schemaless topics do not have a valid URL", ex);
         }
@@ -134,8 +134,8 @@ public class RestSender implements KafkaSender {
     }
 
     /** Get a request to check the connection status. */
-    private synchronized Request getIsConnectedRequest() {
-        return isConnectedRequest.headers(requestProperties.headers).build();
+    private synchronized Request getConnectionTestRequest() {
+        return connectionTestRequest.headers(requestProperties.headers).build();
     }
 
     /** Set the compression of the REST client. */
@@ -181,7 +181,7 @@ public class RestSender implements KafkaSender {
         if (state.getState() == State.CONNECTED) {
             return true;
         }
-        try (Response response = httpClient.request(getIsConnectedRequest())) {
+        try (Response response = httpClient.request(getConnectionTestRequest())) {
             if (response.isSuccessful()) {
                 state.didConnect();
             } else if (response.code() == 401) {
@@ -253,6 +253,24 @@ public class RestSender implements KafkaSender {
             return this;
         }
 
+        /**
+         * Whether to try to send binary content. This only works if the server supports it. If not,
+         * there may be an additional round-trip.
+         * @param binary true if attempt to send binary content, false otherwise
+         */
+        public Builder useBinaryContent(boolean binary) {
+            this.binary = binary;
+            return this;
+        }
+
+        /**
+         * Whether to try to send binary content. This only works if the server supports it. If not,
+         * there may be an additional round-trip.
+         * @param binary true if attempt to send binary content, false otherwise
+         * @deprecated use {@link #useBinaryContent(boolean)} instead
+         */
+        @Deprecated
+        @SuppressWarnings("PMD.LinguisticNaming")
         public Builder hasBinaryContent(boolean binary) {
             this.binary = binary;
             return this;

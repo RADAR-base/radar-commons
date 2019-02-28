@@ -45,7 +45,7 @@ public abstract class ExpectedValue<V extends RecordCollector> {
      **/
     public ExpectedValue(Schema valueSchema, List<String> fieldNames) {
         this.schema = valueSchema;
-        this.fieldNames = fieldNames.toArray(new String[fieldNames.size()]);
+        this.fieldNames = fieldNames.toArray(new String[0]);
         timeReceivedPos = valueSchema.getField("timeReceived").pos();
 
         series = new HashMap<>();
