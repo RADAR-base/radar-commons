@@ -63,7 +63,7 @@ public class AggregateListCollector implements RecordCollector, SpecificAvroConv
      * Add a sample to the collection.
      * @param value new sample that has to be analysed
      */
-    public AggregateListCollector add(double[] value) {
+    public AggregateListCollector add(double... value) {
         if (collectors.length != value.length) {
             throw new IllegalArgumentException(
                     "The length of current input differs from the length of the value used to "

@@ -35,7 +35,7 @@ import java.nio.file.Path;
  */
 public class YamlConfigLoader {
     public static final JsonFactory YAML_FACTORY = new YAMLFactory();
-    private final static ObjectMapper YAML_MAPPER = new ObjectMapper(YAML_FACTORY);
+    private static final ObjectMapper YAML_MAPPER = new ObjectMapper(YAML_FACTORY);
 
     static {
         YAML_MAPPER.setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);

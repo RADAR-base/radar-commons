@@ -5,10 +5,6 @@ import com.fasterxml.jackson.annotation.JsonSetter;
 
 /** Mixin class to load ServerConfig files with. */
 public abstract class ServerConfigMixin {
-    public ServerConfigMixin() {
-        // POJO initializer
-    }
-
     /** Proxy host name. Null if not set. */
     @JsonProperty("proxy_host")
     public abstract String getProxyHost();

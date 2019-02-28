@@ -37,7 +37,7 @@ public class UniformSamplingReservoir implements SpecificAvroConvertible {
      * @param allValues list of values to sample from.
      * @throws NullPointerException if given allValues are {@code null}.
      */
-    public UniformSamplingReservoir(double[] allValues) {
+    public UniformSamplingReservoir(double... allValues) {
         this(allValues, allValues.length, MAX_SIZE_DEFAULT);
     }
 

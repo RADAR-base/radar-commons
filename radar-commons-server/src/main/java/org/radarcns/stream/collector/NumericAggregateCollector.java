@@ -179,10 +179,16 @@ public class NumericAggregateCollector implements RecordCollector, SpecificAvroC
         return sum.doubleValue() / getCount();
     }
 
+    /** Has a sampling reservoir. */
     public boolean hasReservoir() {
         return reservoir != null;
     }
 
+    /**
+     * Get the quartiles as estimated from a uniform sampling reservoir.
+     * @throws IllegalStateException if the collector does not keep a sampling reservoir, as
+     *                               indicated by {@link #hasReservoir()}.
+     */
     public List<Double> getQuartile() {
         if (!hasReservoir()) {
             throw new IllegalStateException("Cannot query quartiles without reservoir");
@@ -190,7 +196,11 @@ public class NumericAggregateCollector implements RecordCollector, SpecificAvroC
         return reservoir.getQuartiles();
     }
 
-    /** Difference between the first quartile and third quartile (IQR). */
+    /**
+     * Difference between the first quartile and third quartile (IQR).
+     * @throws IllegalStateException if the collector does not keep a sampling reservoir, as
+     *                               indicated by {@link #hasReservoir()}.
+     */
     public double getInterQuartileRange() {
         List<Double> quartiles = getQuartile();
         return BigDecimal.valueOf(quartiles.get(2))
