@@ -11,12 +11,6 @@ configurations {
     implementation {
         resolutionStrategy.cacheChangingModulesFor 0, 'SECONDS'
     }
-    api {
-        exclude group: 'org.xerial.snappy', module: 'snappy-java'
-        exclude group: 'com.thoughtworks.paranamer', module: 'paranamer'
-        exclude group: 'org.apache.commons', module: 'commons-compress'
-        exclude group: 'org.tukaani', module: 'xz'
-    }
 }
 
 // In this section you declare where to find the dependencies of your project
@@ -27,7 +21,12 @@ repositories {
 
 // In this section you declare the dependencies for your production and test code
 dependencies {
-    api group: 'org.apache.avro', name: 'avro', version: avroVersion
+    api (group: 'org.apache.avro', name: 'avro', version: avroVersion) {
+        exclude group: 'org.xerial.snappy', module: 'snappy-java'
+        exclude group: 'com.thoughtworks.paranamer', module: 'paranamer'
+        exclude group: 'org.apache.commons', module: 'commons-compress'
+        exclude group: 'org.tukaani', module: 'xz'
+    }
 
     // to implement producers and consumers
     api group: 'com.squareup.okhttp3', name: 'okhttp', version: okhttpVersion

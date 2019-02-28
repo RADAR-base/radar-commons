@@ -29,8 +29,7 @@ repositories {
 
 configurations {
     testImplementation {
-        exclude group: 'com.101tec'
-        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+
     }
 }
 
