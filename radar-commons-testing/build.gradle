@@ -16,7 +16,7 @@
 
 apply plugin: 'application'
 
-mainClassName = 'org.radarcns.mock.MockProducer'
+mainClassName = 'org.radarbase.mock.MockProducer'
 
 run {
     if (project.hasProperty("mockConfig")) {
@@ -26,11 +26,10 @@ run {
     }
 }
 
-ext.testingName = 'radar-commons-testing'
-ext.description = 'RADAR Common testing library mocking code and utilities.'
+description = 'RADAR Common testing library mocking code and utilities.'
 
-targetCompatibility = '1.8'
-sourceCompatibility = '1.8'
+targetCompatibility = '11.0'
+sourceCompatibility = '11.0'
 
 repositories {
     maven { url 'https://oss.jfrog.org/artifactory/oss-snapshot-local' }
@@ -42,8 +41,13 @@ dependencies {
     api group: 'org.apache.avro', name: 'avro', version: avroVersion
     api group: 'org.radarcns', name: 'radar-schemas-commons', version: radarSchemasVersion
 
+    implementation group: 'com.opencsv', name: 'opencsv', version: '4.5'
     implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
     implementation group: 'org.apache.kafka', name: 'kafka-clients', version: kafkaVersion
+    implementation (group: 'io.confluent', name: 'kafka-avro-serializer', version: confluentVersion) {
+        exclude group: 'com.101tec'
+        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    }
 
     runtimeOnly group: 'org.slf4j', name: 'slf4j-simple', version: slf4jVersion
 
@@ -52,111 +56,5 @@ dependencies {
     testImplementation group: 'org.hamcrest', name: 'hamcrest-all', version: hamcrestVersion
 }
 
-checkstyle {
-    // ignore tests
-    sourceSets = [sourceSets.main]
-    ignoreFailures = false
-}
-
-pmd {
-    // ignore tests
-    sourceSets = [sourceSets.main]
-    ignoreFailures = false
-}
-
-ext.sharedManifest = manifest {
-    attributes("Implementation-Title": testingName,
-            "Implementation-Version": version)
-}
-
-jar {
-    baseName testingName
-    manifest.from sharedManifest
-}
-
-// custom tasks for creating source/javadoc jars
-task sourcesJar(type: Jar, dependsOn: classes) {
-    baseName testingName
-    classifier = 'sources'
-    from sourceSets.main.allSource
-    manifest.from sharedManifest
-}
-
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    baseName testingName
-    classifier = 'javadoc'
-    from javadoc.destinationDir
-    manifest.from sharedManifest
-}
-
-// add javadoc/source jar tasks as artifacts
-artifacts {
-    archives sourcesJar, javadocJar
-}
-
-publishing {
-    publications {
-        RadarCommonsTestingPublication(MavenPublication) {
-            from components.java
-            artifact sourcesJar
-            artifact javadocJar
-            groupId project.group
-            artifactId testingName
-            version project.version
-            pom.withXml {
-                def root = asNode()
-                root.appendNode('description', description)
-                root.appendNode('name', testingName)
-                root.appendNode('url', githubUrl)
-                root.dependencies.'*'.findAll() {
-                    it.artifactId.text() == 'slf4j-simple'
-                }.each() {
-                    it.parent().remove(it)
-                }
-                root.children().last() + pomConfig
-            }
-        }
-    }
-}
-
-bintray {
-    user = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
-    key = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
-    override = false
-    publications = ['RadarCommonsTestingPublication']
-    pkg {
-        repo = project.group
-        name = testingName
-        userOrg = 'radar-cns'
-        desc = description
-        licenses = ['Apache-2.0']
-        websiteUrl = website
-        issueTrackerUrl = issueUrl
-        vcsUrl = githubUrl
-        githubRepo = githubRepoName
-        githubReleaseNotesFile = 'README.md'
-        version {
-            name = project.version
-            desc = description
-            vcsTag = System.getenv('TRAVIS_TAG')
-            released = new Date()
-        }
-    }
-}
-
-
-artifactory {
-    contextUrl = 'https://oss.jfrog.org/artifactory'
-    publish {
-        repository {
-            repoKey = 'oss-snapshot-local'
-            username = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
-            password = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
-            maven = true
-        }
-    }
-}
-
-artifactoryPublish {
-    publications('RadarCommonsTestingPublication')
-}
+apply from: '../gradle/publishing.gradle'
+apply from: '../gradle/codestyle.gradle'

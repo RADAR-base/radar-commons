@@ -1,0 +1,10 @@
+{
+     "namespace": "org.radarbase.stream.collector",
+     "name": "SamplingReservoirState",
+     "type": "record",
+     "fields": [
+        {"name": "samples", "type": {"type": "array", "items": "double"}, "doc": "java BigInteger integer value." },
+        {"name": "count", "type": "long", "doc": "Number of values processed for samples." },
+        {"name": "maxSize", "type": "int", "doc": "Maximum size of the reservoir." }
+     ]
+}

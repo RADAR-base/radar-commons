@@ -14,7 +14,7 @@ repositories {
 }
 
 dependencies {
-    implementation group: 'org.radarcns', name: 'radar-commons', version: '0.11.3'
+    implementation group: 'org.radarbase', name: 'radar-commons', version: '0.12.0'
 }
 ```
 
@@ -26,21 +26,21 @@ repositories {
 }
 
 dependencies {
-    implementation group: 'org.radarcns', name: 'radar-commons-server', version: '0.11.3'
+    implementation group: 'org.radarbase', name: 'radar-commons-server', version: '0.12.0'
 }
 ```
 
-For mocking clients of the RADAR-CNS infrastructure, use that 'radar-commons-testing' repository:
+For mocking clients of the RADAR-base infrastructure, use that 'radar-commons-testing' repository:
 
 ```gradle
 repositories {
     jcenter()
     maven { url 'http://packages.confluent.io/maven/' }
-    maven { url  'http://dl.bintray.com/radar-cns/org.radarcns' }
+    maven { url  'http://dl.bintray.com/radar-base/org.radarbase' }
 }
 
 dependencies {
-    testImplementation group: 'org.radarcns', name: 'radar-commons-testing', version: '0.11.3'
+    testImplementation group: 'org.radarbase', name: 'radar-commons-testing', version: '0.12.0'
 }
 ```
 
@@ -49,11 +49,11 @@ Finally, if the schema registry is losing old schemas and your code is not recov
 repositories {
     jcenter()
     maven { url 'http://packages.confluent.io/maven/' }
-    maven { url  'http://dl.bintray.com/radar-cns/org.radarcns' }
+    maven { url  'http://dl.bintray.com/radar-base/org.radarbase' }
 }
 
 dependencies {
-    runtimeOnly group: 'org.radarcns', name: 'radar-commons-unsafe', version: '0.11.3'
+    runtimeOnly group: 'org.radarbase', name: 'radar-commons-unsafe', version: '0.12.0'
 }
 ```
 
@@ -78,9 +78,9 @@ configurations.all {
 }
 
 dependencies {
-    compile group: 'org.radarcns', name: 'radar-commons', version: '0.11.4-SNAPSHOT', changing: true
+    compile group: 'org.radarbase', name: 'radar-commons', version: '0.12.1-SNAPSHOT'
 }
 ```
 
 Code should be formatted using the [Google Java Code Style Guide](https://google.github.io/styleguide/javaguide.html).
-If you want to contribute a feature or fix browse our [issues](https://github.com/RADAR-CNS/RADAR-Commons/issues), and please make a pull request.
+If you want to contribute a feature or fix browse our [issues](https://github.com/RADAR-base/radar-commons/issues), and please make a pull request.

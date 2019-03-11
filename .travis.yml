@@ -1,6 +1,6 @@
 language: java
 jdk:
-  - oraclejdk8
+  - oraclejdk11
 sudo: false
 
 cache:
@@ -12,8 +12,6 @@ cache:
     - $HOME/.gradle/native
     - $HOME/.gradle/wrapper
 
-before_install:
-  - ./gradlew downloadDependencies
 after_script:
   - ./gradlew sendCoverageToCodacy
 

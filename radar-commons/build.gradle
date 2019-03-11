@@ -1,5 +1,4 @@
-ext.moduleName = 'radar-commons'
-ext.description = 'RADAR Common utilities library.'
+description = 'RADAR Common utilities library.'
 
 targetCompatibility = '1.7'
 sourceCompatibility = '1.7'
@@ -9,11 +8,9 @@ sourceCompatibility = '1.7'
 //---------------------------------------------------------------------------//
 
 configurations {
-    codacy
-}
-
-configurations.compile {
-    resolutionStrategy.cacheChangingModulesFor 0, 'SECONDS'
+    implementation {
+        resolutionStrategy.cacheChangingModulesFor 0, 'SECONDS'
+    }
 }
 
 // In this section you declare where to find the dependencies of your project
@@ -33,8 +30,7 @@ dependencies {
 
     // to implement producers and consumers
     api group: 'com.squareup.okhttp3', name: 'okhttp', version: okhttpVersion
-
-    implementation group: 'org.json', name: 'json', version: orgJsonVersion
+    api group: 'org.json', name: 'json', version: orgJsonVersion
 
     // The production code uses the SLF4J logging API at compile time
     implementation group: 'org.slf4j', name:'slf4j-api', version: slf4jVersion
@@ -45,132 +41,7 @@ dependencies {
     testImplementation group: 'org.mockito', name: 'mockito-core', version: mockitoVersion
     testImplementation group: 'com.squareup.okhttp3', name: 'mockwebserver', version: okhttpVersion
     testRuntime group: 'org.slf4j', name: 'slf4j-simple', version: slf4jVersion
-
-    codacy group: 'com.github.codacy', name: 'codacy-coverage-reporter', version: codacyVersion
 }
 
-//---------------------------------------------------------------------------//
-// Testing                                                                   //
-//---------------------------------------------------------------------------//
-checkstyle {
-    // ignore tests
-    sourceSets = [sourceSets.main]
-}
-
-pmd {
-    // ignore tests
-    sourceSets = [sourceSets.main]
-}
-
-jacocoTestReport {
-    reports {
-        xml.enabled true
-        csv.enabled false
-        html.enabled false
-    }
-}
-
-task downloadDependencies(type: Exec) {
-    configurations.testRuntime.files
-    configurations.codacy.files
-    configurations.jacocoAnt.files
-    commandLine 'echo', 'Downloaded all dependencies'
-}
-
-task sendCoverageToCodacy(type: JavaExec, dependsOn: jacocoTestReport) {
-    main = 'com.codacy.CodacyCoverageReporter'
-    classpath = configurations.codacy
-    args = ['-l', 'Java', '-r', "${buildDir}/reports/jacoco/test/jacocoTestReport.xml"]
-}
-
-//---------------------------------------------------------------------------//
-// Build system metadata                                                     //
-//---------------------------------------------------------------------------//
-
-ext.sharedManifest = manifest {
-    attributes("Implementation-Title": moduleName,
-            "Implementation-Version": version)
-}
-
-jar {
-    manifest.from sharedManifest
-}
-// custom tasks for creating source/javadoc jars
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
-    manifest.from sharedManifest
-}
-
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
-    from javadoc.destinationDir
-    manifest.from sharedManifest
-}
-
-// add javadoc/source jar tasks as artifacts
-artifacts {
-    archives javadocJar
-    archives sourcesJar
-}
-
-publishing {
-    publications {
-        RadarCommonsPublication(MavenPublication) {
-            from components.java
-            artifact sourcesJar
-            artifact javadocJar
-            groupId project.group
-            artifactId moduleName
-            version project.version
-            pom.withXml {
-                def root = asNode()
-                root.appendNode('description', description)
-                root.appendNode('name', moduleName)
-                root.appendNode('url', githubUrl)
-                root.children().last() + pomConfig
-            }
-        }
-    }
-}
-
-bintray {
-    user project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
-    key project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
-    override false
-    publications 'RadarCommonsPublication'
-    pkg {
-        repo = project.group
-        name = moduleName
-        userOrg = 'radar-cns'
-        desc = description
-        licenses = ['Apache-2.0']
-        websiteUrl = website
-        issueTrackerUrl = issueUrl
-        vcsUrl = githubUrl
-        githubRepo = githubRepoName
-        githubReleaseNotesFile = 'README.md'
-        version {
-            name = project.version
-            desc = description
-            vcsTag = System.getenv('TRAVIS_TAG')
-            released = new Date()
-        }
-    }
-}
-
-artifactory {
-    contextUrl = 'https://oss.jfrog.org/artifactory'
-    publish {
-        repository {
-            repoKey = 'oss-snapshot-local'
-            username = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
-            password = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
-            maven = true
-        }
-    }
-}
-
-artifactoryPublish {
-    publications('RadarCommonsPublication')
-}
+apply from: '../gradle/publishing.gradle'
+apply from: '../gradle/codestyle.gradle'

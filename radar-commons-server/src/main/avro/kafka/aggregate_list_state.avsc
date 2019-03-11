@@ -1,0 +1,9 @@
+{
+    "namespace": "org.radarbase.stream.collector",
+    "name": "AggregateListState",
+    "type": "record",
+    "doc": "State of the AggregateListCollector",
+    "fields": [
+        { "name": "aggregates", "type": {"type": "array", "items": ["NumericAggregateState"]}, "doc": "Collectors part of this aggregate."}
+    ]
+}
