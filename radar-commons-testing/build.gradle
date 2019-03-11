@@ -16,7 +16,7 @@
 
 apply plugin: 'application'
 
-mainClassName = 'org.radarcns.mock.MockProducer'
+mainClassName = 'org.radarbase.mock.MockProducer'
 
 run {
     if (project.hasProperty("mockConfig")) {

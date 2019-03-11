@@ -52,9 +52,9 @@ apply from: '../gradle/publishing.gradle'
 apply from: '../gradle/codestyle.gradle'
 
 tasks.withType(Checkstyle) {
-    exclude '**/org/radarcns/stream/collector/*State.*'
+    exclude '**/org/radarbase/stream/collector/*State.*'
 }
 
 tasks.withType(Pmd) {
-    exclude '**/org/radarcns/stream/collector/*State.*'
+    exclude '**/org/radarbase/stream/collector/*State.*'
 }
