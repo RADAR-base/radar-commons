@@ -156,12 +156,14 @@ class RestTopicSender<K, V>
             logger.warn("Latest Avro encoding is not supported. Switching to legacy "
                     + "encoding.");
             sender.useLegacyEncoding(
-                    RestSender.KAFKA_REST_ACCEPT_LEGACY_ENCODING, RestSender.KAFKA_REST_AVRO_LEGACY_ENCODING,
+                    RestSender.KAFKA_REST_ACCEPT_LEGACY_ENCODING,
+                    RestSender.KAFKA_REST_AVRO_LEGACY_ENCODING,
                     false);
         } else {
             RequestBody body = request.body();
             MediaType contentType = body != null ? body.contentType() : null;
-            if (contentType == null || contentType.equals(RestSender.KAFKA_REST_AVRO_LEGACY_ENCODING)) {
+            if (contentType == null
+                    || contentType.equals(RestSender.KAFKA_REST_AVRO_LEGACY_ENCODING)) {
                 throw fail(request, response,
                     new IOException("Content-Type " + contentType + " not accepted by server."));
             } else {

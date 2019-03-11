@@ -220,7 +220,8 @@ public class RestClient {
                 this.client.hostnameVerifier(RestUtils.UNSAFE_HOSTNAME_VERIFIER);
             } else {
                 X509TrustManager trustManager = RestUtils.systemDefaultTrustManager();
-                SSLSocketFactory socketFactory = RestUtils.systemDefaultSslSocketFactory(trustManager);
+                SSLSocketFactory socketFactory = RestUtils.systemDefaultSslSocketFactory(
+                        trustManager);
                 this.client.sslSocketFactory(socketFactory, trustManager);
                 this.client.hostnameVerifier(RestUtils.DEFAULT_HOSTNAME_VERIFIER);
             }
