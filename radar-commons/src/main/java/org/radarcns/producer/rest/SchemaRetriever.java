@@ -106,7 +106,7 @@ public class SchemaRetriever {
                 .append(subject)
                 .append("/versions/");
         if (version > 0) {
-            pathBuilder.append(String.valueOf(version));
+            pathBuilder.append(version);
         } else {
             pathBuilder.append("latest");
         }
