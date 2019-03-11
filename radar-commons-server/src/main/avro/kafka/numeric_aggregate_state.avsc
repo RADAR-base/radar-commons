@@ -1,5 +1,5 @@
 {
-    "namespace": "org.radarcns.stream.collector",
+    "namespace": "org.radarbase.stream.collector",
     "name": "NumericAggregateState",
     "type": "record",
     "doc": "State of the NumericAggregateCollector",

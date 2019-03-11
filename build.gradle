@@ -31,7 +31,7 @@ subprojects {
     //---------------------------------------------------------------------------//
 
     version = '0.12.0'
-    group = 'org.radarcns'
+    group = 'org.radarbase'
     ext.githubRepoName = 'RADAR-base/radar-commons'
 
     ext.slf4jVersion = '1.7.26'
