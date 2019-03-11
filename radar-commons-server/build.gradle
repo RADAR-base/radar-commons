@@ -27,12 +27,6 @@ repositories {
     maven { url 'https://oss.jfrog.org/artifactory/oss-snapshot-local' }
 }
 
-configurations {
-    testImplementation {
-
-    }
-}
-
 dependencies {
     api project(':radar-commons')
 
