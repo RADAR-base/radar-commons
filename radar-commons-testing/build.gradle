@@ -18,7 +18,12 @@ apply plugin: 'application'
 
 mainClassName = 'org.radarbase.mock.MockProducer'
 
+configurations {
+    applicationRuntimeOnly
+}
+
 run {
+    classpath += configurations.applicationRuntimeOnly
     if (project.hasProperty("mockConfig")) {
         args project.property("mockConfig")
     } else {
@@ -49,7 +54,7 @@ dependencies {
         exclude group: 'org.slf4j', module: 'slf4j-log4j12'
     }
 
-    runtimeOnly group: 'org.slf4j', name: 'slf4j-simple', version: slf4jVersion
+    applicationRuntimeOnly group: 'org.slf4j', name: 'slf4j-simple', version: slf4jVersion
 
     // Direct producer uses KafkaAvroSerializer if initialized
     testImplementation group: 'junit', name: 'junit', version: junitVersion
