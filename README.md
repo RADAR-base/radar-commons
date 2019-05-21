@@ -69,7 +69,7 @@ For latest code use `dev` branch. This is released on JFrog's OSS Artifactory. T
 
 ```gradle
 repositories {
-    maven { url  'http://oss.jfrog.org/artifactory/oss-snapshot-local/' }
+    maven { url  'https://repo.thehyve.nl/content/repositories/snapshots' }
 }
 
 configurations.all {
@@ -78,7 +78,7 @@ configurations.all {
 }
 
 dependencies {
-    compile group: 'org.radarbase', name: 'radar-commons', version: '0.12.1-SNAPSHOT'
+    compile group: 'org.radarbase', name: 'radar-commons', version: '0.12.2-SNAPSHOT'
 }
 ```
 
