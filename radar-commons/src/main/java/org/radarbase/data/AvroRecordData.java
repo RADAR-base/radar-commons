@@ -49,7 +49,7 @@ public class AvroRecordData<K, V> implements RecordData<K, V> {
 
     @Override
     public boolean isEmpty() {
-        return records.isEmpty();
+        return false;
     }
 
     @Override

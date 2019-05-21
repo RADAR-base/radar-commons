@@ -148,19 +148,19 @@ public class NumericAggregateCollectorTest {
     @Test
     public void testAddRecordWithNull() {
         this.valueCollector = new NumericAggregateCollector("recordsCached", ApplicationRecordCounts.getClassSchema(), false);
-        valueCollector.add(new ApplicationRecordCounts(0d, 1, 0, 1));
+        valueCollector.add(new ApplicationRecordCounts(0d, 1L, 0L, 1));
         assertEquals(1, valueCollector.getCount());
         assertEquals(1d, valueCollector.getMean(), 1e-5d);
-        valueCollector.add(new ApplicationRecordCounts(0d, null, 0, 1));
+        valueCollector.add(new ApplicationRecordCounts(0d, null, 0L, 1));
         assertEquals(1, valueCollector.getCount());
         assertEquals(1d, valueCollector.getMean(), 1d);
-        valueCollector.add(new ApplicationRecordCounts(0d, 2, 0, 1));
+        valueCollector.add(new ApplicationRecordCounts(0d, 2L, 0L, 1));
         assertEquals(2, valueCollector.getCount());
         assertEquals(1.5d, valueCollector.getMean(), 1e-5d);
     }
 
     @Test
-    public void testSerialization() throws IOException {
+    public void testSerialization() {
         valueCollector = new NumericAggregateCollector();
         NumericAggregateState state = new NumericAggregateState();
         state.setName("test");
