@@ -30,7 +30,7 @@ subprojects {
     // Configuration                                                             //
     //---------------------------------------------------------------------------//
 
-    version = '0.12.1-SNAPSHOT'
+    version = '0.12.1'
     group = 'org.radarbase'
     ext.githubRepoName = 'RADAR-base/radar-commons'
 
