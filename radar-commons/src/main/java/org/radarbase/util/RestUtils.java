@@ -117,7 +117,7 @@ public final class RestUtils {
      */
     public static SSLSocketFactory systemDefaultSslSocketFactory(X509TrustManager trustManager) {
         try {
-            SSLContext sslContext = Platform.get().getSSLContext();
+            SSLContext sslContext = Platform.get().newSSLContext();
             sslContext.init(null, new TrustManager[] { trustManager }, null);
             return sslContext.getSocketFactory();
         } catch (GeneralSecurityException e) {

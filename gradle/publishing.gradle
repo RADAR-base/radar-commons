@@ -1,6 +1,5 @@
 apply plugin: 'maven-publish'
 apply plugin: 'com.jfrog.bintray'
-apply plugin: 'com.jfrog.artifactory'
 
 def sharedManifest = manifest {
     attributes("Implementation-Title": project.name,
@@ -26,6 +25,8 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     from javadoc.destinationDir
     manifest.from sharedManifest
 }
+
+ext.nexusRepoBase = 'https://repo.thehyve.nl/content/repositories'
 
 // add javadoc/source jar tasks as artifacts
 artifacts {
@@ -79,6 +80,17 @@ publishing {
             }
         }
     }
+    repositories {
+        maven {
+            def releasesRepoUrl = "$nexusRepoBase/releases"
+            def snapshotsRepoUrl = "$nexusRepoBase/snapshots"
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+            credentials {
+                username = project.hasProperty('nexusUser') ? project.property('nexusUser') : System.getenv('NEXUS_USER')
+                password = project.hasProperty('nexusPassword') ? project.property('nexusPassword') : System.getenv('NEXUS_PASSWORD')
+            }
+        }
+    }
 }
 
 bintray {
@@ -104,21 +116,4 @@ bintray {
             released = new Date()
         }
     }
-}
-
-
-artifactory {
-    contextUrl = 'https://oss.jfrog.org/artifactory'
-    publish {
-        repository {
-            repoKey = 'oss-snapshot-local'
-            username = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
-            password = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
-            maven = true
-        }
-    }
-}
-
-artifactoryPublish {
-    publications('mavenJar')
 }
