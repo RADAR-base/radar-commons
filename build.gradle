@@ -16,7 +16,7 @@
 plugins {
     // Get bintray version
     id 'com.jfrog.bintray' version '1.8.4' apply false
-    id 'com.commercehub.gradle.plugin.avro' version '0.17.0'
+    id 'com.commercehub.gradle.plugin.avro' version '0.16.0'
 }
 
 subprojects {
@@ -35,7 +35,7 @@ subprojects {
 
     ext.slf4jVersion = '1.7.26'
     ext.kafkaVersion = '2.3.0'
-    ext.avroVersion = '1.9.0'
+    ext.avroVersion = '1.8.2'
     ext.confluentVersion = '5.3.0'
     ext.jacksonVersion = '2.9.9.1'
     ext.jacksonYamlVersion = '2.9.9'
