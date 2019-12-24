@@ -65,7 +65,7 @@ For server utilities, include `radar-commons-server`:
 ```gradle
 repositories {
     jcenter()
-    maven { url 'http://packages.confluent.io/maven/' }
+    maven { url 'https://packages.confluent.io/maven/' }
 }
 
 dependencies {
@@ -78,8 +78,8 @@ For mocking clients of the RADAR-base infrastructure, use that 'radar-commons-te
 ```gradle
 repositories {
     jcenter()
-    maven { url 'http://packages.confluent.io/maven/' }
-    maven { url  'http://dl.bintray.com/radar-base/org.radarbase' }
+    maven { url 'https://packages.confluent.io/maven/' }
+    maven { url  'https://dl.bintray.com/radar-base/org.radarbase' }
 }
 
 dependencies {
@@ -91,8 +91,8 @@ Finally, if the schema registry is losing old schemas and your code is not recov
 ```gradle
 repositories {
     jcenter()
-    maven { url 'http://packages.confluent.io/maven/' }
-    maven { url  'http://dl.bintray.com/radar-base/org.radarbase' }
+    maven { url 'https://packages.confluent.io/maven/' }
+    maven { url  'https://dl.bintray.com/radar-base/org.radarbase' }
 }
 
 dependencies {

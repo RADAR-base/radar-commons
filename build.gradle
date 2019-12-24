@@ -49,15 +49,15 @@ subprojects {
 
     ext.githubUrl = "https://github.com/$githubRepoName"
     ext.issueUrl = "https://github.com/$githubRepoName/issues"
-    ext.website = 'http://radar-base.org'
+    ext.website = 'https://radar-base.org'
 
     //---------------------------------------------------------------------------//
     // Dependencies                                                              //
     //---------------------------------------------------------------------------//
     repositories {
         jcenter()
-        maven { url 'http://packages.confluent.io/maven/' }
-        maven { url 'http://dl.bintray.com/typesafe/maven-releases' }
+        maven { url 'https://packages.confluent.io/maven/' }
+        maven { url 'https://dl.bintray.com/typesafe/maven-releases' }
         flatDir {
             dirs "${project.rootDir}/libs"
         }
@@ -111,5 +111,5 @@ subprojects {
 }
 
 wrapper {
-    gradleVersion '5.5.1'
+    gradleVersion '6.0.1'
 }
