@@ -16,6 +16,7 @@
 
 package org.radarbase.mock.model;
 
+import com.opencsv.exceptions.CsvValidationException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -81,6 +82,8 @@ public class MockAggregator {
                 }
 
                 expectedValue.put(config, value);
+            } catch (CsvValidationException ex) {
+                throw new IOException(ex);
             }
         }
 

@@ -16,6 +16,7 @@
 
 package org.radarbase.mock;
 
+import com.opencsv.exceptions.CsvValidationException;
 import java.io.IOException;
 import org.apache.avro.SchemaValidationException;
 import org.radarbase.data.Record;
@@ -50,6 +51,8 @@ public class MockFileSender {
             }
         } catch (SchemaValidationException e) {
             throw new IOException("Failed to match schemas", e);
+        } catch (CsvValidationException e) {
+            throw new IOException("Failed to read CSV file", e);
         }
     }
 }

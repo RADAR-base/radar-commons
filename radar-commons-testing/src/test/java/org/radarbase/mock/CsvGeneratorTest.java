@@ -21,6 +21,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvValidationException;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
@@ -45,7 +46,7 @@ public class CsvGeneratorTest {
     }
 
     @Test
-    public void generateMockConfig() throws IOException {
+    public void generateMockConfig() throws IOException, CsvValidationException {
         CsvGenerator generator = new CsvGenerator();
 
         MockDataConfig config = makeConfig();
@@ -73,7 +74,7 @@ public class CsvGeneratorTest {
     }
 
     @Test
-    public void generateGenerator() throws IOException {
+    public void generateGenerator() throws IOException, CsvValidationException {
         CsvGenerator generator = new CsvGenerator();
 
         MockDataConfig config = makeConfig();
