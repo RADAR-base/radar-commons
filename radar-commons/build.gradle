@@ -1,7 +1,7 @@
 description = 'RADAR Common utilities library.'
 
-targetCompatibility = '1.7'
-sourceCompatibility = '1.7'
+targetCompatibility = '1.8'
+sourceCompatibility = '1.8'
 
 //---------------------------------------------------------------------------//
 // Sources and classpath configurations                                      //

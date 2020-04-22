@@ -382,10 +382,10 @@ public final class AvroDataMapperFactory {
             @Override
             public Object convertAvro(Object obj) {
                 @SuppressWarnings("unchecked")
-                Map<String, ?> map = (Map<String, ?>) obj;
+                Map<? extends CharSequence, ?> map = (Map<? extends CharSequence, ?>) obj;
                 Map<String, Object> toMap = new HashMap<>(map.size() * 4 / 3 + 1);
-                for (Map.Entry<String, ?> entry : map.entrySet()) {
-                    toMap.put(entry.getKey(), subMapper.convertAvro(entry.getValue()));
+                for (Map.Entry<? extends CharSequence, ?> entry : map.entrySet()) {
+                    toMap.put(entry.getKey().toString(), subMapper.convertAvro(entry.getValue()));
                 }
                 return toMap;
             }
