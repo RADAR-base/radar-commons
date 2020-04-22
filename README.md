@@ -14,7 +14,7 @@ repositories {
 }
 
 dependencies {
-    implementation group: 'org.radarbase', name: 'radar-commons', version: '0.12.1'
+    implementation group: 'org.radarbase', name: 'radar-commons', version: '0.12.3'
 }
 ```
 
@@ -69,7 +69,7 @@ repositories {
 }
 
 dependencies {
-    implementation group: 'org.radarbase', name: 'radar-commons-server', version: '0.12.1'
+    implementation group: 'org.radarbase', name: 'radar-commons-server', version: '0.12.3'
 }
 ```
 
@@ -83,7 +83,7 @@ repositories {
 }
 
 dependencies {
-    testImplementation group: 'org.radarbase', name: 'radar-commons-testing', version: '0.12.1'
+    testImplementation group: 'org.radarbase', name: 'radar-commons-testing', version: '0.12.3'
 }
 ```
 
@@ -96,7 +96,7 @@ repositories {
 }
 
 dependencies {
-    runtimeOnly group: 'org.radarbase', name: 'radar-commons-unsafe', version: '0.12.1'
+    runtimeOnly group: 'org.radarbase', name: 'radar-commons-unsafe', version: '0.12.3'
 }
 ```
 
@@ -121,7 +121,7 @@ configurations.all {
 }
 
 dependencies {
-    compile group: 'org.radarbase', name: 'radar-commons', version: '0.12.2-SNAPSHOT'
+    compile group: 'org.radarbase', name: 'radar-commons', version: '0.12.4-SNAPSHOT'
 }
 ```
 
