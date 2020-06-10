@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.X509TrustManager;
 import okhttp3.Callback;
+import okhttp3.Headers;
 import okhttp3.HttpUrl;
 import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
@@ -46,10 +47,12 @@ public class RestClient {
 
     private final ServerConfig server;
     private final OkHttpClient httpClient;
+    private final Headers headers;
 
     private RestClient(Builder builder) {
         this.server = Objects.requireNonNull(builder.serverConfig);
         this.httpClient = builder.client.build();
+        this.headers = builder.requestHeaders;
     }
 
     /** OkHttp client. */
@@ -132,7 +135,7 @@ public class RestClient {
      * @throws MalformedURLException if the path not valid
      */
     public Request.Builder requestBuilder(String relativePath) throws MalformedURLException {
-        return new Request.Builder().url(getRelativeUrl(relativePath));
+        return new Request.Builder().url(getRelativeUrl(relativePath)).headers(headers);
     }
 
     /**
@@ -201,6 +204,7 @@ public class RestClient {
     public static class Builder {
         private ServerConfig serverConfig;
         private final OkHttpClient.Builder client;
+        private Headers requestHeaders = Headers.of();
 
         public Builder(OkHttpClient client) {
             this(client.newBuilder());
@@ -237,6 +241,11 @@ public class RestClient {
         /** Builder to extend the HTTP client with. */
         public OkHttpClient.Builder httpClientBuilder() {
             return client;
+        }
+
+        public Builder headers(Headers headers) {
+            this.requestHeaders = headers;
+            return this;
         }
 
         /** Whether to enable GZIP compression. */

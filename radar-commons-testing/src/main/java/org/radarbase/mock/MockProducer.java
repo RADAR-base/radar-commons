@@ -16,11 +16,12 @@
 
 package org.radarbase.mock;
 
-import static io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG;
+import static io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.BOOTSTRAP_SERVERS_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG;
 
+import com.opencsv.exceptions.CsvValidationException;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -59,7 +60,7 @@ import org.slf4j.LoggerFactory;
  * A Mock Producer class that can be used to stream data. It can use MockFileSender and MockDevice
  * for testing purposes, with direct or indirect streaming.
  */
-@SuppressWarnings("PMD.DoNotCallSystemExit")
+@SuppressWarnings("PMD")
 public class MockProducer {
 
     private static final Logger logger = LoggerFactory.getLogger(MockProducer.class);
@@ -120,6 +121,13 @@ public class MockProducer {
             for (int i = 0; i < mockFiles.size(); i++) {
                 files.add(new MockFileSender(tmpSenders.get(i + numDevices), mockFiles.get(i)));
             }
+        } catch (CsvValidationException ex) {
+            if (tmpSenders != null) {
+                for (KafkaSender sender : tmpSenders) {
+                    sender.close();
+                }
+            }
+            throw new IOException("Cannot read CSV file", ex);
         } catch (Exception ex) {
             if (tmpSenders != null) {
                 for (KafkaSender sender : tmpSenders) {
@@ -185,7 +193,7 @@ public class MockProducer {
 
     /** Start sending data. */
     public void start() throws IOException {
-        for (MockDevice device : devices) {
+        for (MockDevice<?> device : devices) {
             device.start();
         }
         for (MockFileSender file : files) {
@@ -197,11 +205,11 @@ public class MockProducer {
     public void shutdown() throws IOException, InterruptedException, SchemaValidationException {
         if (!devices.isEmpty()) {
             logger.info("Shutting down mock devices");
-            for (MockDevice device : devices) {
+            for (MockDevice<?> device : devices) {
                 device.shutdown();
             }
             logger.info("Waiting for mock devices to finish...");
-            for (MockDevice device : devices) {
+            for (MockDevice<?> device : devices) {
                 device.join(5_000L);
             }
         }
@@ -210,7 +218,7 @@ public class MockProducer {
             sender.close();
         }
 
-        for (MockDevice device : devices) {
+        for (MockDevice<?> device : devices) {
             device.checkException();
         }
     }
@@ -345,7 +353,7 @@ public class MockProducer {
     }
 
     private List<MockCsvParser<ObservationKey>> createMockFiles(List<MockDataConfig> configs,
-            Path dataRoot) throws IOException {
+            Path dataRoot) throws IOException, CsvValidationException {
 
         List<MockCsvParser<ObservationKey>> result = new ArrayList<>(configs.size());
 

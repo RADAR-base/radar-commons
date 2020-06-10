@@ -16,6 +16,7 @@
 
 package org.radarbase.mock.data;
 
+import com.opencsv.exceptions.CsvValidationException;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.apache.avro.specific.SpecificRecord;
@@ -71,7 +72,7 @@ public class MockRecordValidator {
 
             checkDuration();
             checkFrequency(line);
-        } catch (IOException e) {
+        } catch (IOException | CsvValidationException e) {
             error("Cannot open file", -1, e);
         }
     }

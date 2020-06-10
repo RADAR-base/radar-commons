@@ -16,6 +16,8 @@
 
 package org.radarbase.mock.data;
 
+import static org.junit.Assert.assertThrows;
+
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.Files;
@@ -34,8 +36,6 @@ public class MockRecordValidatorTest {
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
     private Path root;
 
     private MockDataConfig makeConfig() throws IOException {
@@ -63,7 +63,6 @@ public class MockRecordValidatorTest {
         MockDataConfig config = makeConfig();
         generator.generate(config, 100_000L, root);
 
-        // doesn't throw
         new MockRecordValidator(config, 100_000L, root).validate();
     }
 
@@ -74,8 +73,7 @@ public class MockRecordValidatorTest {
         MockDataConfig config = makeConfig();
         generator.generate(config, 100_000L, root);
 
-        exception.expect(IllegalArgumentException.class);
-        new MockRecordValidator(config, 10_000L, root).validate();
+        assertValidateThrows(IllegalArgumentException.class, config);
     }
 
     @Test
@@ -88,7 +86,7 @@ public class MockRecordValidatorTest {
             writer.append("test,a,b,1,2,1\n");
         }
 
-        new MockRecordValidator(config, 2_000L, root).validate();
+        assertValidate(config);
     }
 
     @Test
@@ -101,8 +99,7 @@ public class MockRecordValidatorTest {
             writer.append("test,a,c,1,2,1\n");
         }
 
-        exception.expect(IllegalArgumentException.class);
-        new MockRecordValidator(config, 2_000L, root).validate();
+        assertValidateThrows(IllegalArgumentException.class, config);
     }
 
     @Test
@@ -115,8 +112,7 @@ public class MockRecordValidatorTest {
             writer.append("test,a,b,1,0,1\n");
         }
 
-        exception.expect(IllegalArgumentException.class);
-        new MockRecordValidator(config, 2_000L, root).validate();
+        assertValidateThrows(IllegalArgumentException.class, config);
     }
 
 
@@ -130,8 +126,7 @@ public class MockRecordValidatorTest {
             writer.append("test,a,1,2,1\n");
         }
 
-        exception.expect(NullPointerException.class);
-        new MockRecordValidator(config, 2_000L, root).validate();
+        assertValidateThrows(NullPointerException.class, config);
     }
 
     @Test
@@ -144,8 +139,7 @@ public class MockRecordValidatorTest {
             writer.append("test,a,b,1,2\n");
         }
 
-        exception.expect(NullPointerException.class);
-        new MockRecordValidator(config, 2_000L, root).validate();
+        assertValidateThrows(NullPointerException.class, config);
     }
 
     @Test
@@ -158,8 +152,7 @@ public class MockRecordValidatorTest {
             writer.append("test,a,b,1,2,1\n");
         }
 
-        exception.expect(ArrayIndexOutOfBoundsException.class);
-        new MockRecordValidator(config, 2_000L, root).validate();
+        assertValidateThrows(ArrayIndexOutOfBoundsException.class, config);
     }
 
     @Test
@@ -172,8 +165,7 @@ public class MockRecordValidatorTest {
             writer.append("test,a,b,1,2,b\n");
         }
 
-        exception.expect(NumberFormatException.class);
-        new MockRecordValidator(config, 2_000L, root).validate();
+        assertValidateThrows(NumberFormatException.class, config);
     }
 
     @Test
@@ -188,6 +180,15 @@ public class MockRecordValidatorTest {
             writer.append("test,a,b,1,2,1,1,1\n");
         }
 
+        assertValidate(config);
+    }
+
+    private <T extends Throwable> void assertValidateThrows(Class<T> ex, MockDataConfig config) {
+        MockRecordValidator validator = new MockRecordValidator(config, 2_000L, root);
+        assertThrows(ex, validator::validate);
+    }
+
+    private void assertValidate(MockDataConfig config) {
         new MockRecordValidator(config, 2_000L, root).validate();
     }
 }

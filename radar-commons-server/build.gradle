@@ -43,7 +43,7 @@ dependencies {
     testImplementation group: 'org.radarcns', name: 'radar-schemas-commons', version: radarSchemasVersion
     // Direct producer uses KafkaAvroSerializer if initialized
     testImplementation group: 'junit', name: 'junit', version: junitVersion
-    testRuntime group: 'org.slf4j', name: 'slf4j-simple', version: slf4jVersion
+    testRuntimeOnly group: 'org.slf4j', name: 'slf4j-simple', version: slf4jVersion
 }
 
 apply from: '../gradle/publishing.gradle'

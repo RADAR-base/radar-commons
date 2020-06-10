@@ -60,8 +60,12 @@ public class SchemaRetriever {
         PRIMITIVE_SCHEMAS.put(byte[].class, Schema.create(Type.BYTES));
     }
 
-    private final ConcurrentMap<String, TimedSchemaMetadata> cache;
-    private RestClient httpClient;
+    private final ConcurrentMap<String, TimedSchemaMetadata> cache = new ConcurrentHashMap<>();
+    private final RestClient restClient;
+
+    private SchemaRetriever(RestClient client) {
+        restClient = client;
+    }
 
     /**
      * Schema retriever for a Confluent Schema Registry.
@@ -69,27 +73,10 @@ public class SchemaRetriever {
      * @param connectionTimeout timeout in seconds.
      */
     public SchemaRetriever(ServerConfig config, long connectionTimeout) {
-        cache = new ConcurrentHashMap<>();
-        httpClient = RestClient.global()
-                .server(Objects.requireNonNull(config))
-                .timeout(connectionTimeout, TimeUnit.SECONDS)
-                .build();
-    }
-
-    /**
-     * Set the connection timeout.
-     * @param connectionTimeout timeout in seconds.
-     */
-    public synchronized void setConnectionTimeout(long connectionTimeout) {
-        if (httpClient.getTimeout() != connectionTimeout) {
-            httpClient = httpClient.newBuilder()
-                    .timeout(connectionTimeout, TimeUnit.SECONDS)
-                    .build();
-        }
-    }
-
-    private synchronized RestClient getRestClient() {
-        return httpClient;
+        this(RestClient.global()
+                        .server(Objects.requireNonNull(config))
+                        .timeout(connectionTimeout, TimeUnit.SECONDS)
+                        .build());
     }
 
     /** The subject in the Avro Schema Registry, given a Kafka topic. */
@@ -109,7 +96,6 @@ public class SchemaRetriever {
         } else {
             pathBuilder.append("latest");
         }
-        RestClient restClient = getRestClient();
         Request request = restClient.requestBuilder(pathBuilder.toString())
                 .addHeader("Accept", "application/json")
                 .build();
@@ -147,7 +133,6 @@ public class SchemaRetriever {
             throws JSONException, IOException {
         String subject = subject(topic, ofValue);
         if (metadata.getId() == null) {
-            RestClient restClient = getRestClient();
 
             Request request = restClient.requestBuilder("/subjects/" + subject + "/versions")
                     .addHeader("Accept", "application/json")
@@ -179,7 +164,7 @@ public class SchemaRetriever {
         }
     }
 
-    private class SchemaRequestBody extends RequestBody {
+    private static class SchemaRequestBody extends RequestBody {
         private final Schema schema;
 
         private SchemaRequestBody(Schema schema) {
@@ -221,7 +206,7 @@ public class SchemaRetriever {
                 + "Pass null, a primitive CONTENT_TYPE or a GenericContainer.");
     }
 
-    private class TimedSchemaMetadata {
+    private static class TimedSchemaMetadata {
         private final ParsedSchemaMetadata metadata;
         private final long expiry;
 

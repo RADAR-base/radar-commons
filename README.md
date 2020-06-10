@@ -14,7 +14,7 @@ repositories {
 }
 
 dependencies {
-    implementation group: 'org.radarbase', name: 'radar-commons', version: '0.12.1'
+    implementation group: 'org.radarbase', name: 'radar-commons', version: '0.12.3'
 }
 ```
 
@@ -65,11 +65,11 @@ For server utilities, include `radar-commons-server`:
 ```gradle
 repositories {
     jcenter()
-    maven { url 'http://packages.confluent.io/maven/' }
+    maven { url 'https://packages.confluent.io/maven/' }
 }
 
 dependencies {
-    implementation group: 'org.radarbase', name: 'radar-commons-server', version: '0.12.1'
+    implementation group: 'org.radarbase', name: 'radar-commons-server', version: '0.12.3'
 }
 ```
 
@@ -78,12 +78,12 @@ For mocking clients of the RADAR-base infrastructure, use that 'radar-commons-te
 ```gradle
 repositories {
     jcenter()
-    maven { url 'http://packages.confluent.io/maven/' }
-    maven { url  'http://dl.bintray.com/radar-base/org.radarbase' }
+    maven { url 'https://packages.confluent.io/maven/' }
+    maven { url  'https://dl.bintray.com/radar-base/org.radarbase' }
 }
 
 dependencies {
-    testImplementation group: 'org.radarbase', name: 'radar-commons-testing', version: '0.12.1'
+    testImplementation group: 'org.radarbase', name: 'radar-commons-testing', version: '0.12.3'
 }
 ```
 
@@ -91,12 +91,12 @@ Finally, if the schema registry is losing old schemas and your code is not recov
 ```gradle
 repositories {
     jcenter()
-    maven { url 'http://packages.confluent.io/maven/' }
-    maven { url  'http://dl.bintray.com/radar-base/org.radarbase' }
+    maven { url 'https://packages.confluent.io/maven/' }
+    maven { url  'https://dl.bintray.com/radar-base/org.radarbase' }
 }
 
 dependencies {
-    runtimeOnly group: 'org.radarbase', name: 'radar-commons-unsafe', version: '0.12.1'
+    runtimeOnly group: 'org.radarbase', name: 'radar-commons-unsafe', version: '0.12.3'
 }
 ```
 
@@ -121,7 +121,7 @@ configurations.all {
 }
 
 dependencies {
-    compile group: 'org.radarbase', name: 'radar-commons', version: '0.12.2-SNAPSHOT'
+    compile group: 'org.radarbase', name: 'radar-commons', version: '0.12.4-SNAPSHOT'
 }
 ```
 

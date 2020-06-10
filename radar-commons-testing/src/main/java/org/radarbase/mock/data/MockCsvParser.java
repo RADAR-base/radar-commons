@@ -17,6 +17,7 @@
 package org.radarbase.mock.data;
 
 import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvValidationException;
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
@@ -55,7 +56,8 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
      * @param root parent directory of the data file.
      * @throws IllegalArgumentException if the second row has the wrong number of columns
      */
-    public MockCsvParser(MockDataConfig config, Path root) throws IOException {
+    public MockCsvParser(MockDataConfig config, Path root)
+            throws IOException, CsvValidationException {
         //noinspection unchecked
         topic = config.parseAvroTopic();
 
@@ -80,7 +82,7 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
      * @throws IllegalStateException if a next row is not available
      * @throws IOException if the next row could not be read
      */
-    public Record<K, SpecificRecord> next() throws IOException {
+    public Record<K, SpecificRecord> next() throws IOException, CsvValidationException {
         if (!hasNext()) {
             throw new IllegalStateException("No next record available");
         }

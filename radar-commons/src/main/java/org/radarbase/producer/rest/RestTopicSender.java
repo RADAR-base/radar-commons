@@ -16,7 +16,6 @@
 
 package org.radarbase.producer.rest;
 
-import static org.radarbase.producer.rest.RestClient.responseBody;
 import static org.radarbase.producer.rest.UncheckedRequestException.fail;
 
 import java.io.IOException;
@@ -86,10 +85,7 @@ class RestTopicSender<K, V>
         try (Response response = context.client.request(request)) {
             if (response.isSuccessful()) {
                 state.didConnect();
-                if (logger.isDebugEnabled()) {
-                    logger.debug("Added message to topic {} -> {}",
-                            topic, responseBody(response));
-                }
+                logger.debug("Added message to topic {}", topic);
             } else if (response.code() == 401 || response.code() == 403) {
                 state.wasUnauthorized();
             } else if (response.code() == 415) {
