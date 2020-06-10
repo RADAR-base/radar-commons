@@ -16,7 +16,6 @@
 
 package org.radarbase.producer.rest;
 
-import static org.radarbase.producer.rest.RestClient.responseBody;
 import static org.radarbase.producer.rest.UncheckedRequestException.fail;
 
 import java.io.IOException;

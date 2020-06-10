@@ -16,7 +16,7 @@
 
 package org.radarbase.mock;
 
-import static io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG;
+import static io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.BOOTSTRAP_SERVERS_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG;
@@ -193,7 +193,7 @@ public class MockProducer {
 
     /** Start sending data. */
     public void start() throws IOException {
-        for (MockDevice device : devices) {
+        for (MockDevice<?> device : devices) {
             device.start();
         }
         for (MockFileSender file : files) {
@@ -205,11 +205,11 @@ public class MockProducer {
     public void shutdown() throws IOException, InterruptedException, SchemaValidationException {
         if (!devices.isEmpty()) {
             logger.info("Shutting down mock devices");
-            for (MockDevice device : devices) {
+            for (MockDevice<?> device : devices) {
                 device.shutdown();
             }
             logger.info("Waiting for mock devices to finish...");
-            for (MockDevice device : devices) {
+            for (MockDevice<?> device : devices) {
                 device.join(5_000L);
             }
         }
@@ -218,7 +218,7 @@ public class MockProducer {
             sender.close();
         }
 
-        for (MockDevice device : devices) {
+        for (MockDevice<?> device : devices) {
             device.checkException();
         }
     }

@@ -17,6 +17,7 @@
 package org.radarbase.producer.rest;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -28,23 +29,17 @@ import org.apache.avro.Schema;
 import org.apache.avro.Schema.Field;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.radarbase.config.ServerConfig;
 
 public class SchemaRetrieverTest {
     private MockWebServer server;
-    private ServerConfig config;
     private SchemaRetriever retriever;
-
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
 
     @Before
     public void setUp() {
         server = new MockWebServer();
-        config = new ServerConfig();
+        ServerConfig config = new ServerConfig();
         config.setProtocol("http");
         config.setHost(server.getHostName());
         config.setPort(server.getPort());
@@ -58,7 +53,7 @@ public class SchemaRetrieverTest {
     }
 
     @Test
-    public void subject() throws Exception {
+    public void subject() {
         assertEquals("bla-value", SchemaRetriever.subject("bla", true));
         assertEquals("bla-key", SchemaRetriever.subject("bla", false));
     }
@@ -95,16 +90,15 @@ public class SchemaRetrieverTest {
 
         // Already queried schema is cached and does not need another request
         ParsedSchemaMetadata metadata2 = retriever.getSchemaMetadata("bla", true, -1);
-        assertEquals(Integer.valueOf(10), metadata.getId());
-        assertEquals(Integer.valueOf(2), metadata.getVersion());
-        assertEquals(Schema.create(Schema.Type.STRING), metadata.getSchema());
+        assertEquals(Integer.valueOf(10), metadata2.getId());
+        assertEquals(Integer.valueOf(2), metadata2.getVersion());
+        assertEquals(Schema.create(Schema.Type.STRING), metadata2.getSchema());
         assertEquals(1, server.getRequestCount());
 
         // Not yet queried schema needs a new request, so if the server does not respond, an
         // IOException is thrown.
         server.enqueue(new MockResponse().setResponseCode(500));
-        exception.expect(IOException.class);
-        retriever.getSchemaMetadata("bla", false, 2);
+        assertThrows(IOException.class, () -> retriever.getSchemaMetadata("bla", false, 2));
     }
 
     @Test
@@ -122,9 +116,8 @@ public class SchemaRetrieverTest {
         List<Field> schemaFields = Collections.singletonList(
                 new Field("a", Schema.create(Schema.Type.INT), "that a", 10));
 
-        Schema record = Schema.createRecord("C", "that C", "org.radarcns", false);
-        metadata = new ParsedSchemaMetadata(null, null,
-                Schema.createRecord("C", "that C", "org.radarcns", false, schemaFields));
+        Schema record = Schema.createRecord("C", "that C", "org.radarcns", false, schemaFields);
+        metadata = new ParsedSchemaMetadata(null, null, record);
         server.enqueue(new MockResponse().setBody("{\"id\":11}"));
         retriever.addSchemaMetadata("bla", true, metadata);
         assertEquals(Integer.valueOf(11), metadata.getId());
