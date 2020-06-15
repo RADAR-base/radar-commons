@@ -103,19 +103,9 @@ public final class AvroDataMapperFactory {
         } catch (SchemaValidationException ex) {
             if (defaultVal != null) {
                 if (defaultVal == NULL_VALUE) {
-                    return new AvroDataMapper() {
-                        @Override
-                        public Object convertAvro(Object obj) {
-                            return null;
-                        }
-                    };
+                    return obj -> null;
                 } else {
-                    return new AvroDataMapper() {
-                        @Override
-                        public Object convertAvro(Object obj) {
-                            return defaultVal;
-                        }
-                    };
+                    return obj -> defaultVal;
                 }
             } else {
                 throw ex;
@@ -142,12 +132,7 @@ public final class AvroDataMapperFactory {
                         "Cannot map enum from non-string or enum type"));
             }
             if (containsAll) {
-                return new AvroDataMapper() {
-                    @Override
-                    public Object convertAvro(Object obj) {
-                        return new GenericData.EnumSymbol(to, obj.toString());
-                    }
-                };
+                return obj -> new GenericData.EnumSymbol(to, obj.toString());
             } else {
                 String defaultString = (String) defaultVal;
                 if (defaultString == null && to.hasEnumSymbol("UNKNOWN")) {
@@ -158,26 +143,18 @@ public final class AvroDataMapperFactory {
                             "Cannot map enum symbols without default value"));
                 } else {
                     final GenericEnumSymbol symbol = new GenericData.EnumSymbol(to, defaultString);
-                    return new AvroDataMapper() {
-                        @Override
-                        public Object convertAvro(Object obj) {
-                            String value = obj.toString();
-                            if (to.hasEnumSymbol(value)) {
-                                return new GenericData.EnumSymbol(to, value);
-                            } else {
-                                return symbol;
-                            }
+                    return obj -> {
+                        String value = obj.toString();
+                        if (to.hasEnumSymbol(value)) {
+                            return new GenericData.EnumSymbol(to, value);
+                        } else {
+                            return symbol;
                         }
                     };
                 }
             }
         } else if (from.getType() == Schema.Type.ENUM && to.getType() == Schema.Type.STRING) {
-            return new AvroDataMapper() {
-                @Override
-                public Object convertAvro(Object obj) {
-                    return obj.toString();
-                }
-            };
+            return Object::toString;
         } else {
             throw new SchemaValidationException(to, from, new IllegalArgumentException(
                     "Cannot map unknown type with enum."));
@@ -244,40 +221,15 @@ public final class AvroDataMapperFactory {
         } else {
             switch (to.getType()) {
                 case INT:
-                    return new AvroDataMapper() {
-                        @Override
-                        public Object convertAvro(Object obj) {
-                            return ((Number) obj).intValue();
-                        }
-                    };
+                    return obj -> ((Number) obj).intValue();
                 case LONG:
-                    return new AvroDataMapper() {
-                        @Override
-                        public Object convertAvro(Object obj) {
-                            return ((Number) obj).longValue();
-                        }
-                    };
+                    return obj -> ((Number) obj).longValue();
                 case DOUBLE:
-                    return new AvroDataMapper() {
-                        @Override
-                        public Object convertAvro(Object obj) {
-                            return Double.valueOf(obj.toString());
-                        }
-                    };
+                    return obj -> Double.valueOf(obj.toString());
                 case FLOAT:
-                    return new AvroDataMapper() {
-                        @Override
-                        public Object convertAvro(Object obj) {
-                            return ((Number) obj).floatValue();
-                        }
-                    };
+                    return obj -> ((Number) obj).floatValue();
                 case STRING:
-                    return new AvroDataMapper() {
-                        @Override
-                        public Object convertAvro(Object obj) {
-                            return obj.toString();
-                        }
-                    };
+                    return Object::toString;
                 default:
                     throw new SchemaValidationException(to, from, new IllegalArgumentException(
                             "Cannot map numeric type with non-numeric type"));
@@ -318,14 +270,11 @@ public final class AvroDataMapperFactory {
             if (defaultVal != null) {
                 final Object actualDefault = getDefaultValue(defaultVal, to);
                 final AvroDataMapper subMapper = createMapper(resolvedFrom, to, defaultVal);
-                return new AvroDataMapper() {
-                    @Override
-                    public Object convertAvro(Object obj) {
-                        if (obj == null) {
-                            return actualDefault;
-                        } else {
-                            return subMapper.convertAvro(obj);
-                        }
+                return obj -> {
+                    if (obj == null) {
+                        return actualDefault;
+                    } else {
+                        return subMapper.convertAvro(obj);
                     }
                 };
             } else {
@@ -335,14 +284,11 @@ public final class AvroDataMapperFactory {
         } else {
             Schema toNonNull = nonNullUnionSchema(to);
             final AvroDataMapper unionMapper = createMapper(resolvedFrom, toNonNull, defaultVal);
-            return new AvroDataMapper() {
-                @Override
-                public Object convertAvro(Object obj) {
-                    if (obj == null) {
-                        return null;
-                    } else {
-                        return unionMapper.convertAvro(obj);
-                    }
+            return obj -> {
+                if (obj == null) {
+                    return null;
+                } else {
+                    return unionMapper.convertAvro(obj);
                 }
             };
         }
@@ -357,16 +303,13 @@ public final class AvroDataMapperFactory {
         }
         final AvroDataMapper subMapper = createMapper(from.getElementType(), to.getElementType(),
                 null);
-        return new AvroDataMapper() {
-            @Override
-            public Object convertAvro(Object obj) {
-                List array = (List) obj;
-                List<Object> toArray = new ArrayList<>(array.size());
-                for (Object val : array) {
-                    toArray.add(subMapper.convertAvro(val));
-                }
-                return toArray;
+        return obj -> {
+            List array = (List) obj;
+            List<Object> toArray = new ArrayList<>(array.size());
+            for (Object val : array) {
+                toArray.add(subMapper.convertAvro(val));
             }
+            return toArray;
         };
     }
 
@@ -378,17 +321,14 @@ public final class AvroDataMapperFactory {
         }
         final AvroDataMapper subMapper = createMapper(from.getValueType(), to.getValueType(),
                 null);
-        return new AvroDataMapper() {
-            @Override
-            public Object convertAvro(Object obj) {
-                @SuppressWarnings("unchecked")
-                Map<? extends CharSequence, ?> map = (Map<? extends CharSequence, ?>) obj;
-                Map<String, Object> toMap = new HashMap<>(map.size() * 4 / 3 + 1);
-                for (Map.Entry<? extends CharSequence, ?> entry : map.entrySet()) {
-                    toMap.put(entry.getKey().toString(), subMapper.convertAvro(entry.getValue()));
-                }
-                return toMap;
+        return obj -> {
+            @SuppressWarnings("unchecked")
+            Map<? extends CharSequence, ?> map = (Map<? extends CharSequence, ?>) obj;
+            Map<String, Object> toMap = new HashMap<>(map.size() * 4 / 3 + 1);
+            for (Map.Entry<? extends CharSequence, ?> entry : map.entrySet()) {
+                toMap.put(entry.getKey().toString(), subMapper.convertAvro(entry.getValue()));
             }
+            return toMap;
         };
     }
 
@@ -399,46 +339,28 @@ public final class AvroDataMapperFactory {
                 || (from.getType() == Type.FIXED && from.getFixedSize() == to.getFixedSize()))) {
             return IDENTITY_MAPPER;
         } else if (from.getType() == Type.FIXED && to.getType() == Schema.Type.BYTES) {
-            return new AvroDataMapper() {
-                @Override
-                public Object convertAvro(Object object) {
-                    return ByteBuffer.wrap(((Fixed)object).bytes());
-                }
-            };
+            return object -> ByteBuffer.wrap(((Fixed)object).bytes());
         } else if (from.getType() == Type.BYTES && to.getType() == Type.FIXED) {
             if (defaultVal == null) {
                 throw new SchemaValidationException(to, from, new IllegalArgumentException(
                         "Cannot map bytes to fixed without default value"));
             }
-            return new AvroDataMapper() {
-                @Override
-                public Object convertAvro(Object object) {
-                    byte[] bytes = ((ByteBuffer) object).array();
-                    if (bytes.length == to.getFixedSize()) {
-                        return GenericData.get().createFixed(null, bytes, to);
-                    } else {
-                        return GenericData.get().createFixed(null, (byte[]) defaultVal, to);
-                    }
+            return object -> {
+                byte[] bytes = ((ByteBuffer) object).array();
+                if (bytes.length == to.getFixedSize()) {
+                    return GenericData.get().createFixed(null, bytes, to);
+                } else {
+                    return GenericData.get().createFixed(null, (byte[]) defaultVal, to);
                 }
             };
         } else if (to.getType() == Type.STRING) {
             final Encoder encoder = Base64.getEncoder();
             if (from.getType() == Type.FIXED) {
-                return new AvroDataMapper() {
-                    @Override
-                    public Object convertAvro(Object object) {
-                        return new String(encoder.encode(((Fixed) object).bytes()),
-                                StandardCharsets.UTF_8);
-                    }
-                };
+                return object -> new String(encoder.encode(((Fixed) object).bytes()),
+                        StandardCharsets.UTF_8);
             } else {
-                return new AvroDataMapper() {
-                    @Override
-                    public Object convertAvro(Object object) {
-                        return new String(encoder.encode(((ByteBuffer) object).array()),
-                                StandardCharsets.UTF_8);
-                    }
-                };
+                return object -> new String(encoder.encode(((ByteBuffer) object).array()),
+                        StandardCharsets.UTF_8);
             }
         } else {
             throw new SchemaValidationException(to, from,
