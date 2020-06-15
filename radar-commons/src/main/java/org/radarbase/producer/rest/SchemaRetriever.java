@@ -149,10 +149,11 @@ public class SchemaRetriever {
     public ParsedSchemaMetadata getSchemaMetadata(String topic, boolean ofValue, int version)
             throws JSONException, IOException {
         String subject = subject(topic, ofValue);
-        TimedValue<ParsedSchemaMetadata> value = cache.get(subject);
+        String key = subject + '#' + version;
+        TimedValue<ParsedSchemaMetadata> value = cache.get(key);
         if (value == null || value.isExpired()) {
             value = new TimedValue<>(retrieveSchemaMetadata(subject, version), cacheValidity);
-            cache.put(subject, value);
+            cache.put(key, value);
         }
         return value.value;
     }
@@ -170,7 +171,6 @@ public class SchemaRetriever {
             throws JSONException, IOException {
         String subject = subject(topic, ofValue);
         if (metadata.getId() == null) {
-
             Request request = restClient.requestBuilder("/subjects/" + subject + "/versions")
                     .addHeader("Accept", "application/json")
                     .post(new SchemaRequestBody(metadata.getSchema()))
@@ -181,7 +181,9 @@ public class SchemaRetriever {
             int schemaId = node.getInt("id");
             metadata.setId(schemaId);
         }
-        cache.put(subject, new TimedValue<>(metadata, cacheValidity));
+        int version = metadata.getVersion() != null ? metadata.getVersion() : -1;
+        String key = subject + '#' + version;
+        cache.put(key, new TimedValue<>(metadata, cacheValidity));
     }
 
     /**

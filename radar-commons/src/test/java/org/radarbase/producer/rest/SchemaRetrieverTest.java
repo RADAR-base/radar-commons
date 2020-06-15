@@ -89,7 +89,7 @@ public class SchemaRetrieverTest {
         assertEquals("/base/subjects/bla-value/versions/2", server.takeRequest().getPath());
 
         // Already queried schema is cached and does not need another request
-        ParsedSchemaMetadata metadata2 = retriever.getSchemaMetadata("bla", true, -1);
+        ParsedSchemaMetadata metadata2 = retriever.getSchemaMetadata("bla", true, 2);
         assertEquals(Integer.valueOf(10), metadata2.getId());
         assertEquals(Integer.valueOf(2), metadata2.getVersion());
         assertEquals(Schema.create(Schema.Type.STRING), metadata2.getSchema());
