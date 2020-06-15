@@ -17,7 +17,9 @@
 package org.radarbase.producer.rest;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,6 +32,7 @@ import okio.BufferedSink;
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Type;
 import org.apache.avro.generic.GenericContainer;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.radarbase.config.ServerConfig;
@@ -60,11 +63,18 @@ public class SchemaRetriever {
         PRIMITIVE_SCHEMAS.put(byte[].class, Schema.create(Type.BYTES));
     }
 
-    private final ConcurrentMap<String, TimedSchemaMetadata> cache = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, TimedValue<ParsedSchemaMetadata>> cache =
+            new ConcurrentHashMap<>();
+    private final ConcurrentMap<Integer, TimedValue<ParsedSchemaMetadata>> idCache =
+            new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, TimedValue<List<Integer>>> versionCache =
+            new ConcurrentHashMap<>();
     private final RestClient restClient;
+    private final long cacheValidity;
 
-    private SchemaRetriever(RestClient client) {
+    private SchemaRetriever(RestClient client, long cacheValidity) {
         restClient = client;
+        this.cacheValidity = cacheValidity;
     }
 
     /**
@@ -76,8 +86,22 @@ public class SchemaRetriever {
         this(RestClient.global()
                         .server(Objects.requireNonNull(config))
                         .timeout(connectionTimeout, TimeUnit.SECONDS)
-                        .build());
+                        .build(), MAX_VALIDITY);
     }
+
+    /**
+     * Schema retriever for a Confluent Schema Registry.
+     * @param config schema registry configuration.
+     * @param connectionTimeout timeout in seconds.
+     * @param cacheValidity timeout in seconds for considering a schema stale.
+     */
+    public SchemaRetriever(ServerConfig config, long connectionTimeout, long cacheValidity) {
+        this(RestClient.global()
+                .server(Objects.requireNonNull(config))
+                .timeout(connectionTimeout, TimeUnit.SECONDS)
+                .build(), cacheValidity);
+    }
+
 
     /** The subject in the Avro Schema Registry, given a Kafka topic. */
     protected static String subject(String topic, boolean ofValue) {
@@ -96,28 +120,41 @@ public class SchemaRetriever {
         } else {
             pathBuilder.append("latest");
         }
-        Request request = restClient.requestBuilder(pathBuilder.toString())
-                .addHeader("Accept", "application/json")
-                .build();
 
-        String response = restClient.requestString(request);
-        JSONObject node = new JSONObject(response);
+        JSONObject node = requestJson(pathBuilder.toString());
         int newVersion = version < 1 ? node.getInt("version") : version;
         int schemaId = node.getInt("id");
         Schema schema = parseSchema(node.getString("schema"));
         return new ParsedSchemaMetadata(schemaId, newVersion, schema);
     }
 
+    private JSONObject requestJson(String path) throws IOException {
+        Request request = restClient.requestBuilder(path)
+                .addHeader("Accept", "application/json")
+                .build();
+
+        String response = restClient.requestString(request);
+        return new JSONObject(response);
+    }
+
+    /** Retrieve schema metadata from server. */
+    protected ParsedSchemaMetadata retrieveSchemaById(int id)
+            throws JSONException, IOException {
+        JSONObject node = requestJson("/schemas/ids/" + id);
+        Schema schema = parseSchema(node.getString("schema"));
+        return new ParsedSchemaMetadata(id, null, schema);
+    }
+
     /** Get schema metadata. Cached schema metadata will be used if present. */
     public ParsedSchemaMetadata getSchemaMetadata(String topic, boolean ofValue, int version)
             throws JSONException, IOException {
         String subject = subject(topic, ofValue);
-        TimedSchemaMetadata value = cache.get(subject);
+        TimedValue<ParsedSchemaMetadata> value = cache.get(subject);
         if (value == null || value.isExpired()) {
-            value = new TimedSchemaMetadata(retrieveSchemaMetadata(subject, version));
+            value = new TimedValue<>(retrieveSchemaMetadata(subject, version), cacheValidity);
             cache.put(subject, value);
         }
-        return value.metadata;
+        return value.value;
     }
 
     /** Parse a schema from string. */
@@ -144,7 +181,7 @@ public class SchemaRetriever {
             int schemaId = node.getInt("id");
             metadata.setId(schemaId);
         }
-        cache.put(subject, new TimedSchemaMetadata(metadata));
+        cache.put(subject, new TimedValue<>(metadata, cacheValidity));
     }
 
     /**
@@ -184,6 +221,38 @@ public class SchemaRetriever {
         }
     }
 
+    /** Get a schema by its ID. */
+    public ParsedSchemaMetadata getById(int id) throws IOException {
+        TimedValue<ParsedSchemaMetadata> value = idCache.get(id);
+        if (value == null || value.isExpired()) {
+            value = new TimedValue<>(retrieveSchemaById(id), cacheValidity);
+            idCache.put(id, value);
+        }
+        return value.value;
+    }
+
+    /** Get all schema versions in a subject. */
+    public List<Integer> getVersions(String subject) throws IOException {
+        TimedValue<List<Integer>> value = versionCache.get(subject);
+
+        if (value == null || value.isExpired()) {
+            Request request = restClient.requestBuilder("/subjects/" + subject + "/versions")
+                    .addHeader("Accept", "application/json")
+                    .build();
+
+            String response = restClient.requestString(request);
+            JSONArray node = new JSONArray(response);
+
+            List<Integer> versions = new ArrayList<>(node.length());
+            for (int i = 0; i < node.length(); i++) {
+                versions.add(node.getInt(i));
+            }
+            value = new TimedValue<>(versions, cacheValidity);
+            versionCache.put(subject, value);
+        }
+        return value.value;
+    }
+
     /**
      * Get the schema of a generic object. This supports null, primitive types, String, and
      * {@link org.apache.avro.generic.GenericContainer}.
@@ -206,13 +275,13 @@ public class SchemaRetriever {
                 + "Pass null, a primitive CONTENT_TYPE or a GenericContainer.");
     }
 
-    private static class TimedSchemaMetadata {
-        private final ParsedSchemaMetadata metadata;
+    private static class TimedValue<T> {
+        private final T value;
         private final long expiry;
 
-        TimedSchemaMetadata(ParsedSchemaMetadata metadata) {
-            expiry = System.currentTimeMillis() + MAX_VALIDITY * 1000L;
-            this.metadata = Objects.requireNonNull(metadata);
+        TimedValue(T value, long maxValidity) {
+            expiry = System.currentTimeMillis() + maxValidity * 1000L;
+            this.value = Objects.requireNonNull(value);
         }
 
         boolean isExpired() {
@@ -227,12 +296,12 @@ public class SchemaRetriever {
             if (o == null || getClass() != o.getClass()) {
                 return false;
             }
-            return metadata.equals(((TimedSchemaMetadata)o).metadata);
+            return value.equals(((TimedValue<?>)o).value);
         }
 
         @Override
         public int hashCode() {
-            return metadata.hashCode();
+            return value.hashCode();
         }
     }
 }
