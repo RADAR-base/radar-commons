@@ -17,26 +17,20 @@
 package org.radarbase.producer.rest;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import okhttp3.MediaType;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okio.BufferedSink;
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Type;
 import org.apache.avro.generic.GenericContainer;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.radarbase.config.ServerConfig;
-import org.radarbase.util.Strings;
+import org.radarbase.util.TimedInt;
+import org.radarbase.util.TimedValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,11 +40,8 @@ import org.slf4j.LoggerFactory;
  */
 public class SchemaRetriever {
     private static final Logger logger = LoggerFactory.getLogger(SchemaRetriever.class);
-    private static final MediaType CONTENT_TYPE = MediaType.parse(
-            "application/vnd.schemaregistry.v1+json; charset=utf-8");
     private static final Schema NULL_SCHEMA = Schema.create(Type.NULL);
     private static final Map<Class<?>, Schema> PRIMITIVE_SCHEMAS = new HashMap<>();
-    private static final byte[] SCHEMA = Strings.utf8("{\"schema\":");
     private static final long MAX_VALIDITY = 86400L;
 
     static {
@@ -63,18 +54,22 @@ public class SchemaRetriever {
         PRIMITIVE_SCHEMAS.put(byte[].class, Schema.create(Type.BYTES));
     }
 
-    private final ConcurrentMap<String, TimedValue<ParsedSchemaMetadata>> cache =
+    private final ConcurrentMap<Integer, TimedValue<Schema>> idCache =
             new ConcurrentHashMap<>();
-    private final ConcurrentMap<Integer, TimedValue<ParsedSchemaMetadata>> idCache =
+    private final ConcurrentMap<Schema, TimedInt> schemaCache = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, ConcurrentMap<Integer, TimedInt>> subjectVersionCache =
             new ConcurrentHashMap<>();
-    private final ConcurrentMap<String, TimedValue<List<Integer>>> versionCache =
-            new ConcurrentHashMap<>();
-    private final RestClient restClient;
+
+    private final SchemaRestClient restClient;
     private final long cacheValidity;
 
-    private SchemaRetriever(RestClient client, long cacheValidity) {
-        restClient = client;
+    public SchemaRetriever(RestClient client, long cacheValidity) {
+        restClient = new SchemaRestClient(client);
         this.cacheValidity = cacheValidity;
+    }
+
+    public SchemaRetriever(RestClient client) {
+        this(client, MAX_VALIDITY);
     }
 
     /**
@@ -86,7 +81,7 @@ public class SchemaRetriever {
         this(RestClient.global()
                         .server(Objects.requireNonNull(config))
                         .timeout(connectionTimeout, TimeUnit.SECONDS)
-                        .build(), MAX_VALIDITY);
+                        .build());
     }
 
     /**
@@ -108,82 +103,40 @@ public class SchemaRetriever {
         return topic + (ofValue ? "-value" : "-key");
     }
 
-    /** Retrieve schema metadata from server. */
-    protected ParsedSchemaMetadata retrieveSchemaMetadata(String subject, int version)
-            throws JSONException, IOException {
-        StringBuilder pathBuilder = new StringBuilder(50)
-                .append("/subjects/")
-                .append(subject)
-                .append("/versions/");
-        if (version > 0) {
-            pathBuilder.append(version);
-        } else {
-            pathBuilder.append("latest");
-        }
-
-        JSONObject node = requestJson(pathBuilder.toString());
-        int newVersion = version < 1 ? node.getInt("version") : version;
-        int schemaId = node.getInt("id");
-        Schema schema = parseSchema(node.getString("schema"));
-        return new ParsedSchemaMetadata(schemaId, newVersion, schema);
-    }
-
-    private JSONObject requestJson(String path) throws IOException {
-        Request request = restClient.requestBuilder(path)
-                .addHeader("Accept", "application/json")
-                .build();
-
-        String response = restClient.requestString(request);
-        return new JSONObject(response);
-    }
-
-    /** Retrieve schema metadata from server. */
-    protected ParsedSchemaMetadata retrieveSchemaById(int id)
-            throws JSONException, IOException {
-        JSONObject node = requestJson("/schemas/ids/" + id);
-        Schema schema = parseSchema(node.getString("schema"));
-        return new ParsedSchemaMetadata(id, null, schema);
-    }
-
     /** Get schema metadata. Cached schema metadata will be used if present. */
     public ParsedSchemaMetadata getSchemaMetadata(String topic, boolean ofValue, int version)
             throws JSONException, IOException {
         String subject = subject(topic, ofValue);
-        String key = subject + '#' + version;
-        TimedValue<ParsedSchemaMetadata> value = cache.get(key);
-        if (value == null || value.isExpired()) {
-            value = new TimedValue<>(retrieveSchemaMetadata(subject, version), cacheValidity);
-            cache.put(key, value);
+        ConcurrentMap<Integer, TimedInt> versionMap = computeIfAbsent(subjectVersionCache, subject,
+                new ConcurrentHashMap<>());
+        TimedInt id = versionMap.get(Math.max(version, 0));
+        if (id == null || id.isExpired()) {
+            ParsedSchemaMetadata metadata = restClient.retrieveSchemaMetadata(subject, version);
+            cacheMetadata(metadata, subject, version <= 0);
+            return metadata;
+        } else {
+            Schema schema = getById(id.value);
+            ParsedSchemaMetadata metadata = getCachedMetadata(subject, id.value, version, schema);
+
+            return metadata != null ? metadata : getMetadata(topic, ofValue, schema, version <= 0);
         }
-        return value.value;
     }
 
-    /** Parse a schema from string. */
-    protected Schema parseSchema(String schemaString) {
-        Schema.Parser parser = new Schema.Parser();
-        return parser.parse(schemaString);
+    private <K, V> V computeIfAbsent(ConcurrentMap<K, V> original, K key, V newValue) {
+        V existingValue = original.putIfAbsent(key, newValue);
+        return existingValue != null ? existingValue : newValue;
     }
 
     /**
      * Add schema metadata to the retriever. This implementation only adds it to the cache.
+     * @return schema ID
      */
-    public void addSchemaMetadata(String topic, boolean ofValue, ParsedSchemaMetadata metadata)
+    public int addSchema(String topic, boolean ofValue, Schema schema)
             throws JSONException, IOException {
         String subject = subject(topic, ofValue);
-        if (metadata.getId() == null) {
-            Request request = restClient.requestBuilder("/subjects/" + subject + "/versions")
-                    .addHeader("Accept", "application/json")
-                    .post(new SchemaRequestBody(metadata.getSchema()))
-                    .build();
-
-            String response = restClient.requestString(request);
-            JSONObject node = new JSONObject(response);
-            int schemaId = node.getInt("id");
-            metadata.setId(schemaId);
-        }
-        int version = metadata.getVersion() != null ? metadata.getVersion() : -1;
-        String key = subject + '#' + version;
-        cache.put(key, new TimedValue<>(metadata, cacheValidity));
+        int id = restClient.addSchema(subject, schema);
+        cacheMetadata(new ParsedSchemaMetadata(id, null, schema), subject, false);
+        return id;
     }
 
     /**
@@ -197,62 +150,91 @@ public class SchemaRetriever {
             return getSchemaMetadata(topic, ofValue, version);
         } catch (IOException ex) {
             logger.warn("Schema for {} value was not yet added to the schema registry.", topic);
-            ParsedSchemaMetadata metadata = new ParsedSchemaMetadata(null, null, schema);
-            addSchemaMetadata(topic, ofValue, metadata);
-            return metadata;
-        }
-    }
-
-    private static class SchemaRequestBody extends RequestBody {
-        private final Schema schema;
-
-        private SchemaRequestBody(Schema schema) {
-            this.schema = schema;
-        }
-
-        @Override
-        public MediaType contentType() {
-            return CONTENT_TYPE;
-        }
-
-        @Override
-        public void writeTo(BufferedSink sink) throws IOException {
-            sink.write(SCHEMA);
-            sink.writeUtf8(JSONObject.quote(schema.toString()));
-            sink.writeByte('}');
+            addSchema(topic, ofValue, schema);
+            return getMetadata(topic, ofValue, schema, version <= 0);
         }
     }
 
     /** Get a schema by its ID. */
-    public ParsedSchemaMetadata getById(int id) throws IOException {
-        TimedValue<ParsedSchemaMetadata> value = idCache.get(id);
+    public Schema getById(int id) throws IOException {
+        TimedValue<Schema> value = idCache.get(id);
         if (value == null || value.isExpired()) {
-            value = new TimedValue<>(retrieveSchemaById(id), cacheValidity);
+            value = new TimedValue<>(restClient.retrieveSchemaById(id), cacheValidity);
             idCache.put(id, value);
+            schemaCache.put(value.value, new TimedInt(id, cacheValidity));
         }
         return value.value;
     }
 
+    /** Gets a schema by ID and check that it is present in the given topic. */
+    public ParsedSchemaMetadata getBySubjectAndId(String topic, boolean ofValue, int id)
+            throws IOException {
+        Schema schema = getById(id);
+        String subject = subject(topic, ofValue);
+        ParsedSchemaMetadata metadata = getCachedMetadata(subject, id, null, schema);
+        return metadata != null ? metadata : getMetadata(topic, ofValue, schema);
+    }
+
     /** Get all schema versions in a subject. */
-    public List<Integer> getVersions(String subject) throws IOException {
-        TimedValue<List<Integer>> value = versionCache.get(subject);
+    public ParsedSchemaMetadata getMetadata(String topic, boolean ofValue, Schema schema)
+            throws IOException {
+        return getMetadata(topic, ofValue, schema, false);
+    }
 
-        if (value == null || value.isExpired()) {
-            Request request = restClient.requestBuilder("/subjects/" + subject + "/versions")
-                    .addHeader("Accept", "application/json")
-                    .build();
 
-            String response = restClient.requestString(request);
-            JSONArray node = new JSONArray(response);
+    /** Get all schema versions in a subject. */
+    public ParsedSchemaMetadata getMetadata(String topic, boolean ofValue, Schema schema,
+            boolean ofLatestVersion) throws IOException {
+        TimedInt id = schemaCache.get(schema);
+        String subject = subject(topic, ofValue);
 
-            List<Integer> versions = new ArrayList<>(node.length());
-            for (int i = 0; i < node.length(); i++) {
-                versions.add(node.getInt(i));
+        if (id != null && !id.isExpired()) {
+            ParsedSchemaMetadata metadata = getCachedMetadata(subject, id.value, null, schema);
+            if (metadata != null) {
+                return metadata;
             }
-            value = new TimedValue<>(versions, cacheValidity);
-            versionCache.put(subject, value);
         }
-        return value.value;
+
+        ParsedSchemaMetadata metadata = restClient.requestMetadata(subject, schema);
+        cacheMetadata(metadata, subject, ofLatestVersion);
+        return metadata;
+    }
+
+
+    protected ParsedSchemaMetadata getCachedMetadata(String subject, int id,
+            Integer reportedVersion, Schema schema) {
+        Integer version = reportedVersion;
+        if (version == null || version <= 0) {
+            ConcurrentMap<Integer, TimedInt> versions = subjectVersionCache.get(subject);
+            if (versions != null) {
+                for (Map.Entry<Integer, TimedInt> entry : versions.entrySet()) {
+                    if (!entry.getValue().isExpired() && entry.getKey() != 0
+                            && entry.getValue().value == id) {
+                        version = entry.getKey();
+                        break;
+                    }
+                }
+            }
+            if (version == null || version < 1) {
+                return null;
+            }
+        }
+        return new ParsedSchemaMetadata(id, version, schema);
+    }
+
+    protected void cacheMetadata(ParsedSchemaMetadata metadata, String subject, boolean latest) {
+        TimedInt id = new TimedInt(metadata.getId(), cacheValidity);
+        schemaCache.put(metadata.getSchema(), id);
+        if (subject != null && metadata.getVersion() != null) {
+            ConcurrentMap<Integer, TimedInt> versionCache = computeIfAbsent(subjectVersionCache,
+                    subject, new ConcurrentHashMap<>());
+
+            versionCache.put(metadata.getVersion(), id);
+            if (latest) {
+                versionCache.put(0, id);
+            }
+        }
+        idCache.put(metadata.getId(), new TimedValue<>(metadata.getSchema(), cacheValidity));
     }
 
     /**
@@ -275,35 +257,5 @@ public class SchemaRetriever {
         throw new IllegalArgumentException("Passed object " + object + " of class "
                 + object.getClass() + " can not be schematized. "
                 + "Pass null, a primitive CONTENT_TYPE or a GenericContainer.");
-    }
-
-    private static class TimedValue<T> {
-        private final T value;
-        private final long expiry;
-
-        TimedValue(T value, long maxValidity) {
-            expiry = System.currentTimeMillis() + maxValidity * 1000L;
-            this.value = Objects.requireNonNull(value);
-        }
-
-        boolean isExpired() {
-            return expiry < System.currentTimeMillis();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            return value.equals(((TimedValue<?>)o).value);
-        }
-
-        @Override
-        public int hashCode() {
-            return value.hashCode();
-        }
     }
 }

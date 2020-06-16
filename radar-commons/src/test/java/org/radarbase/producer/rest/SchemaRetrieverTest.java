@@ -59,27 +59,6 @@ public class SchemaRetrieverTest {
     }
 
     @Test
-    public void retrieveSchemaMetadata() throws Exception {
-        server.enqueue(new MockResponse().setBody("{\"id\":10,\"version\":2,\"schema\":\"\\\"string\\\"\"}"));
-        ParsedSchemaMetadata metadata = retriever.retrieveSchemaMetadata("bla-value", -1);
-        assertEquals(Integer.valueOf(10), metadata.getId());
-        assertEquals(Integer.valueOf(2), metadata.getVersion());
-        assertEquals(Schema.create(Schema.Type.STRING), metadata.getSchema());
-        assertEquals("/base/subjects/bla-value/versions/latest", server.takeRequest().getPath());
-    }
-
-
-    @Test
-    public void retrieveSchemaMetadataVersion() throws Exception {
-        server.enqueue(new MockResponse().setBody("{\"id\":10,\"version\":2,\"schema\":\"\\\"string\\\"\"}"));
-        ParsedSchemaMetadata metadata = retriever.retrieveSchemaMetadata("bla-value", 2);
-        assertEquals(Integer.valueOf(10), metadata.getId());
-        assertEquals(Integer.valueOf(2), metadata.getVersion());
-        assertEquals(Schema.create(Schema.Type.STRING), metadata.getSchema());
-        assertEquals("/base/subjects/bla-value/versions/2", server.takeRequest().getPath());
-    }
-
-    @Test
     public void getSchemaMetadata() throws Exception {
         server.enqueue(new MockResponse().setBody("{\"id\":10,\"version\":2,\"schema\":\"\\\"string\\\"\"}"));
         ParsedSchemaMetadata metadata = retriever.getSchemaMetadata("bla", true, 2);
@@ -103,11 +82,9 @@ public class SchemaRetrieverTest {
 
     @Test
     public void addSchemaMetadata() throws Exception {
-        ParsedSchemaMetadata metadata = new ParsedSchemaMetadata(null, null, Schema.create(Schema.Type.STRING));
         server.enqueue(new MockResponse().setBody("{\"id\":10}"));
-        retriever.addSchemaMetadata("bla", true, metadata);
-        assertEquals(Integer.valueOf(10), metadata.getId());
-        assertEquals(Schema.create(Schema.Type.STRING), metadata.getSchema());
+        int id = retriever.addSchema("bla", true, Schema.create(Schema.Type.STRING));
+        assertEquals(10, id);
 
         assertEquals(1, server.getRequestCount());
         RecordedRequest request = server.takeRequest();
@@ -117,10 +94,9 @@ public class SchemaRetrieverTest {
                 new Field("a", Schema.create(Schema.Type.INT), "that a", 10));
 
         Schema record = Schema.createRecord("C", "that C", "org.radarcns", false, schemaFields);
-        metadata = new ParsedSchemaMetadata(null, null, record);
         server.enqueue(new MockResponse().setBody("{\"id\":11}"));
-        retriever.addSchemaMetadata("bla", true, metadata);
-        assertEquals(Integer.valueOf(11), metadata.getId());
+        id = retriever.addSchema("bla", true, record);
+        assertEquals(11, id);
         request = server.takeRequest();
         assertEquals("{\"schema\":\"{\\\"type\\\":\\\"record\\\",\\\"name\\\":\\\"C\\\",\\\"namespace\\\":\\\"org.radarcns\\\",\\\"doc\\\":\\\"that C\\\",\\\"fields\\\":[{\\\"name\\\":\\\"a\\\",\\\"type\\\":\\\"int\\\",\\\"doc\\\":\\\"that a\\\",\\\"default\\\":10}]}\"}", request.getBody().readUtf8());
     }
@@ -129,11 +105,12 @@ public class SchemaRetrieverTest {
     public void getOrSetSchemaMetadataSet() throws Exception {
         server.enqueue(new MockResponse().setResponseCode(404));
         server.enqueue(new MockResponse().setBody("{\"id\":10}"));
+        server.enqueue(new MockResponse().setBody("{\"id\":10, \"version\": 2}"));
         ParsedSchemaMetadata metadata = retriever.getOrSetSchemaMetadata("bla", true, Schema.create(Schema.Type.STRING), -1);
         assertEquals(Integer.valueOf(10), metadata.getId());
         assertEquals(Schema.create(Schema.Type.STRING), metadata.getSchema());
 
-        assertEquals(2, server.getRequestCount());
+        assertEquals(3, server.getRequestCount());
         server.takeRequest();
         RecordedRequest request = server.takeRequest();
         assertEquals("{\"schema\":\"\\\"string\\\"\"}", request.getBody().readUtf8());
