@@ -17,7 +17,6 @@
 package org.radarbase.producer.rest;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -25,8 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import org.apache.avro.Schema;
-import org.apache.avro.Schema.Type;
-import org.apache.avro.generic.GenericContainer;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.radarbase.config.ServerConfig;
@@ -42,19 +39,7 @@ import org.slf4j.LoggerFactory;
  */
 public class SchemaRetriever {
     private static final Logger logger = LoggerFactory.getLogger(SchemaRetriever.class);
-    private static final Schema NULL_SCHEMA = Schema.create(Type.NULL);
-    private static final Map<Class<?>, Schema> PRIMITIVE_SCHEMAS = new HashMap<>();
     private static final long MAX_VALIDITY = 86400L;
-
-    static {
-        PRIMITIVE_SCHEMAS.put(Long.class, Schema.create(Type.LONG));
-        PRIMITIVE_SCHEMAS.put(Integer.class, Schema.create(Type.INT));
-        PRIMITIVE_SCHEMAS.put(Float.class, Schema.create(Type.FLOAT));
-        PRIMITIVE_SCHEMAS.put(Double.class, Schema.create(Type.DOUBLE));
-        PRIMITIVE_SCHEMAS.put(String.class, Schema.create(Type.STRING));
-        PRIMITIVE_SCHEMAS.put(Boolean.class, Schema.create(Type.BOOLEAN));
-        PRIMITIVE_SCHEMAS.put(byte[].class, Schema.create(Type.BYTES));
-    }
 
     private final ConcurrentMap<Integer, TimedValue<Schema>> idCache =
             new ConcurrentHashMap<>();
@@ -120,10 +105,14 @@ public class SchemaRetriever {
             int version) throws JSONException, IOException {
         try {
             return getBySubjectAndVersion(topic, ofValue, version);
-        } catch (IOException ex) {
-            logger.warn("Schema for {} value was not yet added to the schema registry.", topic);
-            addSchema(topic, ofValue, schema);
-            return getMetadata(topic, ofValue, schema, version <= 0);
+        } catch (RestException ex) {
+            if (ex.getStatusCode() == 404) {
+                logger.warn("Schema for {} value was not yet added to the schema registry.", topic);
+                addSchema(topic, ofValue, schema);
+                return getMetadata(topic, ofValue, schema, version <= 0);
+            } else {
+                throw ex;
+            }
         }
     }
 
@@ -161,7 +150,6 @@ public class SchemaRetriever {
         } else {
             Schema schema = getById(id.value);
             ParsedSchemaMetadata metadata = getCachedVersion(subject, id.value, version, schema);
-
             return metadata != null ? metadata : getMetadata(topic, ofValue, schema, version <= 0);
         }
     }
@@ -196,9 +184,11 @@ public class SchemaRetriever {
      * Get cached metadata.
      * @param subject schema registry subject
      * @param id schema ID.
-     * @param reportedVersion version requested by the client. Null if no version was requested. This version will be used if the actual version was not cached.
+     * @param reportedVersion version requested by the client. Null if no version was requested.
+     *                        This version will be used if the actual version was not cached.
      * @param schema schema to use.
-     * @return metadata if present. Returns null if no metadata is cached or if no version is cached and the reportedVersion is null.
+     * @return metadata if present. Returns null if no metadata is cached or if no version is cached
+     *         and the reportedVersion is null.
      */
     protected ParsedSchemaMetadata getCachedVersion(String subject, int id,
             Integer reportedVersion, Schema schema) {
@@ -214,7 +204,7 @@ public class SchemaRetriever {
                     }
                 }
             }
-            if (version == null || version < 1) {
+            if (version == null || version <= 0) {
                 return null;
             }
         }
@@ -224,7 +214,7 @@ public class SchemaRetriever {
     protected void cache(ParsedSchemaMetadata metadata, String subject, boolean latest) {
         TimedInt id = new TimedInt(metadata.getId(), cacheValidity);
         schemaCache.put(metadata.getSchema(), id);
-        if (subject != null && metadata.getVersion() != null) {
+        if (metadata.getVersion() != null) {
             ConcurrentMap<Integer, TimedInt> versionCache = computeIfAbsent(subjectVersionCache,
                     subject, new ConcurrentHashMap<>());
 
@@ -247,14 +237,6 @@ public class SchemaRetriever {
         }
     }
 
-    private void prune(Map<?, ? extends TimedVariable> map) {
-        for (Entry<?, ? extends TimedVariable> entry : map.entrySet()) {
-            if (entry.getValue().isExpired()) {
-                map.remove(entry.getKey(), entry.getValue());
-            }
-        }
-    }
-
     /**
      * Remove all entries from cache.
      */
@@ -269,30 +251,16 @@ public class SchemaRetriever {
         return topic + (ofValue ? "-value" : "-key");
     }
 
+    private static void prune(Map<?, ? extends TimedVariable> map) {
+        for (Entry<?, ? extends TimedVariable> entry : map.entrySet()) {
+            if (entry.getValue().isExpired()) {
+                map.remove(entry.getKey(), entry.getValue());
+            }
+        }
+    }
+
     private static <K, V> V computeIfAbsent(ConcurrentMap<K, V> original, K key, V newValue) {
         V existingValue = original.putIfAbsent(key, newValue);
         return existingValue != null ? existingValue : newValue;
-    }
-
-    /**
-     * Get the schema of a generic object. This supports null, primitive types, String, and
-     * {@link org.apache.avro.generic.GenericContainer}.
-     * @param object object of recognized CONTENT_TYPE
-     * @throws IllegalArgumentException if passed object is not a recognized CONTENT_TYPE
-     */
-    public static Schema getSchema(Object object) {
-        if (object == null) {
-            return NULL_SCHEMA;
-        }
-        Schema schema = PRIMITIVE_SCHEMAS.get(object.getClass());
-        if (schema != null) {
-            return schema;
-        }
-        if (object instanceof GenericContainer) {
-            return ((GenericContainer)object).getSchema();
-        }
-        throw new IllegalArgumentException("Passed object " + object + " of class "
-                + object.getClass() + " can not be schematized. "
-                + "Pass null, a primitive CONTENT_TYPE or a GenericContainer.");
     }
 }

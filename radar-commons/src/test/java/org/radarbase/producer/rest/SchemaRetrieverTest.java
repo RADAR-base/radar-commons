@@ -61,14 +61,14 @@ public class SchemaRetrieverTest {
     @Test
     public void getSchemaMetadata() throws Exception {
         server.enqueue(new MockResponse().setBody("{\"id\":10,\"version\":2,\"schema\":\"\\\"string\\\"\"}"));
-        ParsedSchemaMetadata metadata = retriever.getByVersion("bla", true, 2);
+        ParsedSchemaMetadata metadata = retriever.getBySubjectAndVersion("bla", true, 2);
         assertEquals(Integer.valueOf(10), metadata.getId());
         assertEquals(Integer.valueOf(2), metadata.getVersion());
         assertEquals(Schema.create(Schema.Type.STRING), metadata.getSchema());
         assertEquals("/base/subjects/bla-value/versions/2", server.takeRequest().getPath());
 
         // Already queried schema is cached and does not need another request
-        ParsedSchemaMetadata metadata2 = retriever.getByVersion("bla", true, 2);
+        ParsedSchemaMetadata metadata2 = retriever.getBySubjectAndVersion("bla", true, 2);
         assertEquals(Integer.valueOf(10), metadata2.getId());
         assertEquals(Integer.valueOf(2), metadata2.getVersion());
         assertEquals(Schema.create(Schema.Type.STRING), metadata2.getSchema());
@@ -77,7 +77,7 @@ public class SchemaRetrieverTest {
         // Not yet queried schema needs a new request, so if the server does not respond, an
         // IOException is thrown.
         server.enqueue(new MockResponse().setResponseCode(500));
-        assertThrows(IOException.class, () -> retriever.getByVersion("bla", false, 2));
+        assertThrows(IOException.class, () -> retriever.getBySubjectAndVersion("bla", false, 2));
     }
 
     @Test
