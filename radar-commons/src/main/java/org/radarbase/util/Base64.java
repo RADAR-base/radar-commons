@@ -82,7 +82,7 @@ public class Base64 {
          * index values into their "Base64 Alphabet" equivalents as specified
          * in "Table 1: The Base64 Alphabet" of RFC 2045 (and RFC 4648).
          */
-        private static final char[] BASE_64_CHAR = {
+        private static final byte[] BASE_64_CHAR = {
                 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
                 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
                 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
@@ -106,11 +106,12 @@ public class Base64 {
          *          encoded bytes.
          */
         public String encode(byte[] src) {
-            int dstLen = 4 * ((src.length + 2) / 3);
-            char[] dst = new char[dstLen];
-            int srcLen = src.length / 3 * 3;
+            int srcLen = src.length;
+            byte[] dst = new byte[4 * ((srcLen + 2) / 3)];
+            int fullDataLen = srcLen / 3 * 3;
             int dstP = 0;
-            for (int srcP = 0; srcP < srcLen; srcP += 3) {
+            int srcP = 0;
+            for (; srcP < fullDataLen; srcP += 3) {
                 int bits = (src[srcP] & 0xff) << 16
                         | (src[srcP + 1] & 0xff) << 8
                         | (src[srcP + 2] & 0xff);
@@ -119,11 +120,10 @@ public class Base64 {
                 dst[dstP++] = BASE_64_CHAR[(bits >>> 6)  & 0x3f];
                 dst[dstP++] = BASE_64_CHAR[bits & 0x3f];
             }
-            if (srcLen < src.length) {               // 1 or 2 leftover bytes
-                int srcP = srcLen;
+            if (srcP < srcLen) {               // 1 or 2 leftover bytes
                 int b0 = src[srcP++] & 0xff;
                 dst[dstP++] = BASE_64_CHAR[b0 >> 2];
-                if (srcP == src.length) {
+                if (srcP == srcLen) {
                     dst[dstP++] = BASE_64_CHAR[(b0 << 4) & 0x3f];
                     dst[dstP++] = '=';
                 } else {
