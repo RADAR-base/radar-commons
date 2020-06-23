@@ -41,7 +41,7 @@ public class BinaryRecordRequest<K, V> implements RecordRequest<K, V> {
     private RecordData<K, V> records;
     private BinaryEncoder binaryEncoder;
     private final AvroWriter<V> valueEncoder;
-    private int sourceIdPos;
+    private final int sourceIdPos;
 
     /**
      * Binary record request for given topic.

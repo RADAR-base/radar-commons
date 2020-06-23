@@ -145,7 +145,7 @@ public class AvroTopic<K, V> extends KafkaTopic {
             return false;
         }
 
-        AvroTopic topic = (AvroTopic) o;
+        AvroTopic<?, ?> topic = (AvroTopic<?, ?>) o;
 
         return keyClass == topic.getKeyClass() && valueClass == topic.getValueClass();
     }

@@ -26,10 +26,10 @@ import okio.BufferedSink;
  * TopicRequestData in a RequestBody.
  */
 class TopicRequestBody extends RequestBody {
-    protected final RecordRequest data;
+    protected final RecordRequest<?, ?> data;
     private final MediaType mediaType;
 
-    TopicRequestBody(RecordRequest requestData, MediaType mediaType) {
+    TopicRequestBody(RecordRequest<?, ?> requestData, MediaType mediaType) {
         this.data = requestData;
         this.mediaType = mediaType;
     }

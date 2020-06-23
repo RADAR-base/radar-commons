@@ -23,7 +23,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
@@ -40,12 +39,7 @@ public final class RestUtils {
     /** OkHttp3 default hostname verifier. */
     public static final HostnameVerifier DEFAULT_HOSTNAME_VERIFIER = OkHostnameVerifier.INSTANCE;
     /** OkHttp3 hostname verifier for unsafe connections. */
-    public static final HostnameVerifier UNSAFE_HOSTNAME_VERIFIER = new HostnameVerifier() {
-        @Override
-        public boolean verify(String hostname, SSLSession session) {
-            return true;
-        }
-    };
+    public static final HostnameVerifier UNSAFE_HOSTNAME_VERIFIER = (hostname, session) -> true;
 
     /** Unsafe OkHttp3 trust manager that trusts all certificates. */
     public static final TrustManager[] UNSAFE_TRUST_MANAGER = {

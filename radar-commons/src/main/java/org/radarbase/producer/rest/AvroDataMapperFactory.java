@@ -3,7 +3,6 @@ package org.radarbase.producer.rest;
 import static org.apache.avro.JsonProperties.NULL_VALUE;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -142,7 +141,7 @@ public final class AvroDataMapperFactory {
                     throw new SchemaValidationException(to, from, new IllegalArgumentException(
                             "Cannot map enum symbols without default value"));
                 } else {
-                    final GenericEnumSymbol symbol = new GenericData.EnumSymbol(to, defaultString);
+                    GenericEnumSymbol<?> symbol = new GenericData.EnumSymbol(to, defaultString);
                     return obj -> {
                         String value = obj.toString();
                         if (to.hasEnumSymbol(value)) {
@@ -304,7 +303,7 @@ public final class AvroDataMapperFactory {
         final AvroDataMapper subMapper = createMapper(from.getElementType(), to.getElementType(),
                 null);
         return obj -> {
-            List array = (List) obj;
+            List<?> array = (List<?>) obj;
             List<Object> toArray = new ArrayList<>(array.size());
             for (Object val : array) {
                 toArray.add(subMapper.convertAvro(val));
@@ -356,11 +355,9 @@ public final class AvroDataMapperFactory {
         } else if (to.getType() == Type.STRING) {
             final Encoder encoder = Base64.getEncoder();
             if (from.getType() == Type.FIXED) {
-                return object -> new String(encoder.encode(((Fixed) object).bytes()),
-                        StandardCharsets.UTF_8);
+                return object -> encoder.encode(((Fixed) object).bytes());
             } else {
-                return object -> new String(encoder.encode(((ByteBuffer) object).array()),
-                        StandardCharsets.UTF_8);
+                return object -> encoder.encode(((ByteBuffer) object).array());
             }
         } else {
             throw new SchemaValidationException(to, from,
