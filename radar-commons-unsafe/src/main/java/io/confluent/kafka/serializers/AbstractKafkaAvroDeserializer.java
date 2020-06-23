@@ -188,7 +188,7 @@ public abstract class AbstractKafkaAvroDeserializer extends AbstractKafkaSchemaS
   }
 
   /**
-   * Normalizes the reader schema, puts the resolved schema into the cache. 
+   * Normalizes the reader schema, puts the resolved schema into the cache.
    * <li>
    * <ul>if the reader schema is provided, use the provided one</ul>
    * <ul>if the reader schema is cached for the writer schema full name, use the cached value</ul>
