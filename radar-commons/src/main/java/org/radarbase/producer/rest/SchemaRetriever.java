@@ -18,7 +18,6 @@ package org.radarbase.producer.rest;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -100,36 +99,6 @@ public class SchemaRetriever {
                 .build(), cacheValidity);
     }
 
-
-    /** The subject in the Avro Schema Registry, given a Kafka topic. */
-    protected static String subject(String topic, boolean ofValue) {
-        return topic + (ofValue ? "-value" : "-key");
-    }
-
-    /** Get schema metadata. Cached schema metadata will be used if present. */
-    public ParsedSchemaMetadata getSchemaMetadata(String topic, boolean ofValue, int version)
-            throws JSONException, IOException {
-        String subject = subject(topic, ofValue);
-        ConcurrentMap<Integer, TimedInt> versionMap = computeIfAbsent(subjectVersionCache, subject,
-                new ConcurrentHashMap<>());
-        TimedInt id = versionMap.get(Math.max(version, 0));
-        if (id == null || id.isExpired()) {
-            ParsedSchemaMetadata metadata = restClient.retrieveSchemaMetadata(subject, version);
-            cacheMetadata(metadata, subject, version <= 0);
-            return metadata;
-        } else {
-            Schema schema = getById(id.value);
-            ParsedSchemaMetadata metadata = getCachedMetadata(subject, id.value, version, schema);
-
-            return metadata != null ? metadata : getMetadata(topic, ofValue, schema, version <= 0);
-        }
-    }
-
-    private <K, V> V computeIfAbsent(ConcurrentMap<K, V> original, K key, V newValue) {
-        V existingValue = original.putIfAbsent(key, newValue);
-        return existingValue != null ? existingValue : newValue;
-    }
-
     /**
      * Add schema metadata to the retriever. This implementation only adds it to the cache.
      * @return schema ID
@@ -138,7 +107,7 @@ public class SchemaRetriever {
             throws JSONException, IOException {
         String subject = subject(topic, ofValue);
         int id = restClient.addSchema(subject, schema);
-        cacheMetadata(new ParsedSchemaMetadata(id, null, schema), subject, false);
+        cache(new ParsedSchemaMetadata(id, null, schema), subject, false);
         return id;
     }
 
@@ -150,7 +119,7 @@ public class SchemaRetriever {
     public ParsedSchemaMetadata getOrSetSchemaMetadata(String topic, boolean ofValue, Schema schema,
             int version) throws JSONException, IOException {
         try {
-            return getSchemaMetadata(topic, ofValue, version);
+            return getBySubjectAndVersion(topic, ofValue, version);
         } catch (IOException ex) {
             logger.warn("Schema for {} value was not yet added to the schema registry.", topic);
             addSchema(topic, ofValue, schema);
@@ -174,8 +143,27 @@ public class SchemaRetriever {
             throws IOException {
         Schema schema = getById(id);
         String subject = subject(topic, ofValue);
-        ParsedSchemaMetadata metadata = getCachedMetadata(subject, id, null, schema);
+        ParsedSchemaMetadata metadata = getCachedVersion(subject, id, null, schema);
         return metadata != null ? metadata : getMetadata(topic, ofValue, schema);
+    }
+
+    /** Get schema metadata. Cached schema metadata will be used if present. */
+    public ParsedSchemaMetadata getBySubjectAndVersion(String topic, boolean ofValue, int version)
+            throws JSONException, IOException {
+        String subject = subject(topic, ofValue);
+        ConcurrentMap<Integer, TimedInt> versionMap = computeIfAbsent(subjectVersionCache, subject,
+                new ConcurrentHashMap<>());
+        TimedInt id = versionMap.get(Math.max(version, 0));
+        if (id == null || id.isExpired()) {
+            ParsedSchemaMetadata metadata = restClient.retrieveSchemaMetadata(subject, version);
+            cache(metadata, subject, version <= 0);
+            return metadata;
+        } else {
+            Schema schema = getById(id.value);
+            ParsedSchemaMetadata metadata = getCachedVersion(subject, id.value, version, schema);
+
+            return metadata != null ? metadata : getMetadata(topic, ofValue, schema, version <= 0);
+        }
     }
 
     /** Get all schema versions in a subject. */
@@ -185,26 +173,34 @@ public class SchemaRetriever {
     }
 
 
-    /** Get all schema versions in a subject. */
+    /** Get the metadata of a specific schema in a topic. */
     public ParsedSchemaMetadata getMetadata(String topic, boolean ofValue, Schema schema,
             boolean ofLatestVersion) throws IOException {
         TimedInt id = schemaCache.get(schema);
         String subject = subject(topic, ofValue);
 
         if (id != null && !id.isExpired()) {
-            ParsedSchemaMetadata metadata = getCachedMetadata(subject, id.value, null, schema);
+            ParsedSchemaMetadata metadata = getCachedVersion(subject, id.value, null, schema);
             if (metadata != null) {
                 return metadata;
             }
         }
 
         ParsedSchemaMetadata metadata = restClient.requestMetadata(subject, schema);
-        cacheMetadata(metadata, subject, ofLatestVersion);
+        cache(metadata, subject, ofLatestVersion);
         return metadata;
     }
 
 
-    protected ParsedSchemaMetadata getCachedMetadata(String subject, int id,
+    /**
+     * Get cached metadata.
+     * @param subject schema registry subject
+     * @param id schema ID.
+     * @param reportedVersion version requested by the client. Null if no version was requested. This version will be used if the actual version was not cached.
+     * @param schema schema to use.
+     * @return metadata if present. Returns null if no metadata is cached or if no version is cached and the reportedVersion is null.
+     */
+    protected ParsedSchemaMetadata getCachedVersion(String subject, int id,
             Integer reportedVersion, Schema schema) {
         Integer version = reportedVersion;
         if (version == null || version <= 0) {
@@ -225,7 +221,7 @@ public class SchemaRetriever {
         return new ParsedSchemaMetadata(id, version, schema);
     }
 
-    protected void cacheMetadata(ParsedSchemaMetadata metadata, String subject, boolean latest) {
+    protected void cache(ParsedSchemaMetadata metadata, String subject, boolean latest) {
         TimedInt id = new TimedInt(metadata.getId(), cacheValidity);
         schemaCache.put(metadata.getSchema(), id);
         if (subject != null && metadata.getVersion() != null) {
@@ -266,6 +262,16 @@ public class SchemaRetriever {
         subjectVersionCache.clear();
         idCache.clear();
         schemaCache.clear();
+    }
+
+    /** The subject in the Avro Schema Registry, given a Kafka topic. */
+    protected static String subject(String topic, boolean ofValue) {
+        return topic + (ofValue ? "-value" : "-key");
+    }
+
+    private static <K, V> V computeIfAbsent(ConcurrentMap<K, V> original, K key, V newValue) {
+        V existingValue = original.putIfAbsent(key, newValue);
+        return existingValue != null ? existingValue : newValue;
     }
 
     /**
