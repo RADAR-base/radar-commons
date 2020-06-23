@@ -17,6 +17,7 @@
 package org.radarbase.util;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.regex.Pattern;
@@ -26,7 +27,7 @@ import java.util.regex.Pattern;
  */
 @SuppressWarnings("PMD.ClassNamingConventions")
 public final class Strings {
-    private static final Charset UTF_8 = Charset.forName("UTF-8");
+    private static final Charset UTF_8 = StandardCharsets.UTF_8;
     private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 
     private Strings() {

@@ -25,7 +25,7 @@
 
 package org.radarbase.util;
 
-import java.util.Arrays;
+import static java.nio.charset.StandardCharsets.UTF_8;  // Since Android API 19
 
 /**
  * This class consists exclusively of static methods for obtaining
@@ -84,7 +84,7 @@ public class Base64 {
          * index values into their "Base64 Alphabet" equivalents as specified
          * in "Table 1: The Base64 Alphabet" of RFC 2045 (and RFC 4648).
          */
-        private static final byte[] BASE_64_BYTE = {
+        private static final byte[] BASE_64_CHAR = {
                 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
                 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
                 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
@@ -97,10 +97,6 @@ public class Base64 {
         private Encoder() {
         }
 
-        private int outLength(int srclen) {
-            return 4 * ((srclen + 2) / 3);
-        }
-
         /**
          * Encodes all bytes from the specified byte array into a newly-allocated
          * byte array using the {@link Base64} encoding scheme. The returned byte
@@ -111,51 +107,36 @@ public class Base64 {
          * @return  A newly-allocated byte array containing the resulting
          *          encoded bytes.
          */
-        public byte[] encode(byte[] src) {
-            int len = outLength(src.length);          // dst array size
-            byte[] dst = new byte[len];
-            int ret = encode0(src, src.length, dst);
-            if (ret != dst.length) {
-                return Arrays.copyOf(dst, ret);
+        public String encode(byte[] src) {
+            int srcLen = src.length;
+            byte[] dst = new byte[4 * ((srcLen + 2) / 3)];
+            int fullDataLen = srcLen / 3 * 3;
+            int dstP = 0;
+            int srcP = 0;
+            for (; srcP < fullDataLen; srcP += 3) {
+                int bits = (src[srcP] & 0xff) << 16
+                        | (src[srcP + 1] & 0xff) << 8
+                        | (src[srcP + 2] & 0xff);
+                dst[dstP++] = BASE_64_CHAR[(bits >>> 18) & 0x3f];
+                dst[dstP++] = BASE_64_CHAR[(bits >>> 12) & 0x3f];
+                dst[dstP++] = BASE_64_CHAR[(bits >>> 6)  & 0x3f];
+                dst[dstP++] = BASE_64_CHAR[bits & 0x3f];
             }
-            return dst;
-        }
-
-        private int encode0(byte[] src, int end, byte[] dst) {
-            int sp = 0;
-            int slen = end / 3 * 3;
-            int dp = 0;
-            while (sp < slen) {
-                int sl0 = Math.min(sp + slen, slen);
-                int dp0 = dp;
-                for (int sp0 = sp; sp0 < sl0; sp0 += 3) {
-                    int bits = (src[sp0] & 0xff) << 16
-                            | (src[sp0 + 1] & 0xff) <<  8
-                            | (src[sp0 + 2] & 0xff);
-                    dst[dp0++] = BASE_64_BYTE[(bits >>> 18) & 0x3f];
-                    dst[dp0++] = BASE_64_BYTE[(bits >>> 12) & 0x3f];
-                    dst[dp0++] = BASE_64_BYTE[(bits >>> 6)  & 0x3f];
-                    dst[dp0++] = BASE_64_BYTE[bits & 0x3f];
-                }
-                int dlen = (sl0 - sp) / 3 * 4;
-                dp += dlen;
-                sp = sl0;
-            }
-            if (sp < end) {               // 1 or 2 leftover bytes
-                int b0 = src[sp++] & 0xff;
-                dst[dp++] = BASE_64_BYTE[b0 >> 2];
-                if (sp == end) {
-                    dst[dp++] = BASE_64_BYTE[(b0 << 4) & 0x3f];
-                    dst[dp++] = '=';
-                    dst[dp++] = '=';
+            if (srcP < srcLen) {               // 1 or 2 leftover bytes
+                int b0 = src[srcP++] & 0xff;
+                dst[dstP++] = BASE_64_CHAR[b0 >> 2];
+                if (srcP == srcLen) {
+                    dst[dstP++] = BASE_64_CHAR[(b0 << 4) & 0x3f];
+                    dst[dstP++] = '=';
                 } else {
-                    int b1 = src[sp] & 0xff;
-                    dst[dp++] = BASE_64_BYTE[(b0 << 4) & 0x3f | (b1 >> 4)];
-                    dst[dp++] = BASE_64_BYTE[(b1 << 2) & 0x3f];
-                    dst[dp++] = '=';
+                    int b1 = src[srcP] & 0xff;
+                    dst[dstP++] = BASE_64_CHAR[(b0 << 4) & 0x3f | (b1 >> 4)];
+                    dst[dstP++] = BASE_64_CHAR[(b1 << 2) & 0x3f];
                 }
+                dst[dstP] = '=';
             }
-            return dp;
+
+            return new String(dst, UTF_8);
         }
     }
 }

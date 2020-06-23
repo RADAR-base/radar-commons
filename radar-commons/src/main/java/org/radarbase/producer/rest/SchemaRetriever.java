@@ -17,23 +17,19 @@
 package org.radarbase.producer.rest;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import okhttp3.MediaType;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okio.BufferedSink;
 import org.apache.avro.Schema;
-import org.apache.avro.Schema.Type;
-import org.apache.avro.generic.GenericContainer;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.radarbase.config.ServerConfig;
-import org.radarbase.util.Strings;
+import org.radarbase.util.TimedInt;
+import org.radarbase.util.TimedValue;
+import org.radarbase.util.TimedVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,28 +39,24 @@ import org.slf4j.LoggerFactory;
  */
 public class SchemaRetriever {
     private static final Logger logger = LoggerFactory.getLogger(SchemaRetriever.class);
-    private static final MediaType CONTENT_TYPE = MediaType.parse(
-            "application/vnd.schemaregistry.v1+json; charset=utf-8");
-    private static final Schema NULL_SCHEMA = Schema.create(Type.NULL);
-    private static final Map<Class<?>, Schema> PRIMITIVE_SCHEMAS = new HashMap<>();
-    private static final byte[] SCHEMA = Strings.utf8("{\"schema\":");
     private static final long MAX_VALIDITY = 86400L;
 
-    static {
-        PRIMITIVE_SCHEMAS.put(Long.class, Schema.create(Type.LONG));
-        PRIMITIVE_SCHEMAS.put(Integer.class, Schema.create(Type.INT));
-        PRIMITIVE_SCHEMAS.put(Float.class, Schema.create(Type.FLOAT));
-        PRIMITIVE_SCHEMAS.put(Double.class, Schema.create(Type.DOUBLE));
-        PRIMITIVE_SCHEMAS.put(String.class, Schema.create(Type.STRING));
-        PRIMITIVE_SCHEMAS.put(Boolean.class, Schema.create(Type.BOOLEAN));
-        PRIMITIVE_SCHEMAS.put(byte[].class, Schema.create(Type.BYTES));
+    private final ConcurrentMap<Integer, TimedValue<Schema>> idCache =
+            new ConcurrentHashMap<>();
+    private final ConcurrentMap<Schema, TimedInt> schemaCache = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, ConcurrentMap<Integer, TimedInt>> subjectVersionCache =
+            new ConcurrentHashMap<>();
+
+    private final SchemaRestClient restClient;
+    private final long cacheValidity;
+
+    public SchemaRetriever(RestClient client, long cacheValidity) {
+        restClient = new SchemaRestClient(client);
+        this.cacheValidity = cacheValidity;
     }
 
-    private final ConcurrentMap<String, TimedSchemaMetadata> cache = new ConcurrentHashMap<>();
-    private final RestClient restClient;
-
-    private SchemaRetriever(RestClient client) {
-        restClient = client;
+    public SchemaRetriever(RestClient client) {
+        this(client, MAX_VALIDITY);
     }
 
     /**
@@ -79,72 +71,29 @@ public class SchemaRetriever {
                         .build());
     }
 
-    /** The subject in the Avro Schema Registry, given a Kafka topic. */
-    protected static String subject(String topic, boolean ofValue) {
-        return topic + (ofValue ? "-value" : "-key");
-    }
-
-    /** Retrieve schema metadata from server. */
-    protected ParsedSchemaMetadata retrieveSchemaMetadata(String subject, int version)
-            throws JSONException, IOException {
-        StringBuilder pathBuilder = new StringBuilder(50)
-                .append("/subjects/")
-                .append(subject)
-                .append("/versions/");
-        if (version > 0) {
-            pathBuilder.append(version);
-        } else {
-            pathBuilder.append("latest");
-        }
-        Request request = restClient.requestBuilder(pathBuilder.toString())
-                .addHeader("Accept", "application/json")
-                .build();
-
-        String response = restClient.requestString(request);
-        JSONObject node = new JSONObject(response);
-        int newVersion = version < 1 ? node.getInt("version") : version;
-        int schemaId = node.getInt("id");
-        Schema schema = parseSchema(node.getString("schema"));
-        return new ParsedSchemaMetadata(schemaId, newVersion, schema);
-    }
-
-    /** Get schema metadata. Cached schema metadata will be used if present. */
-    public ParsedSchemaMetadata getSchemaMetadata(String topic, boolean ofValue, int version)
-            throws JSONException, IOException {
-        String subject = subject(topic, ofValue);
-        TimedSchemaMetadata value = cache.get(subject);
-        if (value == null || value.isExpired()) {
-            value = new TimedSchemaMetadata(retrieveSchemaMetadata(subject, version));
-            cache.put(subject, value);
-        }
-        return value.metadata;
-    }
-
-    /** Parse a schema from string. */
-    protected Schema parseSchema(String schemaString) {
-        Schema.Parser parser = new Schema.Parser();
-        return parser.parse(schemaString);
+    /**
+     * Schema retriever for a Confluent Schema Registry.
+     * @param config schema registry configuration.
+     * @param connectionTimeout timeout in seconds.
+     * @param cacheValidity timeout in seconds for considering a schema stale.
+     */
+    public SchemaRetriever(ServerConfig config, long connectionTimeout, long cacheValidity) {
+        this(RestClient.global()
+                .server(Objects.requireNonNull(config))
+                .timeout(connectionTimeout, TimeUnit.SECONDS)
+                .build(), cacheValidity);
     }
 
     /**
      * Add schema metadata to the retriever. This implementation only adds it to the cache.
+     * @return schema ID
      */
-    public void addSchemaMetadata(String topic, boolean ofValue, ParsedSchemaMetadata metadata)
+    public int addSchema(String topic, boolean ofValue, Schema schema)
             throws JSONException, IOException {
         String subject = subject(topic, ofValue);
-        if (metadata.getId() == null) {
-
-            Request request = restClient.requestBuilder("/subjects/" + subject + "/versions")
-                    .addHeader("Accept", "application/json")
-                    .post(new SchemaRequestBody(metadata.getSchema()))
-                    .build();
-
-            String response = restClient.requestString(request);
-            JSONObject node = new JSONObject(response);
-            int schemaId = node.getInt("id");
-            metadata.setId(schemaId);
-        }
-        cache.put(subject, new TimedSchemaMetadata(metadata));
+        int id = restClient.addSchema(subject, schema);
+        cache(new ParsedSchemaMetadata(id, null, schema), subject, false);
+        return id;
     }
 
     /**
@@ -155,84 +104,163 @@ public class SchemaRetriever {
     public ParsedSchemaMetadata getOrSetSchemaMetadata(String topic, boolean ofValue, Schema schema,
             int version) throws JSONException, IOException {
         try {
-            return getSchemaMetadata(topic, ofValue, version);
-        } catch (IOException ex) {
-            logger.warn("Schema for {} value was not yet added to the schema registry.", topic);
-            ParsedSchemaMetadata metadata = new ParsedSchemaMetadata(null, null, schema);
-            addSchemaMetadata(topic, ofValue, metadata);
-            return metadata;
+            return getBySubjectAndVersion(topic, ofValue, version);
+        } catch (RestException ex) {
+            if (ex.getStatusCode() == 404) {
+                logger.warn("Schema for {} value was not yet added to the schema registry.", topic);
+                addSchema(topic, ofValue, schema);
+                return getMetadata(topic, ofValue, schema, version <= 0);
+            } else {
+                throw ex;
+            }
         }
     }
 
-    private static class SchemaRequestBody extends RequestBody {
-        private final Schema schema;
+    /** Get a schema by its ID. */
+    public Schema getById(int id) throws IOException {
+        TimedValue<Schema> value = idCache.get(id);
+        if (value == null || value.isExpired()) {
+            value = new TimedValue<>(restClient.retrieveSchemaById(id), cacheValidity);
+            idCache.put(id, value);
+            schemaCache.put(value.value, new TimedInt(id, cacheValidity));
+        }
+        return value.value;
+    }
 
-        private SchemaRequestBody(Schema schema) {
-            this.schema = schema;
+    /** Gets a schema by ID and check that it is present in the given topic. */
+    public ParsedSchemaMetadata getBySubjectAndId(String topic, boolean ofValue, int id)
+            throws IOException {
+        Schema schema = getById(id);
+        String subject = subject(topic, ofValue);
+        ParsedSchemaMetadata metadata = getCachedVersion(subject, id, null, schema);
+        return metadata != null ? metadata : getMetadata(topic, ofValue, schema);
+    }
+
+    /** Get schema metadata. Cached schema metadata will be used if present. */
+    public ParsedSchemaMetadata getBySubjectAndVersion(String topic, boolean ofValue, int version)
+            throws JSONException, IOException {
+        String subject = subject(topic, ofValue);
+        ConcurrentMap<Integer, TimedInt> versionMap = computeIfAbsent(subjectVersionCache, subject,
+                new ConcurrentHashMap<>());
+        TimedInt id = versionMap.get(Math.max(version, 0));
+        if (id == null || id.isExpired()) {
+            ParsedSchemaMetadata metadata = restClient.retrieveSchemaMetadata(subject, version);
+            cache(metadata, subject, version <= 0);
+            return metadata;
+        } else {
+            Schema schema = getById(id.value);
+            ParsedSchemaMetadata metadata = getCachedVersion(subject, id.value, version, schema);
+            return metadata != null ? metadata : getMetadata(topic, ofValue, schema, version <= 0);
+        }
+    }
+
+    /** Get all schema versions in a subject. */
+    public ParsedSchemaMetadata getMetadata(String topic, boolean ofValue, Schema schema)
+            throws IOException {
+        return getMetadata(topic, ofValue, schema, false);
+    }
+
+
+    /** Get the metadata of a specific schema in a topic. */
+    public ParsedSchemaMetadata getMetadata(String topic, boolean ofValue, Schema schema,
+            boolean ofLatestVersion) throws IOException {
+        TimedInt id = schemaCache.get(schema);
+        String subject = subject(topic, ofValue);
+
+        if (id != null && !id.isExpired()) {
+            ParsedSchemaMetadata metadata = getCachedVersion(subject, id.value, null, schema);
+            if (metadata != null) {
+                return metadata;
+            }
         }
 
-        @Override
-        public MediaType contentType() {
-            return CONTENT_TYPE;
-        }
+        ParsedSchemaMetadata metadata = restClient.requestMetadata(subject, schema);
+        cache(metadata, subject, ofLatestVersion);
+        return metadata;
+    }
 
-        @Override
-        public void writeTo(BufferedSink sink) throws IOException {
-            sink.write(SCHEMA);
-            sink.writeUtf8(JSONObject.quote(schema.toString()));
-            sink.writeByte('}');
+
+    /**
+     * Get cached metadata.
+     * @param subject schema registry subject
+     * @param id schema ID.
+     * @param reportedVersion version requested by the client. Null if no version was requested.
+     *                        This version will be used if the actual version was not cached.
+     * @param schema schema to use.
+     * @return metadata if present. Returns null if no metadata is cached or if no version is cached
+     *         and the reportedVersion is null.
+     */
+    protected ParsedSchemaMetadata getCachedVersion(String subject, int id,
+            Integer reportedVersion, Schema schema) {
+        Integer version = reportedVersion;
+        if (version == null || version <= 0) {
+            ConcurrentMap<Integer, TimedInt> versions = subjectVersionCache.get(subject);
+            if (versions != null) {
+                for (Map.Entry<Integer, TimedInt> entry : versions.entrySet()) {
+                    if (!entry.getValue().isExpired() && entry.getKey() != 0
+                            && entry.getValue().value == id) {
+                        version = entry.getKey();
+                        break;
+                    }
+                }
+            }
+            if (version == null || version <= 0) {
+                return null;
+            }
+        }
+        return new ParsedSchemaMetadata(id, version, schema);
+    }
+
+    protected void cache(ParsedSchemaMetadata metadata, String subject, boolean latest) {
+        TimedInt id = new TimedInt(metadata.getId(), cacheValidity);
+        schemaCache.put(metadata.getSchema(), id);
+        if (metadata.getVersion() != null) {
+            ConcurrentMap<Integer, TimedInt> versionCache = computeIfAbsent(subjectVersionCache,
+                    subject, new ConcurrentHashMap<>());
+
+            versionCache.put(metadata.getVersion(), id);
+            if (latest) {
+                versionCache.put(0, id);
+            }
+        }
+        idCache.put(metadata.getId(), new TimedValue<>(metadata.getSchema(), cacheValidity));
+    }
+
+    /**
+     * Remove expired entries from cache.
+     */
+    public void pruneCache() {
+        prune(schemaCache);
+        prune(idCache);
+        for (ConcurrentMap<Integer, TimedInt> versionMap : subjectVersionCache.values()) {
+            prune(versionMap);
         }
     }
 
     /**
-     * Get the schema of a generic object. This supports null, primitive types, String, and
-     * {@link org.apache.avro.generic.GenericContainer}.
-     * @param object object of recognized CONTENT_TYPE
-     * @throws IllegalArgumentException if passed object is not a recognized CONTENT_TYPE
+     * Remove all entries from cache.
      */
-    public static Schema getSchema(Object object) {
-        if (object == null) {
-            return NULL_SCHEMA;
-        }
-        Schema schema = PRIMITIVE_SCHEMAS.get(object.getClass());
-        if (schema != null) {
-            return schema;
-        }
-        if (object instanceof GenericContainer) {
-            return ((GenericContainer)object).getSchema();
-        }
-        throw new IllegalArgumentException("Passed object " + object + " of class "
-                + object.getClass() + " can not be schematized. "
-                + "Pass null, a primitive CONTENT_TYPE or a GenericContainer.");
+    public void clearCache() {
+        subjectVersionCache.clear();
+        idCache.clear();
+        schemaCache.clear();
     }
 
-    private static class TimedSchemaMetadata {
-        private final ParsedSchemaMetadata metadata;
-        private final long expiry;
+    /** The subject in the Avro Schema Registry, given a Kafka topic. */
+    protected static String subject(String topic, boolean ofValue) {
+        return topic + (ofValue ? "-value" : "-key");
+    }
 
-        TimedSchemaMetadata(ParsedSchemaMetadata metadata) {
-            expiry = System.currentTimeMillis() + MAX_VALIDITY * 1000L;
-            this.metadata = Objects.requireNonNull(metadata);
-        }
-
-        boolean isExpired() {
-            return expiry < System.currentTimeMillis();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
+    private static void prune(Map<?, ? extends TimedVariable> map) {
+        for (Entry<?, ? extends TimedVariable> entry : map.entrySet()) {
+            if (entry.getValue().isExpired()) {
+                map.remove(entry.getKey(), entry.getValue());
             }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            return metadata.equals(((TimedSchemaMetadata)o).metadata);
         }
+    }
 
-        @Override
-        public int hashCode() {
-            return metadata.hashCode();
-        }
+    private static <K, V> V computeIfAbsent(ConcurrentMap<K, V> original, K key, V newValue) {
+        V existingValue = original.putIfAbsent(key, newValue);
+        return existingValue != null ? existingValue : newValue;
     }
 }
