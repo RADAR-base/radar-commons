@@ -14,7 +14,7 @@ public class Base64Test {
         java.util.Base64.Encoder javaEncoder = java.util.Base64.getEncoder();
 
         ThreadLocalRandom random = ThreadLocalRandom.current();
-        for (int i = 0; i < 2_000; i++) {
+        for (int i = 0; i < 2_000; i += 7) {
             byte[] src = new byte[i];
             random.nextBytes(src);
             String actual = encoder.encode(src);

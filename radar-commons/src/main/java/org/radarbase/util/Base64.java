@@ -25,6 +25,8 @@
 
 package org.radarbase.util;
 
+import static java.nio.charset.StandardCharsets.UTF_8;  // Since Android API 19
+
 /**
  * This class consists exclusively of static methods for obtaining
  * encoders and decoders for the Base64 encoding scheme. The
@@ -134,7 +136,7 @@ public class Base64 {
                 dst[dstP] = '=';
             }
 
-            return new String(dst);
+            return new String(dst, UTF_8);
         }
     }
 }
