@@ -1,6 +1,6 @@
 package org.radarbase.util;
 
-public class TimedInt {
+public class TimedInt implements TimedVariable {
     public final int value;
     private final long expiry;
 
@@ -9,6 +9,7 @@ public class TimedInt {
         this.value = value;
     }
 
+    @Override
     public boolean isExpired() {
         return expiry < System.currentTimeMillis();
     }
@@ -21,7 +22,9 @@ public class TimedInt {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        return value == ((TimedInt)o).value;
+        TimedInt other = (TimedInt)o;
+        return value == other.value
+                && expiry == other.expiry;
     }
 
     @Override

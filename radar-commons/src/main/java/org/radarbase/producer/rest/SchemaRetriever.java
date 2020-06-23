@@ -18,7 +18,9 @@ package org.radarbase.producer.rest;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -31,6 +33,7 @@ import org.json.JSONObject;
 import org.radarbase.config.ServerConfig;
 import org.radarbase.util.TimedInt;
 import org.radarbase.util.TimedValue;
+import org.radarbase.util.TimedVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -235,6 +238,34 @@ public class SchemaRetriever {
             }
         }
         idCache.put(metadata.getId(), new TimedValue<>(metadata.getSchema(), cacheValidity));
+    }
+
+    /**
+     * Remove expired entries from cache.
+     */
+    public void pruneCache() {
+        prune(schemaCache);
+        prune(idCache);
+        for (ConcurrentMap<Integer, TimedInt> versionMap : subjectVersionCache.values()) {
+            prune(versionMap);
+        }
+    }
+
+    private void prune(Map<?, ? extends TimedVariable> map) {
+        for (Entry<?, ? extends TimedVariable> entry : map.entrySet()) {
+            if (entry.getValue().isExpired()) {
+                map.remove(entry.getKey(), entry.getValue());
+            }
+        }
+    }
+
+    /**
+     * Remove all entries from cache.
+     */
+    public void clearCache() {
+        subjectVersionCache.clear();
+        idCache.clear();
+        schemaCache.clear();
     }
 
     /**

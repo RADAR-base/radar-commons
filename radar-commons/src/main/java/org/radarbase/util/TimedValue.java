@@ -2,7 +2,7 @@ package org.radarbase.util;
 
 import java.util.Objects;
 
-public class TimedValue<T> {
+public class TimedValue<T> implements TimedVariable {
     public final T value;
     private final long expiry;
 
@@ -11,6 +11,7 @@ public class TimedValue<T> {
         this.value = Objects.requireNonNull(value);
     }
 
+    @Override
     public boolean isExpired() {
         return expiry < System.currentTimeMillis();
     }
@@ -23,7 +24,9 @@ public class TimedValue<T> {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        return value.equals(((TimedValue<?>)o).value);
+        TimedValue<?> other = (TimedValue<?>)o;
+        return value.equals(other.value)
+                && expiry == other.expiry;
     }
 
     @Override
