@@ -144,4 +144,19 @@ public class MockDataConfig extends AvroTopicConfig {
     public int getFrequency() {
         return frequency;
     }
+
+    @Override
+    public String toString() {
+        return "MockDataConfig{"
+                + "topic='" + getTopic() + '\''
+                + ", valueSchema='" + getValueSchema() + '\''
+                + ", dataFile='" + dataFile + '\''
+                + ", frequency=" + frequency
+                + ", sensor='" + sensor + '\''
+                + ", valueFields=" + valueFields
+                + ", maximumDifference=" + maximumDifference
+                + ", minimum=" + minimum
+                + ", maximum=" + maximum
+                + '}';
+    }
 }

@@ -206,4 +206,9 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
         csvReader.close();
         bufferedReader.close();
     }
+
+    @Override
+    public String toString() {
+        return "MockCsvParser{" + "topic=" + topic + '}';
+    }
 }

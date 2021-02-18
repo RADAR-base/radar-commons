@@ -46,6 +46,9 @@ public class BasicMockConfig {
     @JsonProperty("duration_millis")
     private long duration = 0L;
 
+    @JsonProperty("auth")
+    private AuthConfig authConfig = null;
+
     public List<ServerConfig> getBroker() {
         return broker;
     }
@@ -121,5 +124,9 @@ public class BasicMockConfig {
 
     public void setDuration(long duration) {
         this.duration = duration;
+    }
+
+    public AuthConfig getAuthConfig() {
+        return authConfig;
     }
 }
