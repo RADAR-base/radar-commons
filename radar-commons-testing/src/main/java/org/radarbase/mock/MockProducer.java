@@ -195,10 +195,12 @@ public class MockProducer {
         try (Response response = okHttpClient.newCall(request).execute()) {
             ResponseBody responseBody = response.body();
             if (responseBody == null) {
-                throw new IOException("Cannot request token at " + request.url() + " (" + response.code() + ") returned no body");
+                throw new IOException("Cannot request token at " + request.url()
+                        + " (" + response.code() + ") returned no body");
             }
             if (!response.isSuccessful()) {
-                throw new IOException("Cannot request token: at " + request.url() + " (" + response.code() + "): " + responseBody.string());
+                throw new IOException("Cannot request token: at " + request.url()
+                        + " (" + response.code() + "): " + responseBody.string());
             }
             return new JSONObject(responseBody.string()).getString("access_token");
         }

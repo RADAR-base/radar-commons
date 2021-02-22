@@ -126,6 +126,10 @@ public class BasicMockConfig {
         this.duration = duration;
     }
 
+    public void setAuthConfig(AuthConfig authConfig) {
+        this.authConfig = authConfig;
+    }
+
     public AuthConfig getAuthConfig() {
         return authConfig;
     }
