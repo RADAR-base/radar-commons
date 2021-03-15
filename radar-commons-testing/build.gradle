@@ -59,6 +59,7 @@ dependencies {
     // Direct producer uses KafkaAvroSerializer if initialized
     testImplementation group: 'junit', name: 'junit', version: junitVersion
     testImplementation group: 'org.hamcrest', name: 'hamcrest-all', version: hamcrestVersion
+    testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: slf4jVersion
 }
 
 apply from: '../gradle/publishing.gradle'

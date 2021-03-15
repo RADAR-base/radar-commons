@@ -21,6 +21,7 @@ import com.opencsv.exceptions.CsvValidationException;
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -136,6 +137,8 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
                 return parseArray(schema, fieldString);
             case UNION:
                 return parseUnion(schema, fieldString);
+            case ENUM:
+                return parseEnum(schema, fieldString);
             default:
                 throw new IllegalArgumentException("Cannot handle schemas of type "
                         + schema.getType());
@@ -199,6 +202,19 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
             ret.add(parseValue(schema.getElementType(), substring));
         }
         return ret;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <E extends Enum<E>> E parseEnum(Schema schema, String fieldString) {
+        try {
+            Class<?> cls = Class.forName(schema.getFullName());
+            Method valueOf = cls.getMethod("valueOf", String.class);
+            return (E) valueOf.invoke(null, fieldString);
+        } catch (ReflectiveOperationException | ClassCastException e) {
+            throw new IllegalArgumentException(
+                    "Cannot create enum class " + schema.getFullName()
+                            + " for value "+ fieldString, e);
+        }
     }
 
     @Override

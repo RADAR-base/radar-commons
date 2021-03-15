@@ -29,6 +29,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.radarbase.mock.config.MockDataConfig;
+import org.radarcns.monitor.application.ApplicationServerStatus;
 import org.radarcns.passive.phone.PhoneAcceleration;
 import org.radarcns.passive.phone.PhoneLight;
 
@@ -54,6 +55,31 @@ public class MockRecordValidatorTest {
         config.setValueField("light");
         config.setTopic("test");
         return config;
+    }
+
+    @Test
+    public void validateEnum() throws IOException {
+        MockDataConfig config = makeConfig();
+        config.setValueSchema(ApplicationServerStatus.class.getName());
+
+        try (Writer writer = Files.newBufferedWriter(config.getDataFile(root))) {
+            writer.append("projectId,userId,sourceId,time,serverStatus,ipAddress\n");
+            writer.append("test,a,b,1,UNKNOWN,\n");
+            writer.append("test,a,b,2,CONNECTED,\n");
+        }
+
+        new MockRecordValidator(config, 2_000L, root).validate();
+    }
+
+
+    @Test
+    public void validateEnumGenerated() throws IOException {
+        MockDataConfig config = makeConfig();
+        config.setValueSchema(ApplicationServerStatus.class.getName());
+        config.setValueField("serverStatus");
+        CsvGenerator generator = new CsvGenerator();
+        generator.generate(config, 2_000L, root);
+        new MockRecordValidator(config, 2_000L, root).validate();
     }
 
     @Test
