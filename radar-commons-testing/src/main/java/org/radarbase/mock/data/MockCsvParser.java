@@ -213,7 +213,7 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
         } catch (ReflectiveOperationException | ClassCastException e) {
             throw new IllegalArgumentException(
                     "Cannot create enum class " + schema.getFullName()
-                            + " for value "+ fieldString, e);
+                            + " for value " + fieldString, e);
         }
     }
 
