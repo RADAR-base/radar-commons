@@ -19,6 +19,8 @@ package org.radarbase.mock.data;
 import com.opencsv.exceptions.CsvValidationException;
 import java.io.IOException;
 import java.nio.file.Path;
+import org.apache.avro.Schema;
+import org.apache.avro.Schema.Field;
 import org.apache.avro.specific.SpecificRecord;
 import org.radarbase.data.Record;
 import org.radarbase.mock.config.MockDataConfig;
@@ -58,8 +60,12 @@ public class MockRecordValidator {
                 throw new IllegalArgumentException("CSV file is empty");
             }
 
-            timePos = config.parseAvroTopic().getValueSchema()
-                    .getField("timeReceived").pos();
+            Schema valueSchema = config.parseAvroTopic().getValueSchema();
+            Field timeField = valueSchema.getField("timeReceived");
+            if (timeField == null) {
+                timeField = valueSchema.getField("time");
+            }
+            timePos = timeField.pos();
 
             Record<ObservationKey, SpecificRecord> last = null;
             long line = 1L;
@@ -78,8 +84,9 @@ public class MockRecordValidator {
     }
 
     private void checkFrequency(long line) {
+        long expected = config.getFrequency() * duration / 1000L + 1L;
         if (line != config.getFrequency() * duration / 1000L + 1L) {
-            error("CSV contains fewer messages than expected.", -1L, null);
+            error("CSV contains fewer messages " + line + " than expected " + expected, -1L, null);
         }
     }
 

@@ -32,9 +32,19 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import okhttp3.Credentials;
+import okhttp3.FormBody;
+import okhttp3.Headers;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Request.Builder;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 import org.apache.avro.SchemaValidationException;
+import org.json.JSONObject;
 import org.radarbase.config.ServerConfig;
 import org.radarbase.config.YamlConfigLoader;
+import org.radarbase.mock.config.AuthConfig;
 import org.radarbase.mock.config.MockDataConfig;
 import org.radarbase.mock.data.MockCsvParser;
 import org.radarbase.mock.data.RecordGenerator;
@@ -106,7 +116,8 @@ public class MockProducer {
             generators = createGenerators(dataConfigs);
             mockFiles = createMockFiles(dataConfigs, root);
 
-            tmpSenders = createSenders(mockConfig, numDevices + mockFiles.size());
+            tmpSenders = createSenders(mockConfig, numDevices + mockFiles.size(),
+                    mockConfig.getAuthConfig());
 
             if (!generators.isEmpty()) {
                 String userId = "UserID_";
@@ -141,14 +152,14 @@ public class MockProducer {
     }
 
     private List<KafkaSender> createSenders(
-            BasicMockConfig mockConfig, int numDevices) {
+            BasicMockConfig mockConfig, int numDevices, AuthConfig authConfig) throws IOException {
 
         if (mockConfig.isDirectProducer()) {
             return createDirectSenders(numDevices, mockConfig.getSchemaRegistry().getUrlString(),
                     mockConfig.getBrokerPaths());
         } else {
             return createRestSenders(numDevices, retriever, mockConfig.getRestProxy(),
-                    mockConfig.hasCompression());
+                    mockConfig.hasCompression(), authConfig);
         }
     }
 
@@ -168,11 +179,48 @@ public class MockProducer {
         return result;
     }
 
+    private String requestAccessToken(OkHttpClient okHttpClient, AuthConfig authConfig)
+            throws IOException {
+        Request request = new Builder()
+                .url(authConfig.getTokenUrl())
+                .post(new FormBody.Builder()
+                        .add("grant_type", "client_credentials")
+                        .add("client_id", authConfig.getClientId())
+                        .add("client_secret", authConfig.getClientSecret())
+                        .build())
+                .addHeader("Authorization", Credentials
+                        .basic(authConfig.getClientId(), authConfig.getClientSecret()))
+                .build();
+
+        try (Response response = okHttpClient.newCall(request).execute()) {
+            ResponseBody responseBody = response.body();
+            if (responseBody == null) {
+                throw new IOException("Cannot request token at " + request.url()
+                        + " (" + response.code() + ") returned no body");
+            }
+            if (!response.isSuccessful()) {
+                throw new IOException("Cannot request token: at " + request.url()
+                        + " (" + response.code() + "): " + responseBody.string());
+            }
+            return new JSONObject(responseBody.string()).getString("access_token");
+        }
+    }
+
     /** Create senders that produce data to Kafka via the REST proxy. */
     private List<KafkaSender> createRestSenders(int numDevices,
-            SchemaRetriever retriever, ServerConfig restProxy, boolean useCompression) {
+            SchemaRetriever retriever, ServerConfig restProxy, boolean useCompression,
+            AuthConfig authConfig) throws IOException {
         List<KafkaSender> result = new ArrayList<>(numDevices);
         ConnectionState sharedState = new ConnectionState(10, TimeUnit.SECONDS);
+
+        Headers headers;
+        if (authConfig == null) {
+            headers = Headers.of();
+        } else {
+            OkHttpClient okHttpClient = new OkHttpClient();
+            String token = requestAccessToken(okHttpClient, authConfig);
+            headers = Headers.of("Authorization", "Bearer " + token);
+        }
 
         for (int i = 0; i < numDevices; i++) {
             RestClient httpClient = RestClient.newClient()
@@ -185,6 +233,7 @@ public class MockProducer {
                     .schemaRetriever(retriever)
                     .httpClient(httpClient)
                     .connectionState(sharedState)
+                    .headers(headers)
                     .build();
             result.add(new BatchedKafkaSender(restSender, 1000, 1000));
         }
@@ -198,6 +247,7 @@ public class MockProducer {
         }
         for (MockFileSender file : files) {
             file.send();
+            logger.info("Sent data {}", file);
         }
     }
 
@@ -244,7 +294,9 @@ public class MockProducer {
         try {
             MockProducer producer = new MockProducer(config, mockFile.getParent());
             producer.start();
-            waitForProducer(producer, config.getDuration());
+            if (!producer.devices.isEmpty()) {
+                waitForProducer(producer, config.getDuration());
+            }
         } catch (IllegalArgumentException ex) {
             logger.error("{}", ex.getMessage());
             System.exit(1);
@@ -364,7 +416,10 @@ public class MockProducer {
 
         for (MockDataConfig config : configs) {
             if (config.getDataFile() != null) {
+                logger.info("Reading mock data from {}", config.getDataFile());
                 result.add(new MockCsvParser<>(config, parent));
+            } else {
+                logger.info("Generating mock data from {}", config);
             }
         }
 

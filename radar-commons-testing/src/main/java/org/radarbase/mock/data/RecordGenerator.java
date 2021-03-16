@@ -16,6 +16,7 @@
 
 package org.radarbase.mock.data;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -40,7 +41,7 @@ import org.radarbase.util.Metronome;
  */
 public class RecordGenerator<K extends SpecificRecord> {
     private static final Set<Type> ACCEPTABLE_VALUE_TYPES = new HashSet<>(Arrays.asList(Type.DOUBLE,
-            Type.FLOAT, Type.INT, Type.LONG));
+            Type.FLOAT, Type.INT, Type.LONG, Type.ENUM));
     private final AvroTopic<K, SpecificRecord> topic;
     private final Field timeField;
     private final Field timeReceivedField;
@@ -76,7 +77,7 @@ public class RecordGenerator<K extends SpecificRecord> {
         Schema valueSchema = topic.getValueSchema();
 
         timeField = forceGetField(valueSchema, "time");
-        timeReceivedField = forceGetField(valueSchema, "timeReceived");
+        timeReceivedField = valueSchema.getField("timeReceived");
 
         List<String> valueFieldNames = config.getValueFields();
         if (valueFieldNames == null) {
@@ -229,7 +230,9 @@ public class RecordGenerator<K extends SpecificRecord> {
             long time = timestamps.next();
 
             value.put(timeField.pos(), time / 1000d);
-            value.put(timeReceivedField.pos(), getTimeReceived(time) / 1000d);
+            if (timeReceivedField != null) {
+                value.put(timeReceivedField.pos(), getTimeReceived(time) / 1000d);
+            }
 
             for (Field f : valueFields) {
                 Type type = f.schema().getType();
@@ -246,6 +249,9 @@ public class RecordGenerator<K extends SpecificRecord> {
                         break;
                     case INT:
                         fieldValue = (int)getRandomDouble();
+                        break;
+                    case ENUM:
+                        fieldValue = getRandomEnum(f.schema());
                         break;
                     default:
                         throw new IllegalStateException("Cannot parse type " + type);
@@ -264,6 +270,19 @@ public class RecordGenerator<K extends SpecificRecord> {
         @Override
         public void remove() {
             throw new UnsupportedOperationException();
+        }
+    }
+
+    private static Object getRandomEnum(Schema schema) {
+        try {
+            Class<?> cls = Class.forName(schema.getFullName());
+            Method values = cls.getMethod("values");
+            Object[] symbols = (Object[]) values.invoke(null);
+            int symbolIndex = ThreadLocalRandom.current().nextInt(symbols.length);
+            return symbols[symbolIndex];
+        } catch (ReflectiveOperationException | ClassCastException e) {
+            throw new IllegalArgumentException(
+                    "Cannot generate random enum class " + schema.getFullName(), e);
         }
     }
 }

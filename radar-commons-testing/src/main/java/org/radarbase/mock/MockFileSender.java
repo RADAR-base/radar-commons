@@ -55,4 +55,11 @@ public class MockFileSender {
             throw new IOException("Failed to read CSV file", e);
         }
     }
+
+    @Override
+    public String toString() {
+        return "MockFileSender{"
+                + "parser=" + parser
+                + '}';
+    }
 }

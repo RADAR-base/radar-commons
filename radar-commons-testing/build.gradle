@@ -46,7 +46,7 @@ dependencies {
     api group: 'org.apache.avro', name: 'avro', version: avroVersion
     api group: 'org.radarcns', name: 'radar-schemas-commons', version: radarSchemasVersion
 
-    implementation group: 'com.opencsv', name: 'opencsv', version: '5.2'
+    implementation group: 'com.opencsv', name: 'opencsv', version: '5.3'
     implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
     implementation group: 'org.apache.kafka', name: 'kafka-clients', version: kafkaVersion
     implementation (group: 'io.confluent', name: 'kafka-avro-serializer', version: confluentVersion) {
@@ -59,6 +59,7 @@ dependencies {
     // Direct producer uses KafkaAvroSerializer if initialized
     testImplementation group: 'junit', name: 'junit', version: junitVersion
     testImplementation group: 'org.hamcrest', name: 'hamcrest-all', version: hamcrestVersion
+    testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: slf4jVersion
 }
 
 apply from: '../gradle/publishing.gradle'

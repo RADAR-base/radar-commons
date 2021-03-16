@@ -10,11 +10,11 @@ Add the RADAR-Commons library to your project with Gradle by updating your `buil
 
 ```gradle
 repositories {
-    jcenter()
+    mavenCentral()
 }
 
 dependencies {
-    implementation group: 'org.radarbase', name: 'radar-commons', version: '0.13.0'
+    implementation group: 'org.radarbase', name: 'radar-commons', version: '0.13.1'
 }
 ```
 
@@ -64,12 +64,12 @@ Note that this code above does not include any flows for registering a source wi
 For server utilities, include `radar-commons-server`:
 ```gradle
 repositories {
-    jcenter()
+    mavenCentral()
     maven { url 'https://packages.confluent.io/maven/' }
 }
 
 dependencies {
-    implementation group: 'org.radarbase', name: 'radar-commons-server', version: '0.13.0'
+    implementation group: 'org.radarbase', name: 'radar-commons-server', version: '0.13.1'
 }
 ```
 
@@ -77,26 +77,24 @@ For mocking clients of the RADAR-base infrastructure, use that 'radar-commons-te
 
 ```gradle
 repositories {
-    jcenter()
+    mavenCentral()
     maven { url 'https://packages.confluent.io/maven/' }
-    maven { url  'https://dl.bintray.com/radar-base/org.radarbase' }
 }
 
 dependencies {
-    testImplementation group: 'org.radarbase', name: 'radar-commons-testing', version: '0.13.0'
+    testImplementation group: 'org.radarbase', name: 'radar-commons-testing', version: '0.13.1'
 }
 ```
 
 Finally, if the schema registry is losing old schemas and your code is not recovering, include `radar-commons-unsafe`. Ensure that it comes in the classpath before any Confluent code. This will override the Confluent Avro deserializer to recover from failure when a message with unknown schema ID is passed.
 ```gradle
 repositories {
-    jcenter()
+    mavenCentral()
     maven { url 'https://packages.confluent.io/maven/' }
-    maven { url  'https://dl.bintray.com/radar-base/org.radarbase' }
 }
 
 dependencies {
-    runtimeOnly group: 'org.radarbase', name: 'radar-commons-unsafe', version: '0.13.0'
+    runtimeOnly group: 'org.radarbase', name: 'radar-commons-unsafe', version: '0.13.1'
 }
 ```
 
@@ -112,7 +110,7 @@ For latest code use `dev` branch. This is released on JFrog's OSS Artifactory. T
 
 ```gradle
 repositories {
-    maven { url  'https://repo.thehyve.nl/content/repositories/snapshots' }
+    maven { url  'https://oss.sonatype.org/content/repositories/snapshots' }
 }
 
 configurations.all {
@@ -121,7 +119,7 @@ configurations.all {
 }
 
 dependencies {
-    compile group: 'org.radarbase', name: 'radar-commons', version: '0.13.1-SNAPSHOT'
+    compile group: 'org.radarbase', name: 'radar-commons', version: '0.13.2-SNAPSHOT'
 }
 ```
 
