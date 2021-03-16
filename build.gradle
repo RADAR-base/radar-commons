@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 plugins {
-    // Get bintray version
-    id 'com.jfrog.bintray' version '1.8.5' apply false
     id 'com.commercehub.gradle.plugin.avro' version '0.19.1'
 }
 
