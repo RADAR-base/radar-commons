@@ -22,14 +22,18 @@ import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Field;
+import org.apache.avro.generic.GenericData;
 import org.apache.avro.specific.SpecificData;
 import org.apache.avro.specific.SpecificRecord;
 import org.radarbase.data.Record;
@@ -139,10 +143,17 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
                 return parseUnion(schema, fieldString);
             case ENUM:
                 return parseEnum(schema, fieldString);
+            case BYTES:
+                return parseBytes(fieldString);
             default:
                 throw new IllegalArgumentException("Cannot handle schemas of type "
                         + schema.getType());
         }
+    }
+
+    private static Object parseBytes(String fieldString) {
+        return Base64.getDecoder()
+                .decode(ByteBuffer.wrap(fieldString.getBytes(StandardCharsets.UTF_8)));
     }
 
     private static Object parseUnion(Schema schema, String fieldString) {
