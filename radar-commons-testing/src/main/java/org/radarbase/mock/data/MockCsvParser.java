@@ -123,7 +123,7 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
         return record;
     }
 
-    private static Object parseValue(Schema schema, String fieldString) {
+    public static Object parseValue(Schema schema, String fieldString) {
         switch (schema.getType()) {
             case INT:
                 return Integer.parseInt(fieldString);
@@ -151,9 +151,10 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
         }
     }
 
-    private static Object parseBytes(String fieldString) {
-        return Base64.getDecoder()
-                .decode(ByteBuffer.wrap(fieldString.getBytes(StandardCharsets.UTF_8)));
+    private static ByteBuffer parseBytes(String fieldString) {
+        byte[] result = Base64.getDecoder()
+                .decode(fieldString.getBytes(StandardCharsets.UTF_8));
+        return ByteBuffer.wrap(result);
     }
 
     private static Object parseUnion(Schema schema, String fieldString) {
