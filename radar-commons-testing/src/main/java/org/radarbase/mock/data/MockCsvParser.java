@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Field;
-import org.apache.avro.generic.GenericData;
 import org.apache.avro.specific.SpecificData;
 import org.apache.avro.specific.SpecificRecord;
 import org.radarbase.data.Record;
@@ -63,7 +62,6 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
      */
     public MockCsvParser(MockDataConfig config, Path root)
             throws IOException, CsvValidationException {
-        //noinspection unchecked
         topic = config.parseAvroTopic();
 
         bufferedReader = Files.newBufferedReader(config.getDataFile(root));
@@ -76,7 +74,7 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
         currentLine = csvReader.readNext();
     }
 
-    public AvroTopic getTopic() {
+    public AvroTopic<K, SpecificRecord> getTopic() {
         return topic;
     }
 
