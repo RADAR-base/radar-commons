@@ -115,7 +115,13 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
         V record = (V) SpecificData.newInstance(recordClass, schema);
 
         for (Field field : schema.getFields()) {
-            String fieldString = rawValues[header.get(field.name())];
+            Integer fieldHeader = header.get(field.name());
+            if (fieldHeader == null) {
+                throw new IllegalArgumentException(
+                        "Cannot map record field " + field.name()
+                                + ": no corresponding header in " + header.keySet());
+            }
+            String fieldString = rawValues[fieldHeader];
             Object fieldValue = parseValue(field.schema(), fieldString);
             record.put(field.pos(), fieldValue);
         }
