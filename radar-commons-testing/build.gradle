@@ -44,7 +44,7 @@ dependencies {
     api project(':radar-commons')
     api project(':radar-commons-server')
     api group: 'org.apache.avro', name: 'avro', version: avroVersion
-    api group: 'org.radarcns', name: 'radar-schemas-commons', version: radarSchemasVersion
+    api group: 'org.radarbase', name: 'radar-schemas-commons', version: radarSchemasVersion
 
     implementation group: 'com.opencsv', name: 'opencsv', version: '5.3'
     implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
