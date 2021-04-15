@@ -152,7 +152,7 @@ public class MockRecordValidatorTest {
             writer.append("test,a,1,2,1\n");
         }
 
-        assertValidateThrows(NullPointerException.class, config);
+        assertValidateThrows(IllegalArgumentException.class, config);
     }
 
     @Test
@@ -165,7 +165,7 @@ public class MockRecordValidatorTest {
             writer.append("test,a,b,1,2\n");
         }
 
-        assertValidateThrows(NullPointerException.class, config);
+        assertValidateThrows(IllegalArgumentException.class, config);
     }
 
     @Test

@@ -22,9 +22,12 @@ import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +62,6 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
      */
     public MockCsvParser(MockDataConfig config, Path root)
             throws IOException, CsvValidationException {
-        //noinspection unchecked
         topic = config.parseAvroTopic();
 
         bufferedReader = Files.newBufferedReader(config.getDataFile(root));
@@ -72,7 +74,7 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
         currentLine = csvReader.readNext();
     }
 
-    public AvroTopic getTopic() {
+    public AvroTopic<K, SpecificRecord> getTopic() {
         return topic;
     }
 
@@ -111,7 +113,13 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
         V record = (V) SpecificData.newInstance(recordClass, schema);
 
         for (Field field : schema.getFields()) {
-            String fieldString = rawValues[header.get(field.name())];
+            Integer fieldHeader = header.get(field.name());
+            if (fieldHeader == null) {
+                throw new IllegalArgumentException(
+                        "Cannot map record field " + field.name()
+                                + ": no corresponding header in " + header.keySet());
+            }
+            String fieldString = rawValues[fieldHeader];
             Object fieldValue = parseValue(field.schema(), fieldString);
             record.put(field.pos(), fieldValue);
         }
@@ -119,7 +127,7 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
         return record;
     }
 
-    private static Object parseValue(Schema schema, String fieldString) {
+    public static Object parseValue(Schema schema, String fieldString) {
         switch (schema.getType()) {
             case INT:
                 return Integer.parseInt(fieldString);
@@ -139,10 +147,18 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
                 return parseUnion(schema, fieldString);
             case ENUM:
                 return parseEnum(schema, fieldString);
+            case BYTES:
+                return parseBytes(fieldString);
             default:
                 throw new IllegalArgumentException("Cannot handle schemas of type "
                         + schema.getType());
         }
+    }
+
+    private static ByteBuffer parseBytes(String fieldString) {
+        byte[] result = Base64.getDecoder()
+                .decode(fieldString.getBytes(StandardCharsets.UTF_8));
+        return ByteBuffer.wrap(result);
     }
 
     private static Object parseUnion(Schema schema, String fieldString) {

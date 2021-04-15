@@ -40,7 +40,7 @@ dependencies {
     testImplementation group: 'org.mockito', name: 'mockito-core', version: mockitoVersion
     // Direct producer uses KafkaAvroSerializer if initialized
     testImplementation group: 'io.confluent', name: 'kafka-avro-serializer', version: confluentVersion
-    testImplementation group: 'org.radarcns', name: 'radar-schemas-commons', version: radarSchemasVersion
+    testImplementation group: 'org.radarbase', name: 'radar-schemas-commons', version: radarSchemasVersion
     // Direct producer uses KafkaAvroSerializer if initialized
     testImplementation group: 'junit', name: 'junit', version: junitVersion
     testRuntimeOnly group: 'org.slf4j', name: 'slf4j-simple', version: slf4jVersion
