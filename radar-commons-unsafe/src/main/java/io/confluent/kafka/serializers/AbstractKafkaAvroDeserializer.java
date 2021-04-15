@@ -16,19 +16,11 @@
 
 package io.confluent.kafka.serializers;
 
-import io.confluent.kafka.schemaregistry.avro.AvroSchema;
-import io.confluent.kafka.schemaregistry.avro.AvroSchemaProvider;
-import io.confluent.kafka.schemaregistry.avro.AvroSchemaUtils;
-import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import kafka.utils.VerifiableProperties;
 import org.apache.avro.Schema;
+import org.apache.avro.Schema.Type;
 import org.apache.avro.generic.GenericContainer;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.io.DatumReader;
@@ -38,15 +30,27 @@ import org.apache.avro.reflect.ReflectDatumReader;
 import org.apache.avro.specific.SpecificData;
 import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.avro.specific.SpecificRecord;
+import org.apache.kafka.common.errors.InvalidConfigurationException;
 import org.apache.kafka.common.errors.SerializationException;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import io.confluent.kafka.schemaregistry.avro.AvroSchema;
+import io.confluent.kafka.schemaregistry.avro.AvroSchemaProvider;
+import io.confluent.kafka.schemaregistry.avro.AvroSchemaUtils;
+import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
+import kafka.utils.VerifiableProperties;
+
+@SuppressWarnings("unused")
 public abstract class AbstractKafkaAvroDeserializer extends AbstractKafkaSchemaSerDe {
-
-  private final ConcurrentMap<String, ConcurrentMap<Integer, Integer>> oldToNewIdMap = new ConcurrentHashMap<>();
-
   private final DecoderFactory decoderFactory = DecoderFactory.get();
   protected boolean useSpecificAvroReader = false;
   private final Map<String, Schema> readerSchemaCache = new ConcurrentHashMap<>();
+  private final Map<SchemaPair, DatumReader<?>> datumReaderCache = new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, ConcurrentMap<Integer, Integer>> oldToNewIdMap = new ConcurrentHashMap<>();
 
   /**
    * Sets properties for this deserializer without overriding the schema registry client itself.
@@ -134,7 +138,7 @@ public abstract class AbstractKafkaAvroDeserializer extends AbstractKafkaSchemaS
    */
   protected GenericContainerWithVersion deserializeWithSchemaAndVersion(
       String topic, boolean isKey, byte[] payload)
-      throws SerializationException {
+      throws SerializationException, InvalidConfigurationException {
     // Even if the caller requests schema & version, if the payload is null we cannot include it.
     // The caller must handle this case.
     if (payload == null) {
@@ -163,28 +167,38 @@ public abstract class AbstractKafkaAvroDeserializer extends AbstractKafkaSchemaS
         return new GenericContainerWithVersion(new NonRecordContainer(schema.rawSchema(), result),
             version);
       }
-    } catch (RestClientException | IOException e) {
+    } catch (IOException e) {
       throw new SerializationException("Error retrieving Avro "
                                       + getSchemaType(isKey)
                                       + " schema version for id "
                                       + context.getSchemaId(), e);
+    } catch (RestClientException e) {
+      String errorMessage = "Error retrieving Avro "
+           + getSchemaType(isKey)
+           + " schema version for id "
+           + context.getSchemaId();
+      throw toKafkaException(e, errorMessage);
     }
   }
 
   protected DatumReader<?> getDatumReader(Schema writerSchema, Schema readerSchema) {
     // normalize reader schema
-    readerSchema = getReaderSchema(writerSchema, readerSchema);
-    boolean writerSchemaIsPrimitive =
-        AvroSchemaUtils.getPrimitiveSchemas().containsValue(writerSchema);
-    if (writerSchemaIsPrimitive) {
-      return new GenericDatumReader<>(writerSchema, readerSchema);
-    } else if (useSchemaReflection) {
-      return new ReflectDatumReader<>(writerSchema, readerSchema);
-    } else if (useSpecificAvroReader) {
-      return new SpecificDatumReader<>(writerSchema, readerSchema);
-    } else {
-      return new GenericDatumReader<>(writerSchema, readerSchema);
-    }
+    final Schema finalReaderSchema = getReaderSchema(writerSchema, readerSchema);
+    SchemaPair cacheKey = new SchemaPair(writerSchema, finalReaderSchema);
+
+    return datumReaderCache.computeIfAbsent(cacheKey, schema -> {
+      boolean writerSchemaIsPrimitive =
+              AvroSchemaUtils.getPrimitiveSchemas().values().contains(writerSchema);
+      if (writerSchemaIsPrimitive) {
+        return new GenericDatumReader<>(writerSchema, finalReaderSchema);
+      } else if (useSchemaReflection) {
+        return new ReflectDatumReader<>(writerSchema, finalReaderSchema);
+      } else if (useSpecificAvroReader) {
+        return new SpecificDatumReader<>(writerSchema, finalReaderSchema);
+      } else {
+        return new GenericDatumReader<>(writerSchema, finalReaderSchema);
+      }
+    });
   }
 
   /**
@@ -224,6 +238,11 @@ public abstract class AbstractKafkaAvroDeserializer extends AbstractKafkaSchemaS
 
   @SuppressWarnings("unchecked")
   private Schema getSpecificReaderSchema(Schema writerSchema) {
+    if (writerSchema.getType() == Type.ARRAY
+        || writerSchema.getType() == Type.MAP
+        || writerSchema.getType() == Type.UNION) {
+      return writerSchema;
+    }
     Class<SpecificRecord> readerClass = SpecificData.get().getClass(writerSchema);
     if (readerClass == null) {
       throw new SerializationException("Could not find class "
@@ -278,6 +297,10 @@ public abstract class AbstractKafkaAvroDeserializer extends AbstractKafkaSchemaS
       try {
         return (AvroSchema) schemaRegistry.getSchemaBySubjectAndId(subject, id);
       } catch (RestClientException e) {
+        String errorMessage = "Error retrieving Avro "
+                + getSchemaType(isKey)
+                + " schema for id "
+                + schemaId;
         if (e.getErrorCode() == 40403) {
           try {
             List<Integer> versions = schemaRegistry.getAllVersions(subject);
@@ -286,16 +309,10 @@ public abstract class AbstractKafkaAvroDeserializer extends AbstractKafkaSchemaS
 
             return (AvroSchema) schemaRegistry.getSchemaBySubjectAndId(subject, latestId);
           } catch (RestClientException | IOException ex) {
-            throw new SerializationException("Error retrieving Avro "
-                    + getSchemaType(isKey)
-                    + " schema for id "
-                    + schemaId, e);
+            throw toKafkaException(e, errorMessage);
           }
         }
-        throw new SerializationException("Error retrieving Avro "
-                                         + getSchemaType(isKey)
-                                         + " schema for id "
-                                         + schemaId, e);
+        throw toKafkaException(e, errorMessage);
       } catch (IOException e) {
         throw new SerializationException("Error retrieving Avro "
                                          + getSchemaType(isKey)
