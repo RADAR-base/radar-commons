@@ -21,7 +21,6 @@ dependencies {
     compileOnly group: 'io.confluent', name: 'kafka-avro-serializer', version: confluentVersion
     compileOnly group: 'org.apache.kafka', name: 'kafka-clients', version: kafkaVersion
     compileOnly group: 'org.apache.kafka', name: 'kafka_2.12', version: kafkaVersion
-
 }
 
 apply from: '../gradle/publishing.gradle'
