@@ -19,7 +19,7 @@ jobs:
 
       - name: Has SNAPSHOT version
         id: is-snapshot
-        run: grep 'version = ".*-SNAPSHOT"' build.gradle.kts
+        run: grep "version = '.*-SNAPSHOT'" build.gradle
 
       - uses: actions/setup-java@v1
         with:
@@ -33,7 +33,7 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
           # Key for restoring and saving the cache
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle.kts', 'gradle.properties') }}
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle', 'gradle.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
 

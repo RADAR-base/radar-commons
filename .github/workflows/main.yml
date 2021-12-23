@@ -30,7 +30,7 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
           # Key for restoring and saving the cache
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle.kts', 'gradle.properties') }}
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle', 'gradle.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
 
