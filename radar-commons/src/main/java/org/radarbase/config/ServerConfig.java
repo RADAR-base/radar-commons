@@ -58,21 +58,7 @@ public class ServerConfig {
 
     /** Get the path of the server as a string. This does not include proxyHost information. */
     public String getUrlString() {
-        return addUrlString(new StringBuilder(40)).toString();
-    }
-
-    private StringBuilder addUrlString(StringBuilder builder) {
-        if (protocol != null) {
-            builder.append(protocol).append("://");
-        }
-        builder.append(host);
-        if (port != -1) {
-            builder.append(':').append(port);
-        }
-        if (path != null) {
-            builder.append(path);
-        }
-        return builder;
+        return getUrl().toString();
     }
 
     /** Get the paths of a list of servers, concatenated with commas. */
@@ -85,7 +71,7 @@ public class ServerConfig {
             } else {
                 builder.append(',');
             }
-            server.addUrlString(builder);
+            builder.append(server.getUrl());
         }
         return builder.toString();
     }
@@ -110,18 +96,7 @@ public class ServerConfig {
      * @throws IllegalStateException if the URL is invalid
      */
     public HttpUrl getHttpUrl() {
-        HttpUrl.Builder urlBuilder = new HttpUrl.Builder()
-                .scheme(protocol)
-                .host(host);
-
-        if (port != -1) {
-            urlBuilder.port(port);
-        }
-        if (path != null) {
-            urlBuilder.encodedPath(path);
-        }
-
-        return urlBuilder.build();
+        return HttpUrl.get(getUrl());
     }
 
     /**
