@@ -124,9 +124,10 @@ public class BinaryRecordRequest<K, V> implements RecordRequest<K, V> {
 
     @Override
     public String content(int maxLength) throws IOException {
-        Buffer buffer = new Buffer();
-        writeToSink(buffer, maxLength / 2 - 2);
-        return "0x" + Strings.bytesToHex(
-                buffer.readByteArray(Math.min(buffer.size(), maxLength - 2)));
+        try (Buffer buffer = new Buffer()) {
+            writeToSink(buffer, maxLength / 2 - 2);
+            return "0x" + Strings.bytesToHex(
+                    buffer.readByteArray(Math.min(buffer.size(), maxLength - 2)));
+        }
     }
 }

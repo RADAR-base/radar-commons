@@ -187,11 +187,12 @@ public class RestClient {
      * @throws IOException if the body could not be read as a String.
      */
     public static String responseBody(Response response) throws IOException {
-        ResponseBody body = response.body();
-        if (body == null) {
-            return null;
+        try (ResponseBody body = response.body()) {
+            if (body == null) {
+                return null;
+            }
+            return body.string();
         }
-        return body.string();
     }
 
     /** Create a new builder with the settings of the current client. */

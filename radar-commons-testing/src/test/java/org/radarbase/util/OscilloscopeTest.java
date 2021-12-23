@@ -38,7 +38,7 @@ public class OscilloscopeTest {
                 // time of one beat is about 1/128 seconds = 7.8125 milliseconds
                 long beatDiff = System.currentTimeMillis() - time;
                 assertThat(beatDiff, greaterThanOrEqualTo(7L));
-                assertThat(beatDiff, lessThanOrEqualTo(13L));
+                assertThat(beatDiff, lessThanOrEqualTo(14L));
             }
         } while (!oscilloscope.willRestart());
 

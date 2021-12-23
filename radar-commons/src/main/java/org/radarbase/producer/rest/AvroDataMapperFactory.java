@@ -368,10 +368,10 @@ public final class AvroDataMapperFactory {
 
 
     private AvroDataMapper mapRecord(Schema from, Schema to)
-        throws SchemaValidationException {
+            throws SchemaValidationException {
         if (to.getType() != Schema.Type.RECORD) {
             throw new SchemaValidationException(to, from,
-                new IllegalArgumentException("From and to schemas must be records."));
+                    new IllegalArgumentException("From and to schemas must be records."));
         }
         List<Schema.Field> fromFields = from.getFields();
         Schema.Field[] toFields = new Schema.Field[fromFields.size()];
@@ -398,8 +398,8 @@ public final class AvroDataMapperFactory {
         for (int i = 0; i < filledPositions.length; i++) {
             if (!filledPositions[i] && to.getFields().get(i).defaultVal() == null) {
                 throw new SchemaValidationException(to, from,
-                    new IllegalArgumentException("Cannot map to record without default value"
-                            + " for new field " + to.getFields().get(i).name()));
+                        new IllegalArgumentException("Cannot map to record without default value"
+                                + " for new field " + to.getFields().get(i).name()));
             }
         }
 

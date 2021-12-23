@@ -33,20 +33,13 @@ run {
 
 description = 'RADAR Common testing library mocking code and utilities.'
 
-targetCompatibility = '11.0'
-sourceCompatibility = '11.0'
-
-repositories {
-    maven { url 'https://oss.jfrog.org/artifactory/oss-snapshot-local' }
-}
-
 dependencies {
     api project(':radar-commons')
     api project(':radar-commons-server')
     api group: 'org.apache.avro', name: 'avro', version: avroVersion
     api group: 'org.radarbase', name: 'radar-schemas-commons', version: radarSchemasVersion
 
-    implementation group: 'com.opencsv', name: 'opencsv', version: '5.4'
+    implementation group: 'com.opencsv', name: 'opencsv', version: '5.5.2'
     implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
     implementation group: 'org.apache.kafka', name: 'kafka-clients', version: kafkaVersion
     implementation (group: 'io.confluent', name: 'kafka-avro-serializer', version: confluentVersion) {
