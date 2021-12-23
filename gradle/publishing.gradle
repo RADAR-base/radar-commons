@@ -82,5 +82,5 @@ signing {
 }
 
 tasks.withType(Sign).configureEach {
-    onlyIf { gradle.taskGraph.hasTask("${project.path}:publish") }
+    onlyIf { gradle.taskGraph.hasTask(project.tasks["publish"]) }
 }
