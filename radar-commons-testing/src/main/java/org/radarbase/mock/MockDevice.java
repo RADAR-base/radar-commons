@@ -63,6 +63,7 @@ public class MockDevice<K extends SpecificRecord> extends Thread {
     }
 
     @Override
+    @SuppressWarnings("PMD.CloseResource")
     public void run() {
         List<KafkaTopicSender<K, SpecificRecord>> topicSenders =
                 new ArrayList<>(generators.size());

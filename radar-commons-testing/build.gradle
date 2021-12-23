@@ -33,13 +33,6 @@ run {
 
 description = 'RADAR Common testing library mocking code and utilities.'
 
-targetCompatibility = '11.0'
-sourceCompatibility = '11.0'
-
-repositories {
-    maven { url 'https://oss.jfrog.org/artifactory/oss-snapshot-local' }
-}
-
 dependencies {
     api project(':radar-commons')
     api project(':radar-commons-server')

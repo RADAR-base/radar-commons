@@ -40,9 +40,10 @@ import org.radarbase.mock.config.MockDataConfig;
 import org.radarbase.topic.AvroTopic;
 
 /**
- * Parse mock data from a CSV file
+ * Parse mock data from a CSV file.
  * @param <K> key type.
  */
+@SuppressWarnings("PMD.GodClass")
 public class MockCsvParser<K extends SpecificRecord> implements Closeable {
     private static final char ARRAY_SEPARATOR = ';';
     private static final char ARRAY_START = '[';
@@ -127,6 +128,7 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
         return record;
     }
 
+    /** Parse value from Schema. */
     public static Object parseValue(Schema schema, String fieldString) {
         switch (schema.getType()) {
             case INT:

@@ -145,6 +145,7 @@ public class RecordGenerator<K extends SpecificRecord> {
     }
 
     /**
+     * Get a random double.
      * @return random {@code Double} using {@code ThreadLocalRandom}.
      **/
     private double getRandomDouble() {

@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
  * Retriever of an Avro Schema. Internally, only {@link JSONObject} is used to manage JSON data,
  * to keep the class as lean as possible.
  */
+@SuppressWarnings("PMD.GodClass")
 public class SchemaRetriever {
     private static final Logger logger = LoggerFactory.getLogger(SchemaRetriever.class);
     private static final long MAX_VALIDITY = 86400L;
@@ -195,20 +196,26 @@ public class SchemaRetriever {
         Integer version = reportedVersion;
         if (version == null || version <= 0) {
             ConcurrentMap<Integer, TimedInt> versions = subjectVersionCache.get(subject);
-            if (versions != null) {
-                for (Map.Entry<Integer, TimedInt> entry : versions.entrySet()) {
-                    if (!entry.getValue().isExpired() && entry.getKey() != 0
-                            && entry.getValue().value == id) {
-                        version = entry.getKey();
-                        break;
-                    }
-                }
-            }
+            version = findCachedVersion(id, versions);
             if (version == null || version <= 0) {
                 return null;
             }
         }
         return new ParsedSchemaMetadata(id, version, schema);
+    }
+
+    private Integer findCachedVersion(int id, ConcurrentMap<Integer, TimedInt> cache) {
+        if (cache == null) {
+            return null;
+        }
+        for (Map.Entry<Integer, TimedInt> entry : cache.entrySet()) {
+            if (!entry.getValue().isExpired()
+                    && entry.getKey() != 0
+                    && entry.getValue().value == id) {
+                return entry.getKey();
+            }
+        }
+        return null;
     }
 
     protected void cache(ParsedSchemaMetadata metadata, String subject, boolean latest) {

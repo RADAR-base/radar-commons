@@ -23,6 +23,11 @@
     <exclude name="CallSuperInConstructor"/>
     <exclude name="ConfusingTernary"/>
     <exclude name="UseUnderscoresInNumericLiterals"/>
+    <exclude name="ClassNamingConventions"/>
+    <exclude name="UnnecessaryAnnotationValueElement"/>
+    <exclude name="UselessParentheses"/>
+    <exclude name="ShortClassName"/>
+    <exclude name="LinguisticNaming"/>
   </rule>
   <rule ref="category/java/codestyle.xml/ShortMethodName">
     <properties>
@@ -37,6 +42,7 @@
 
   <rule ref="category/java/design.xml">
     <exclude name="AvoidCatchingGenericException"/>
+    <exclude name="AvoidUncheckedExceptionsInSignatures"/>
     <exclude name="AvoidDeeplyNestedIfStmts"/>
     <exclude name="SwitchDensity"/>
     <exclude name="CyclomaticComplexity"/>
@@ -52,8 +58,13 @@
 
   <rule ref="category/java/bestpractices.xml">
     <exclude name="GuardLogStatement"/>
-    <exclude name="PositionLiteralsFirstInComparisons"/>
-    <exclude name="MethodReturnsInternalArray"/>
+    <exclude name="LiteralsFirstInComparisons"/>
+    <exclude name="AbstractClassWithoutAbstractMethod"/>
+    <exclude name="ConstantsInInterface"/>
+    <exclude name="PreserveStackTrace"/>
+    <exclude name="AvoidUsingHardCodedIP"/>
+    <exclude name="UseVarargs"/>
+    <exclude name="SwitchStmtsShouldHaveDefault"/>
   </rule>
 
   <rule ref="category/java/errorprone.xml">
@@ -62,13 +73,17 @@
     <exclude name="AvoidLiteralsInIfCondition"/>
     <exclude name="BeanMembersShouldSerialize"/>
     <exclude name="NullAssignment"/>
-    <exclude name="UseProperClassLoader"/>
+    <exclude name="DoNotTerminateVM"/>
+    <exclude name="AvoidDuplicateLiterals"/>
+    <exclude name="MissingSerialVersionUID"/>
+    <exclude name="AvoidFieldNameMatchingMethodName"/>
   </rule>
 
   <rule ref="category/java/multithreading.xml">
     <exclude name="AvoidSynchronizedAtMethodLevel"/>
     <exclude name="UseConcurrentHashMap"/>
     <exclude name="DoNotUseThreads"/>
+    <exclude name="AvoidUsingVolatile"/>
   </rule>
   <rule ref="category/java/performance.xml">
     <exclude name="AvoidUsingShortType"/>
