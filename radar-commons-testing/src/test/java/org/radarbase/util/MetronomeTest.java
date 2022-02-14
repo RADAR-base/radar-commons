@@ -20,15 +20,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThrows;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 public class MetronomeTest {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
     private void check(Metronome it, long expectedMin) {
         assertThat(it.hasNext(), is(true));
         long t = it.next();
@@ -37,7 +35,7 @@ public class MetronomeTest {
     }
 
     @Test
-    public void timestamps() throws Exception {
+    public void timestamps() {
         long base = System.currentTimeMillis();
         Metronome it = new Metronome(5, 2);
         check(it, base - 2000L);
@@ -46,30 +44,26 @@ public class MetronomeTest {
         check(it, base - 500L);
         check(it, base);
         assertThat(it.hasNext(), is(false));
-        exception.expect(IllegalStateException.class);
-        it.next();
+        assertThrows(IllegalStateException.class, it::next);
     }
 
     @Test
-    public void errFreqTimestamps() throws Exception {
-        exception.expect(IllegalArgumentException.class);
-        new Metronome(5, -1);
+    public void errFreqTimestamps() {
+        assertThrows(IllegalArgumentException.class, () -> new Metronome(5, -1));
     }
 
     @Test
-    public void errFreq0Timestamps() throws Exception {
-        exception.expect(IllegalArgumentException.class);
-        new Metronome(5, 0);
+    public void errFreq0Timestamps() {
+        assertThrows(IllegalArgumentException.class, () -> new Metronome(5, 0));
     }
 
     @Test
-    public void errSampleTimestamps() throws Exception {
-        exception.expect(IllegalArgumentException.class);
-        new Metronome(-1, 10);
+    public void errSampleTimestamps() {
+        assertThrows(IllegalArgumentException.class, () -> new Metronome(-1, 10));
     }
 
     @Test
-    public void sample0Timestamps() throws Exception {
+    public void sample0Timestamps() {
         long base = System.currentTimeMillis();
         Metronome it = new Metronome(0, 10);
         check(it, base);
