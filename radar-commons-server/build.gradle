@@ -23,7 +23,7 @@ dependencies {
 
     // For POJO classes and ConfigLoader
     implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
-    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: jacksonYamlVersion
+    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: jacksonVersion
 
     api group: 'org.apache.avro', name: 'avro', version: avroVersion
 

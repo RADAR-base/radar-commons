@@ -99,6 +99,18 @@ subprojects {
     }
 }
 
+def isNonStable = { String version ->
+    def stableKeyword = ["RELEASE", "FINAL", "GA"].any { version.toUpperCase().contains(it) }
+    def regex = /^[0-9,.v-]+(-r)?$/
+    return !stableKeyword && !(version ==~ regex)
+}
+
+tasks.named("dependencyUpdates").configure {
+    rejectVersionIf {
+        isNonStable(it.candidate.version)
+    }
+}
+
 nexusPublishing {
     repositories {
         sonatype {
@@ -109,5 +121,5 @@ nexusPublishing {
 }
 
 wrapper {
-    gradleVersion '7.3.3'
+    gradleVersion '7.4'
 }
