@@ -52,7 +52,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;  // Since Android API 19
 @SuppressWarnings("PMD.ClassNamingConventions")
 public class Base64 {
 
-    private Base64() {}
+    private Base64() {
+    }
 
     /**
      * Returns a {@link Encoder} that encodes using the

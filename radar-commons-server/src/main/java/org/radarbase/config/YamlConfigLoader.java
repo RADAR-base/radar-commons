@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import java.io.IOException;
@@ -38,7 +38,7 @@ public class YamlConfigLoader {
     private static final ObjectMapper YAML_MAPPER = new ObjectMapper(YAML_FACTORY);
 
     static {
-        YAML_MAPPER.setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
+        YAML_MAPPER.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
         // only serialize fields, not getters, etc.
         YAML_MAPPER.setVisibility(YAML_MAPPER.getSerializationConfig().getDefaultVisibilityChecker()
                 .withFieldVisibility(JsonAutoDetect.Visibility.ANY)

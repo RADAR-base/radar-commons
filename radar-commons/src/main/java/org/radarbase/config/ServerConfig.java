@@ -28,6 +28,7 @@ import okhttp3.HttpUrl;
 /**
  * POJO representing a ServerConfig configuration.
  */
+@SuppressWarnings("PMD.GodClass")
 public class ServerConfig {
     private String host;
     private int port = -1;
@@ -57,21 +58,7 @@ public class ServerConfig {
 
     /** Get the path of the server as a string. This does not include proxyHost information. */
     public String getUrlString() {
-        return addUrlString(new StringBuilder(40)).toString();
-    }
-
-    private StringBuilder addUrlString(StringBuilder builder) {
-        if (protocol != null) {
-            builder.append(protocol).append("://");
-        }
-        builder.append(host);
-        if (port != -1) {
-            builder.append(':').append(port);
-        }
-        if (path != null) {
-            builder.append(path);
-        }
-        return builder;
+        return getUrl().toString();
     }
 
     /** Get the paths of a list of servers, concatenated with commas. */
@@ -84,7 +71,7 @@ public class ServerConfig {
             } else {
                 builder.append(',');
             }
-            server.addUrlString(builder);
+            builder.append(server.getUrl());
         }
         return builder.toString();
     }
@@ -109,22 +96,11 @@ public class ServerConfig {
      * @throws IllegalStateException if the URL is invalid
      */
     public HttpUrl getHttpUrl() {
-        HttpUrl.Builder urlBuilder = new HttpUrl.Builder()
-                .scheme(protocol)
-                .host(host);
-
-        if (port != -1) {
-            urlBuilder.port(port);
-        }
-        if (path != null) {
-            urlBuilder.encodedPath(path);
-        }
-
-        return urlBuilder.build();
+        return HttpUrl.get(getUrl());
     }
 
     /**
-     * Get the HTTP proxyHost associated to given server
+     * Get the HTTP proxyHost associated to given server.
      * @return http proxyHost if specified, or null if none is specified.
      * @throws IllegalStateException if proxyHost is set but proxyPort is not or if the server
      *                               protocol is not HTTP(s)
@@ -206,23 +182,29 @@ public class ServerConfig {
      * @throws IllegalArgumentException if the path contains a question mark.
      */
     public final void setPath(String path) {
-        if (path == null) {
-            this.path = "/";
-        } else if (path.contains("?")) {
-            throw new IllegalArgumentException("Cannot set server path with query string");
-        } else {
-            this.path = path.trim();
-            if (this.path.isEmpty()) {
-                this.path = "/";
-            } else {
-                if (this.path.charAt(0) != '/') {
-                    this.path = '/' + this.path;
-                }
-                if (this.path.charAt(this.path.length() - 1) != '/') {
-                    this.path += '/';
-                }
-            }
+        this.path = cleanPath(path);
+    }
+
+    @SuppressWarnings("PMD.UseStringBufferForStringAppends")
+    private static String cleanPath(String path) {
+        String newPath = path;
+        if (newPath == null) {
+            newPath = "/";
         }
+        if (newPath.contains("?")) {
+            throw new IllegalArgumentException("Cannot set server path with query string");
+        }
+        newPath = newPath.trim();
+        if (newPath.isEmpty()) {
+            newPath = "/";
+        }
+        if (newPath.charAt(0) != '/') {
+            newPath = '/' + newPath;
+        }
+        if (newPath.charAt(newPath.length() - 1) != '/') {
+            newPath += '/';
+        }
+        return newPath;
     }
 
     @Override

@@ -17,6 +17,7 @@
 package org.radarbase.topic;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import org.apache.avro.Schema;
@@ -96,7 +97,7 @@ public class AvroTopic<K, V> extends KafkaTopic {
     }
 
     public Schema.Type[] getValueFieldTypes() {
-        return valueFieldTypes;
+        return Arrays.copyOf(valueFieldTypes, valueFieldTypes.length);
     }
 
     /**

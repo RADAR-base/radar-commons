@@ -152,6 +152,7 @@ public class BatchedKafkaSender implements KafkaSender {
         }
 
         @Override
+        @SuppressWarnings("PMD.UseTryWithResources")
         public void close() throws IOException {
             try {
                 flush();

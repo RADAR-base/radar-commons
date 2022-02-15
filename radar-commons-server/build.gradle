@@ -14,16 +14,9 @@
  * limitations under the License.
  */
 
-apply plugin: 'com.commercehub.gradle.plugin.avro'
+apply plugin: 'com.github.davidmc24.gradle.plugin.avro'
 
 description = 'RADAR Common server library utilities.'
-
-targetCompatibility = '11.0'
-sourceCompatibility = '11.0'
-
-repositories {
-    maven { url 'https://oss.jfrog.org/artifactory/oss-snapshot-local' }
-}
 
 dependencies {
     api project(':radar-commons')

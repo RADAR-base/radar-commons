@@ -14,7 +14,7 @@ repositories {
 }
 
 dependencies {
-    implementation group: 'org.radarbase', name: 'radar-commons', version: '0.13.2'
+    implementation group: 'org.radarbase', name: 'radar-commons', version: '0.14.0'
 }
 ```
 
@@ -69,7 +69,7 @@ repositories {
 }
 
 dependencies {
-    implementation group: 'org.radarbase', name: 'radar-commons-server', version: '0.13.2'
+    implementation group: 'org.radarbase', name: 'radar-commons-server', version: '0.14.0'
 }
 ```
 
@@ -82,19 +82,7 @@ repositories {
 }
 
 dependencies {
-    testImplementation group: 'org.radarbase', name: 'radar-commons-testing', version: '0.13.2'
-}
-```
-
-Finally, if the schema registry is losing old schemas and your code is not recovering, include `radar-commons-unsafe`. Ensure that it comes in the classpath before any Confluent code. This will override the Confluent Avro deserializer to recover from failure when a message with unknown schema ID is passed.
-```gradle
-repositories {
-    mavenCentral()
-    maven { url 'https://packages.confluent.io/maven/' }
-}
-
-dependencies {
-    runtimeOnly group: 'org.radarbase', name: 'radar-commons-unsafe', version: '0.13.2'
+    testImplementation group: 'org.radarbase', name: 'radar-commons-testing', version: '0.14.0'
 }
 ```
 
@@ -119,7 +107,7 @@ configurations.all {
 }
 
 dependencies {
-    compile group: 'org.radarbase', name: 'radar-commons', version: '0.13.3-SNAPSHOT'
+    compile group: 'org.radarbase', name: 'radar-commons', version: '0.14.1-SNAPSHOT'
 }
 ```
 

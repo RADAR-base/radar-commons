@@ -41,11 +41,12 @@ public class RemoteSchemaEncoder implements AvroEncoder {
             this.schema = schema;
 
             GenericData genericData;
+            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
             if (SpecificRecord.class.isAssignableFrom(clazz)) {
-                genericData = new SpecificData(RemoteSchemaEncoder.class.getClassLoader());
+                genericData = new SpecificData(classLoader);
                 isGeneric = false;
             } else {
-                genericData = new GenericData(RemoteSchemaEncoder.class.getClassLoader());
+                genericData = new GenericData(classLoader);
                 isGeneric = true;
             }
             recordEncoder = new AvroDatumEncoder(genericData, binary);

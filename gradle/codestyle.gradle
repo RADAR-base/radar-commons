@@ -1,55 +1,24 @@
 apply plugin: 'checkstyle'
 apply plugin: 'pmd'
-apply plugin: 'jacoco'
-
-configurations {
-    codacy
-}
-
-dependencies {
-    codacy group: 'com.github.codacy', name: 'codacy-coverage-reporter', version: codacyVersion
-}
 
 checkstyle {
-    // codacy version
-    toolVersion '6.16'
-    ignoreFailures false
+    toolVersion = '9.2'
+    ignoreFailures = false
 
     configFile = rootProject.file('config/checkstyle/checkstyle.xml')
+    // ignore tests
+    sourceSets = [sourceSets.main]
 }
 
 pmd {
-    // codacy version
-    toolVersion = '6.12.0'
+    toolVersion = '6.41.0'
     ignoreFailures = false
 
     consoleOutput = true
 
     ruleSets = []
-    ruleSetFiles = files(rootProject.file("config/pmd/ruleset.xml"))
-}
-
-checkstyle {
+    ruleSetFiles = rootProject.files("config/pmd/ruleset.xml")
     // ignore tests
     sourceSets = [sourceSets.main]
-}
-
-pmd {
-    // ignore tests
-    sourceSets = [sourceSets.main]
-}
-
-jacocoTestReport {
-    reports {
-        xml.enabled = true
-        csv.enabled = false
-        html.enabled = false
-    }
-}
-
-task sendCoverageToCodacy(type: JavaExec, dependsOn: jacocoTestReport) {
-    main = 'com.codacy.CodacyCoverageReporter'
-    classpath = configurations.codacy
-    args = ['report', '-l', 'Java', '-r', "${buildDir}/reports/jacoco/test/jacocoTestReport.xml"]
 }
 
