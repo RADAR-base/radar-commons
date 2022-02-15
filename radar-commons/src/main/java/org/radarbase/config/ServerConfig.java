@@ -23,6 +23,8 @@ import java.net.Proxy.Type;
 import java.net.URL;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import okhttp3.HttpUrl;
 
 /**
@@ -30,6 +32,9 @@ import okhttp3.HttpUrl;
  */
 @SuppressWarnings("PMD.GodClass")
 public class ServerConfig {
+    private static final Pattern URL_PATTERN = Pattern.compile(
+            "(?:(?<protocol>\\w+)://)?(?<host>[^:/]+)(?::(?<port>\\d+))?(?<path>/.*)?");
+
     private String host;
     private int port = -1;
     private String protocol;
@@ -53,12 +58,36 @@ public class ServerConfig {
 
     /** Parses the config from a URL string. */
     public ServerConfig(String urlString) throws MalformedURLException {
-        this(new URL(urlString));
+        Matcher matcher = URL_PATTERN.matcher(urlString);
+        if (!matcher.matches()) {
+            throw new MalformedURLException("Cannot create URL from string " + urlString);
+        }
+        protocol = matcher.group("protocol");
+        host = matcher.group("host");
+        String portString = matcher.group("port");
+        if (portString != null && !portString.isEmpty()) {
+            port = Integer.parseInt(portString);
+        }
+        setPath(matcher.group("path"));
     }
 
     /** Get the path of the server as a string. This does not include proxyHost information. */
     public String getUrlString() {
-        return getUrl().toString();
+        StringBuilder builder = new StringBuilder(host.length() + path.length() + 15);
+        appendUrlString(builder);
+        return builder.toString();
+    }
+
+    /** Get the path of the server as a string. This does not include proxyHost information. */
+    private void appendUrlString(StringBuilder builder) {
+        if (protocol != null) {
+            builder.append(protocol).append("://");
+        }
+        builder.append(host);
+        if (port != -1) {
+            builder.append(':').append(port);
+        }
+        builder.append(path);
     }
 
     /** Get the paths of a list of servers, concatenated with commas. */
@@ -71,7 +100,7 @@ public class ServerConfig {
             } else {
                 builder.append(',');
             }
-            builder.append(server.getUrl());
+            server.appendUrlString(builder);
         }
         return builder.toString();
     }
@@ -83,6 +112,9 @@ public class ServerConfig {
      * @throws IllegalStateException if the URL is invalid
      */
     public URL getUrl() {
+        if (protocol == null || host == null) {
+            throw new IllegalStateException("Cannot create URL without protocol and host");
+        }
         try {
             return new URL(protocol, host, port, path == null ? "" : path);
         } catch (MalformedURLException ex) {
@@ -96,7 +128,10 @@ public class ServerConfig {
      * @throws IllegalStateException if the URL is invalid
      */
     public HttpUrl getHttpUrl() {
-        return HttpUrl.get(getUrl());
+        if (protocol == null) {
+            protocol = "http";
+        }
+        return HttpUrl.get(getUrlString());
     }
 
     /**
@@ -189,14 +224,14 @@ public class ServerConfig {
     private static String cleanPath(String path) {
         String newPath = path;
         if (newPath == null) {
-            newPath = "/";
+            return "/";
         }
-        if (newPath.contains("?")) {
+        if (newPath.contains("?") || newPath.contains("#")) {
             throw new IllegalArgumentException("Cannot set server path with query string");
         }
         newPath = newPath.trim();
         if (newPath.isEmpty()) {
-            newPath = "/";
+            return "/";
         }
         if (newPath.charAt(0) != '/') {
             newPath = '/' + newPath;
