@@ -73,7 +73,8 @@ public class ServerConfig {
 
     /** Get the path of the server as a string. This does not include proxyHost information. */
     public String getUrlString() {
-        StringBuilder builder = new StringBuilder(host.length() + path.length() + 15);
+        StringBuilder builder = new StringBuilder(host.length()
+                + (path != null ? path.length() : 0) + 20);
         appendUrlString(builder);
         return builder.toString();
     }
@@ -87,7 +88,9 @@ public class ServerConfig {
         if (port != -1) {
             builder.append(':').append(port);
         }
-        builder.append(path);
+        if (path != null) {
+            builder.append(path);
+        }
     }
 
     /** Get the paths of a list of servers, concatenated with commas. */
@@ -211,7 +214,7 @@ public class ServerConfig {
     }
 
     /**
-     * Set the absolute path. If the path is null or empty, it will be set to the root. The path
+     * Set the absolute path. If the path is empty, it will be set to the root. The path
      * will be ended with a single slash. The path will be prepended with a single slash if needed.
      * @param path path string
      * @throws IllegalArgumentException if the path contains a question mark.
@@ -222,14 +225,13 @@ public class ServerConfig {
 
     @SuppressWarnings("PMD.UseStringBufferForStringAppends")
     private static String cleanPath(String path) {
-        String newPath = path;
-        if (newPath == null) {
-            return "/";
+        if (path == null) {
+            return null;
         }
-        if (newPath.contains("?") || newPath.contains("#")) {
+        if (path.contains("?") || path.contains("#")) {
             throw new IllegalArgumentException("Cannot set server path with query string");
         }
-        newPath = newPath.trim();
+        String newPath = path.trim();
         if (newPath.isEmpty()) {
             return "/";
         }
