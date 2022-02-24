@@ -106,34 +106,30 @@ public class AvroTopic<K, V> extends KafkaTopic {
      * @throws IllegalArgumentException if the key_schema or value_schema properties are not valid
      *                                  Avro SpecificRecord classes
      */
-    @SuppressWarnings({"unchecked", "JavaReflectionMemberAccess"})
+    @SuppressWarnings({"unchecked"})
     public static <K extends SpecificRecord, V extends SpecificRecord> AvroTopic<K, V> parse(
             String topic, String keySchema, String valueSchema) {
+        Objects.requireNonNull(topic, "topic needs to be specified");
+        K key = parseSpecificRecord(keySchema);
+        V value = parseSpecificRecord(valueSchema);
+        return new AvroTopic<>(topic,
+                key.getSchema(), value.getSchema(),
+                (Class<K>) key.getClass(), (Class<V>) value.getClass());
+    }
 
+    @SuppressWarnings("unchecked")
+    public static <K extends SpecificRecord> K parseSpecificRecord(String schemaClass) {
         try {
-            Objects.requireNonNull(topic, "topic needs to be specified");
-            Objects.requireNonNull(keySchema, "key_schema needs to be specified");
-            Objects.requireNonNull(valueSchema, "value_schema needs to be specified");
+            Objects.requireNonNull(schemaClass, "schema needs to be specified");
 
-            Class<? extends K> keyClass = (Class<? extends K>) Class.forName(keySchema);
+            Class<K> keyClass = (Class<K>) Class.forName(schemaClass);
             Schema keyAvroSchema = (Schema) keyClass
                     .getMethod("getClassSchema").invoke(null);
             // check instantiation
-            SpecificData.newInstance(keyClass, keyAvroSchema);
-
-            Class<? extends V> valueClass = (Class<? extends V>) Class.forName(valueSchema);
-            Schema valueAvroSchema = (Schema) valueClass
-                    .getMethod("getClassSchema").invoke(null);
-            // check instantiation
-            SpecificData.newInstance(valueClass, valueAvroSchema);
-
-            return new AvroTopic<>(topic, keyAvroSchema, valueAvroSchema, keyClass, valueClass);
-        } catch (ClassNotFoundException
-                | NoSuchMethodException
-                | InvocationTargetException
-                | IllegalAccessException ex) {
-            throw new IllegalArgumentException("Topic " + topic
-                    + " schema cannot be instantiated", ex);
+            return (K) SpecificData.newInstance(keyClass, keyAvroSchema);
+        } catch (ClassCastException | ReflectiveOperationException ex) {
+            throw new IllegalArgumentException("Schema " + schemaClass + " cannot be instantiated",
+                    ex);
         }
     }
 

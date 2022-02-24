@@ -26,9 +26,9 @@ import java.util.Arrays;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.radarbase.mock.config.MockDataConfig;
+import org.radarbase.producer.rest.SchemaRetriever;
 import org.radarcns.monitor.application.ApplicationServerStatus;
 import org.radarcns.passive.phone.PhoneAcceleration;
 import org.radarcns.passive.phone.PhoneLight;
@@ -38,6 +38,7 @@ public class MockRecordValidatorTest {
     public TemporaryFolder folder = new TemporaryFolder();
 
     private Path root;
+    private SchemaRetriever retriever;
 
     private MockDataConfig makeConfig() throws IOException {
         return makeConfig(folder);
@@ -46,6 +47,7 @@ public class MockRecordValidatorTest {
     @Before
     public void setUp() {
         root = folder.getRoot().toPath();
+        retriever = null;
     }
 
     public static MockDataConfig makeConfig(TemporaryFolder folder) throws IOException {
@@ -68,7 +70,7 @@ public class MockRecordValidatorTest {
             writer.append("test,a,b,2,CONNECTED,\n");
         }
 
-        new MockRecordValidator(config, 2_000L, root).validate();
+        new MockRecordValidator(config, 2_000L, root, retriever).validate();
     }
 
 
@@ -79,7 +81,7 @@ public class MockRecordValidatorTest {
         config.setValueField("serverStatus");
         CsvGenerator generator = new CsvGenerator();
         generator.generate(config, 2_000L, root);
-        new MockRecordValidator(config, 2_000L, root).validate();
+        new MockRecordValidator(config, 2_000L, root, retriever).validate();
     }
 
     @Test
@@ -89,7 +91,7 @@ public class MockRecordValidatorTest {
         MockDataConfig config = makeConfig();
         generator.generate(config, 100_000L, root);
 
-        new MockRecordValidator(config, 100_000L, root).validate();
+        new MockRecordValidator(config, 100_000L, root, retriever).validate();
     }
 
     @Test
@@ -210,11 +212,11 @@ public class MockRecordValidatorTest {
     }
 
     private <T extends Throwable> void assertValidateThrows(Class<T> ex, MockDataConfig config) {
-        MockRecordValidator validator = new MockRecordValidator(config, 2_000L, root);
+        MockRecordValidator validator = new MockRecordValidator(config, 2_000L, root, retriever);
         assertThrows(ex, validator::validate);
     }
 
     private void assertValidate(MockDataConfig config) {
-        new MockRecordValidator(config, 2_000L, root).validate();
+        new MockRecordValidator(config, 2_000L, root, retriever).validate();
     }
 }

@@ -21,61 +21,85 @@ import com.opencsv.exceptions.CsvValidationException;
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Base64;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Field;
-import org.apache.avro.specific.SpecificData;
+import org.apache.avro.generic.GenericData;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.generic.GenericRecordBuilder;
 import org.apache.avro.specific.SpecificRecord;
 import org.radarbase.data.Record;
 import org.radarbase.mock.config.MockDataConfig;
+import org.radarbase.producer.rest.SchemaRetriever;
 import org.radarbase.topic.AvroTopic;
 
 /**
  * Parse mock data from a CSV file.
- * @param <K> key type.
  */
 @SuppressWarnings("PMD.GodClass")
-public class MockCsvParser<K extends SpecificRecord> implements Closeable {
-    private static final char ARRAY_SEPARATOR = ';';
-    private static final char ARRAY_START = '[';
-    private static final char ARRAY_END = ']';
-
-    private final AvroTopic<K, SpecificRecord> topic;
-    private final Map<String, Integer> headerMap;
+public class MockCsvParser implements Closeable {
+    private final AvroTopic<GenericRecord, GenericRecord> topic;
     private final CSVReader csvReader;
     private final BufferedReader bufferedReader;
+    private final Instant startTime;
+    private final Duration rowDuration;
+    private final HeaderHierarchy headers;
     private String[] currentLine;
+    private int row;
+    private long rowTime;
 
     /**
      * Base constructor.
      * @param config configuration of the stream.
      * @param root parent directory of the data file.
+     * @param retriever schema retriever to fetch schema with if none is supplied.
      * @throws IllegalArgumentException if the second row has the wrong number of columns
      */
-    public MockCsvParser(MockDataConfig config, Path root)
+    public MockCsvParser(MockDataConfig config, Path root, Instant startTime,
+            SchemaRetriever retriever)
             throws IOException, CsvValidationException {
-        topic = config.parseAvroTopic();
+        Schema keySchema, valueSchema;
+        try {
+            AvroTopic<SpecificRecord, SpecificRecord> specificTopic = config.parseAvroTopic();
+            keySchema = specificTopic.getKeySchema();
+            valueSchema = specificTopic.getValueSchema();
+        } catch (IllegalStateException ex) {
+            Objects.requireNonNull(retriever, "Cannot instantiate value schema without "
+                    + "schema retriever.");
+            keySchema = AvroTopic.parseSpecificRecord(config.getKeySchema()).getSchema();
+            valueSchema = retriever.getBySubjectAndVersion(
+                    config.getTopic(), true, 0).getSchema();
+        }
+        topic = new AvroTopic<>(config.getTopic(),
+                keySchema, valueSchema,
+                GenericRecord.class, GenericRecord.class);
+
+        this.startTime = startTime;
+        row = 0;
+        rowDuration = Duration.ofMillis((long)(1.0 / config.getFrequency()));
+        rowTime = this.startTime.toEpochMilli();
 
         bufferedReader = Files.newBufferedReader(config.getDataFile(root));
         csvReader = new CSVReader(bufferedReader);
+        headers = new HeaderHierarchy();
         String[] header = csvReader.readNext();
-        headerMap = new HashMap<>();
         for (int i = 0; i < header.length; i++) {
-            headerMap.put(header[i], i);
+            headers.add(i, List.of(header[i].split("\\.")));
         }
         currentLine = csvReader.readNext();
     }
 
-    public AvroTopic<K, SpecificRecord> getTopic() {
+    public AvroTopic<GenericRecord, GenericRecord> getTopic() {
         return topic;
     }
 
@@ -86,18 +110,19 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
      * @throws IllegalStateException if a next row is not available
      * @throws IOException if the next row could not be read
      */
-    public Record<K, SpecificRecord> next() throws IOException, CsvValidationException {
+    public Record<GenericRecord, GenericRecord> next() throws IOException, CsvValidationException {
         if (!hasNext()) {
             throw new IllegalStateException("No next record available");
         }
 
-        K key = parseRecord(currentLine, headerMap,
-                topic.getKeyClass(), topic.getKeySchema());
-        SpecificRecord value = parseRecord(currentLine, headerMap,
-                topic.getValueClass(), topic.getValueSchema());
+        GenericRecord key = parseRecord(currentLine, topic.getKeySchema(), headers.getChildren().get("key"));
+        GenericRecord value = parseRecord(currentLine, topic.getValueSchema(), headers.getChildren().get("value"));
 
         currentLine = csvReader.readNext();
-
+        row++;
+        rowTime = startTime
+                .plus(rowDuration.multipliedBy(row))
+                .toEpochMilli();
         return new Record<>(key, value);
     }
 
@@ -108,29 +133,64 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
         return currentLine != null;
     }
 
-    private <V extends SpecificRecord> V parseRecord(String[] rawValues,
-            Map<String, Integer> header, Class<V> recordClass, Schema schema) {
-        @SuppressWarnings("unchecked")
-        V record = (V) SpecificData.newInstance(recordClass, schema);
+    private GenericRecord parseRecord(String[] rawValues, Schema schema, HeaderHierarchy headers) {
+        GenericRecordBuilder record = new GenericRecordBuilder(schema);
+        Map<String, HeaderHierarchy> children = headers.getChildren();
 
         for (Field field : schema.getFields()) {
-            Integer fieldHeader = header.get(field.name());
-            if (fieldHeader == null) {
-                throw new IllegalArgumentException(
-                        "Cannot map record field " + field.name()
-                                + ": no corresponding header in " + header.keySet());
+            HeaderHierarchy child = children.get(field.name());
+            if (child != null) {
+                record.set(field, parseValue(rawValues, field.schema(), child));
             }
-            String fieldString = rawValues[fieldHeader];
-            Object fieldValue = parseValue(field.schema(), fieldString);
-            record.put(field.pos(), fieldValue);
         }
 
-        return record;
+        return record.build();
     }
 
     /** Parse value from Schema. */
-    public static Object parseValue(Schema schema, String fieldString) {
+    public Object parseValue(String[] rawValues, Schema schema, HeaderHierarchy headers) {
         switch (schema.getType()) {
+            case NULL:
+            case INT:
+            case LONG:
+            case FLOAT:
+            case DOUBLE:
+            case BOOLEAN:
+            case STRING:
+            case ENUM:
+            case BYTES:
+                return parseScalar(rawValues, schema, headers);
+            case UNION:
+                return parseUnion(rawValues, schema, headers);
+            case RECORD:
+                return parseRecord(rawValues, schema, headers);
+            case ARRAY:
+                return parseArray(rawValues, schema, headers);
+            case MAP:
+                return parseMap(rawValues, schema, headers);
+            default:
+                throw new IllegalArgumentException("Cannot handle schemas of type "
+                        + schema.getType() + " in " + headers);
+        }
+    }
+
+    private Object parseScalar(String[] rawValues, Schema schema, HeaderHierarchy headers) {
+        int fieldHeader = headers.getIndex();
+        String fieldString = rawValues[fieldHeader]
+                .replace("${timeSeconds}", Double.toString(rowTime / 1000.0))
+                .replace("${timeMillis}", Long.toString(rowTime));
+
+        return parseScalar(fieldString, schema, headers);
+    }
+
+    private static Object parseScalar(String fieldString, Schema schema, HeaderHierarchy headers) {
+        switch (schema.getType()) {
+            case NULL:
+                if (fieldString == null || fieldString.isEmpty() || fieldString.equals("null")) {
+                    return null;
+                } else {
+                    throw new IllegalArgumentException("Cannot parse " + fieldString + " as null");
+                }
             case INT:
                 return Integer.parseInt(fieldString);
             case LONG:
@@ -143,18 +203,23 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
                 return Boolean.parseBoolean(fieldString);
             case STRING:
                 return fieldString;
-            case ARRAY:
-                return parseArray(schema, fieldString);
-            case UNION:
-                return parseUnion(schema, fieldString);
             case ENUM:
                 return parseEnum(schema, fieldString);
             case BYTES:
                 return parseBytes(fieldString);
             default:
-                throw new IllegalArgumentException("Cannot handle schemas of type "
-                        + schema.getType());
+                throw new IllegalArgumentException("Cannot handle scalar schema of type "
+                        + schema.getType() + " in " + headers);
         }
+    }
+
+    private Map<String, Object> parseMap(String[] rawValues, Schema schema, HeaderHierarchy headers) {
+        Map<String, HeaderHierarchy> children = headers.getChildren();
+        Map<String, Object> map = new LinkedHashMap<>(children.size() * 4 / 3);
+        for (HeaderHierarchy child : children.values()) {
+            map.put(child.getName(), parseValue(rawValues, schema.getValueType(), child));
+        }
+        return map;
     }
 
     private static ByteBuffer parseBytes(String fieldString) {
@@ -163,76 +228,39 @@ public class MockCsvParser<K extends SpecificRecord> implements Closeable {
         return ByteBuffer.wrap(result);
     }
 
-    private static Object parseUnion(Schema schema, String fieldString) {
-        if (schema.getTypes().size() != 2) {
-            throw new IllegalArgumentException(
-                    "Cannot handle UNION types with other than two internal types: "
-                    + schema.getTypes());
-        }
-        Schema schema0 = schema.getTypes().get(0);
-        Schema schema1 = schema.getTypes().get(1);
-
-        Schema nonNullSchema;
-        if (schema0.getType() == Schema.Type.NULL) {
-            nonNullSchema = schema1;
-        } else if (schema1.getType() == Schema.Type.NULL) {
-            nonNullSchema = schema0;
-        } else {
-            throw new IllegalArgumentException("Cannot handle non-nullable UNION types: "
-                    + schema.getTypes());
-        }
-
-        if (fieldString.isEmpty() || fieldString.equals("null")) {
-            return null;
-        } else {
-            return parseValue(nonNullSchema, fieldString);
-        }
-    }
-
-    private static List<Object> parseArray(Schema schema, String fieldString) {
-        if (fieldString.charAt(0) != ARRAY_START
-                || fieldString.charAt(fieldString.length() - 1) != ARRAY_END) {
-            throw new IllegalArgumentException("Array must be enclosed by brackets.");
-        }
-
-        List<String> subStrings = new ArrayList<>();
-        StringBuilder buffer = new StringBuilder(fieldString.length());
-        int depth = 0;
-        for (char c : fieldString.substring(1, fieldString.length() - 1).toCharArray()) {
-            if (c == ARRAY_SEPARATOR && depth == 0) {
-                subStrings.add(buffer.toString());
-                buffer.setLength(0);
-            } else {
-                buffer.append(c);
-                if (c == ARRAY_START) {
-                    depth++;
-                } else if (c == ARRAY_END) {
-                    depth--;
-                }
+    private Object parseUnion(String[] rawValues, Schema schema, HeaderHierarchy headers) {
+        for (Schema subschema : schema.getTypes()) {
+            try {
+                return parseValue(rawValues, subschema, headers);
+            } catch (IllegalArgumentException ex) {
+                // skip bad union member
             }
         }
-        if (buffer.length() > 0) {
-            subStrings.add(buffer.toString());
-        }
-
-        List<Object> ret = new ArrayList<>(subStrings.size());
-        for (String substring : subStrings) {
-            ret.add(parseValue(schema.getElementType(), substring));
-        }
-        return ret;
+        throw new IllegalArgumentException("Cannot handle union types "
+                + schema.getTypes() + " in " + headers);
     }
 
-    @SuppressWarnings("unchecked")
-    private static <E extends Enum<E>> E parseEnum(Schema schema, String fieldString) {
-        try {
-            Class<?> cls = Class.forName(schema.getFullName());
-            Method valueOf = cls.getMethod("valueOf", String.class);
-            return (E) valueOf.invoke(null, fieldString);
-        } catch (ReflectiveOperationException | ClassCastException e) {
-            throw new IllegalArgumentException(
-                    "Cannot create enum class " + schema.getFullName()
-                            + " for value " + fieldString, e);
+    private List<Object> parseArray(String[] rawValues, Schema schema, HeaderHierarchy headers) {
+        Map<String, HeaderHierarchy> children = headers.getChildren();
+        int arrayLength = children.keySet().stream()
+                .mapToInt(headerName -> Integer.parseInt(headerName) + 1)
+                .max()
+                .orElse(0);
+
+        GenericData.Array<Object> array = new GenericData.Array<>(arrayLength, schema);
+        for (int i = 0; i < arrayLength; i++) {
+            HeaderHierarchy child = children.get(String.valueOf(i));
+            if (child != null) {
+                array.add(i, parseValue(rawValues, schema.getElementType(), child));
+            } else {
+                array.add(i, null);
+            }
         }
+        return array;
+    }
+
+    private static GenericData.EnumSymbol parseEnum(Schema schema, String fieldString) {
+        return new GenericData.EnumSymbol(schema, fieldString);
     }
 
     @Override

@@ -19,17 +19,18 @@ package org.radarbase.mock.data;
 import com.opencsv.exceptions.CsvValidationException;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Field;
-import org.apache.avro.specific.SpecificRecord;
+import org.apache.avro.generic.GenericRecord;
 import org.radarbase.data.Record;
 import org.radarbase.mock.config.MockDataConfig;
-import org.radarcns.kafka.ObservationKey;
+import org.radarbase.producer.rest.SchemaRetriever;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * CSV files must be validate before using since MockAggregator can handle only files containing
+ * CSV files must be validated before using since MockAggregator can handle only files containing
  *      unique User_ID and Source_ID and having increasing timestamp at each raw.
  */
 public class MockRecordValidator {
@@ -40,12 +41,15 @@ public class MockRecordValidator {
     private int timePos;
     private double time;
     private double startTime;
+    private final SchemaRetriever retriever;
 
     /** Create a new validator for given configuration. */
-    public MockRecordValidator(MockDataConfig config, long duration, Path root) {
+    public MockRecordValidator(MockDataConfig config, long duration, Path root,
+            SchemaRetriever retriever) {
         this.config = config;
         this.duration = duration;
         this.root = root;
+        this.retriever = retriever;
         this.time = Double.NaN;
         this.startTime = Double.NaN;
     }
@@ -55,7 +59,9 @@ public class MockRecordValidator {
      * @throws IllegalArgumentException if the CSV file does not respect the constraints.
      */
     public void validate() {
-        try (MockCsvParser<ObservationKey> parser = new MockCsvParser<>(config, root)) {
+        Instant now = Instant.now();
+        try (MockCsvParser parser = new MockCsvParser(config, root, now,
+                retriever)) {
             if (!parser.hasNext()) {
                 throw new IllegalArgumentException("CSV file is empty");
             }
@@ -67,11 +73,11 @@ public class MockRecordValidator {
             }
             timePos = timeField.pos();
 
-            Record<ObservationKey, SpecificRecord> last = null;
+            Record<GenericRecord, GenericRecord> last = null;
             long line = 1L;
 
             while (parser.hasNext()) {
-                Record<ObservationKey, SpecificRecord> record = parser.next();
+                Record<GenericRecord, GenericRecord> record = parser.next();
                 checkRecord(record, last, line++);
                 last = record;
             }
@@ -90,8 +96,8 @@ public class MockRecordValidator {
         }
     }
 
-    private void checkRecord(Record<ObservationKey, SpecificRecord> record,
-            Record<ObservationKey, SpecificRecord> last, long line) {
+    private void checkRecord(Record<GenericRecord, GenericRecord> record,
+            Record<GenericRecord, GenericRecord> last, long line) {
         double previousTime = time;
         time = (Double) record.value.get(timePos);
 

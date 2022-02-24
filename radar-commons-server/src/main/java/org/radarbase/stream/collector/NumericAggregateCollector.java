@@ -26,6 +26,7 @@ import java.util.Objects;
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Field;
 import org.apache.avro.Schema.Type;
+import org.apache.avro.generic.IndexedRecord;
 import org.apache.avro.specific.SpecificRecord;
 import org.radarbase.util.SpecificAvroConvertible;
 
@@ -105,7 +106,7 @@ public class NumericAggregateCollector implements RecordCollector, SpecificAvroC
     }
 
     @Override
-    public NumericAggregateCollector add(SpecificRecord record) {
+    public NumericAggregateCollector add(IndexedRecord record) {
         if (pos == -1) {
             throw new IllegalStateException(
                     "Cannot add record without specifying a schema in the constructor.");

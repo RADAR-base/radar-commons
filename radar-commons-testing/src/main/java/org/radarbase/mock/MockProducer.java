@@ -26,6 +26,7 @@ import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -112,7 +113,7 @@ public class MockProducer {
             }
 
             List<RecordGenerator<ObservationKey>> generators;
-            List<MockCsvParser<ObservationKey>> mockFiles;
+            List<MockCsvParser> mockFiles;
             generators = createGenerators(dataConfigs);
             mockFiles = createMockFiles(dataConfigs, root);
 
@@ -404,11 +405,12 @@ public class MockProducer {
         return result;
     }
 
-    private List<MockCsvParser<ObservationKey>> createMockFiles(List<MockDataConfig> configs,
+    private List<MockCsvParser> createMockFiles(List<MockDataConfig> configs,
             Path dataRoot) throws IOException, CsvValidationException {
 
-        List<MockCsvParser<ObservationKey>> result = new ArrayList<>(configs.size());
+        List<MockCsvParser> result = new ArrayList<>(configs.size());
 
+        Instant now = Instant.now();
         Path parent = dataRoot;
         if (parent == null) {
             parent = Paths.get(".").toAbsolutePath();
@@ -417,7 +419,7 @@ public class MockProducer {
         for (MockDataConfig config : configs) {
             if (config.getDataFile() != null) {
                 logger.info("Reading mock data from {}", config.getDataFile());
-                result.add(new MockCsvParser<>(config, parent));
+                result.add(new MockCsvParser(config, parent, now, retriever));
             } else {
                 logger.info("Generating mock data from {}", config);
             }

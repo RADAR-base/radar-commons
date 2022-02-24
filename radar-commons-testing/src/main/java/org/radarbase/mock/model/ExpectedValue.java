@@ -21,10 +21,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.avro.Schema;
-import org.apache.avro.specific.SpecificRecord;
+import org.apache.avro.generic.GenericRecord;
 import org.radarbase.data.Record;
 import org.radarbase.stream.collector.RecordCollector;
-import org.radarcns.kafka.ObservationKey;
 
 /**
  * It computes the expected value for a test case.
@@ -67,7 +66,7 @@ public abstract class ExpectedValue<V extends RecordCollector> {
      * Add a new record to the series of expected values.
      * @param record record to add
      */
-    public void add(Record<ObservationKey, SpecificRecord> record) {
+    public void add(Record<GenericRecord, GenericRecord> record) {
         if (timeReceivedPos == -1) {
             throw new IllegalStateException("Cannot parse record without a schema.");
         }
