@@ -16,7 +16,6 @@
 
 package org.radarbase.topic;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -117,6 +116,13 @@ public class AvroTopic<K, V> extends KafkaTopic {
                 (Class<K>) key.getClass(), (Class<V>) value.getClass());
     }
 
+    /**
+     * Parse the schema of a single specific record.
+     *
+     * @param schemaClass class name of the SpecificRecord to use
+     * @param <K> class type to return
+     * @return Instantiated class of given specific record class
+     */
     @SuppressWarnings("unchecked")
     public static <K extends SpecificRecord> K parseSpecificRecord(String schemaClass) {
         try {
