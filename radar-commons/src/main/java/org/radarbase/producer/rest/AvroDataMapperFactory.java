@@ -263,6 +263,25 @@ public final class AvroDataMapperFactory {
     /** Map one union to another, or a union to non-union, or non-union to union. */
     private AvroDataMapper mapUnion(Schema from, Schema to, Object defaultVal)
             throws SchemaValidationException {
+
+        // Do not create a custom mapper for trivial changes.
+        if (from.getType() == Schema.Type.UNION && to.getType() == Schema.Type.UNION
+                && from.getTypes().size() == from.getTypes().size()) {
+            boolean matches = true;
+            for (int i = 0; i < from.getTypes().size(); i++) {
+                Schema.Type fromType = from.getTypes().get(i).getType();
+                Schema.Type toType = to.getTypes().get(i).getType();
+
+                if (fromType != toType || !isPrimitive(fromType)) {
+                    matches = false;
+                    break;
+                }
+            }
+            if (matches) {
+                return IDENTITY_MAPPER;
+            }
+        }
+
         Schema resolvedFrom = from.getType() == Schema.Type.UNION ? nonNullUnionSchema(from) : from;
 
         if (from.getType() == Schema.Type.UNION && to.getType() != Schema.Type.UNION) {
@@ -458,5 +477,21 @@ public final class AvroDataMapperFactory {
         }
 
         abstract Number stringToNumber(String toString);
+    }
+
+    private static boolean isPrimitive(Schema.Type type) {
+        switch (type) {
+            case INT:
+            case LONG:
+            case BYTES:
+            case FLOAT:
+            case DOUBLE:
+            case NULL:
+            case BOOLEAN:
+            case STRING:
+                return true;
+            default:
+                return false;
+        }
     }
 }
