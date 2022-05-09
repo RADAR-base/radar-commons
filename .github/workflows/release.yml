@@ -31,7 +31,7 @@ jobs:
       - name: Upload to GitHub
         uses: AButler/upload-release-assets@v2.0
         with:
-          files: 'radar-jersey/build/libs/*;radar-jersey-hibernate/build/libs/*'
+          files: 'radar-commons*/build/libs/*'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install gpg secret key
