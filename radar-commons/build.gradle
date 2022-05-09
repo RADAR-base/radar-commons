@@ -26,7 +26,8 @@ dependencies {
     // The production code uses the SLF4J logging API at compile time
     implementation group: 'org.slf4j', name:'slf4j-api', version: slf4jVersion
 
-    testImplementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
+    testImplementation(platform("com.fasterxml.jackson:jackson-bom:$jacksonVersion"))
+    testImplementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind'
     testImplementation group: 'org.radarbase', name: 'radar-schemas-commons', version: radarSchemasVersion
     testImplementation group: 'junit', name: 'junit', version: junitVersion
     testImplementation group: 'org.mockito', name: 'mockito-core', version: mockitoVersion

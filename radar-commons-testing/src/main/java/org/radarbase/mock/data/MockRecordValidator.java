@@ -60,8 +60,7 @@ public class MockRecordValidator {
      */
     public void validate() {
         Instant now = Instant.now();
-        try (MockCsvParser parser = new MockCsvParser(config, root, now,
-                retriever)) {
+        try (MockCsvParser parser = new MockCsvParser(config, root, now, retriever)) {
             if (!parser.hasNext()) {
                 throw new IllegalArgumentException("CSV file is empty");
             }

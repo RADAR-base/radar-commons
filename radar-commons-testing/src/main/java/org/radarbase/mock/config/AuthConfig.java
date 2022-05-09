@@ -37,6 +37,10 @@ public class AuthConfig {
         this.tokenUrl = tokenUrl;
     }
 
+    /**
+     * Fill in the client ID and client secret from environment variables. The variables are
+     * {@code &lt;prefix&gt;_CLIENT_ID} and {@code &lt;prefix&gt;_CLIENT_SECRET}.
+     */
     public void withEnv(String prefix) {
         String envClientId = System.getenv(prefix + "_CLIENT_ID");
         if (envClientId != null) {

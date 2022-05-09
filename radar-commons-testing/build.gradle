@@ -39,8 +39,9 @@ dependencies {
     api group: 'org.apache.avro', name: 'avro', version: avroVersion
     api group: 'org.radarbase', name: 'radar-schemas-commons', version: radarSchemasVersion
 
-    implementation group: 'com.opencsv', name: 'opencsv', version: '5.5.2'
-    implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
+    implementation group: 'com.opencsv', name: 'opencsv', version: opencsvVersion
+    implementation(platform("com.fasterxml.jackson:jackson-bom:$jacksonVersion"))
+    implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind'
     implementation group: 'org.apache.kafka', name: 'kafka-clients', version: kafkaVersion
     implementation (group: 'io.confluent', name: 'kafka-avro-serializer', version: confluentVersion) {
         exclude group: 'com.101tec'

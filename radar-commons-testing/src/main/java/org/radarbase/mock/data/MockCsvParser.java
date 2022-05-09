@@ -68,7 +68,8 @@ public class MockCsvParser implements Closeable {
     public MockCsvParser(MockDataConfig config, Path root, Instant startTime,
             SchemaRetriever retriever)
             throws IOException, CsvValidationException {
-        Schema keySchema, valueSchema;
+        Schema keySchema;
+        Schema valueSchema;
         try {
             AvroTopic<SpecificRecord, SpecificRecord> specificTopic = config.parseAvroTopic();
             keySchema = specificTopic.getKeySchema();
@@ -89,7 +90,8 @@ public class MockCsvParser implements Closeable {
         rowDuration = Duration.ofMillis((long)(1.0 / config.getFrequency()));
         rowTime = this.startTime.toEpochMilli();
 
-        bufferedReader = Files.newBufferedReader(config.getDataFile(root));
+        Path dataFile = config.getDataFile(root);
+        bufferedReader = Files.newBufferedReader(dataFile);
         csvReader = new CSVReader(bufferedReader);
         headers = new HeaderHierarchy();
         String[] header = csvReader.readNext();
@@ -115,15 +117,20 @@ public class MockCsvParser implements Closeable {
             throw new IllegalStateException("No next record available");
         }
 
-        GenericRecord key = parseRecord(currentLine, topic.getKeySchema(), headers.getChildren().get("key"));
-        GenericRecord value = parseRecord(currentLine, topic.getValueSchema(), headers.getChildren().get("value"));
+        GenericRecord key = parseRecord(currentLine, topic.getKeySchema(),
+                headers.getChildren().get("key"));
+        GenericRecord value = parseRecord(currentLine, topic.getValueSchema(),
+                headers.getChildren().get("value"));
+        incrementRow();
+        return new Record<>(key, value);
+    }
 
+    private void incrementRow() throws CsvValidationException, IOException {
         currentLine = csvReader.readNext();
         row++;
         rowTime = startTime
                 .plus(rowDuration.multipliedBy(row))
                 .toEpochMilli();
-        return new Record<>(key, value);
     }
 
     /**
@@ -176,6 +183,9 @@ public class MockCsvParser implements Closeable {
 
     private Object parseScalar(String[] rawValues, Schema schema, HeaderHierarchy headers) {
         int fieldHeader = headers.getIndex();
+        if (fieldHeader >= rawValues.length) {
+            throw new IllegalArgumentException("Row is missing value for " + headers.getName());
+        }
         String fieldString = rawValues[fieldHeader]
                 .replace("${timeSeconds}", Double.toString(rowTime / 1000.0))
                 .replace("${timeMillis}", Long.toString(rowTime));
@@ -213,7 +223,8 @@ public class MockCsvParser implements Closeable {
         }
     }
 
-    private Map<String, Object> parseMap(String[] rawValues, Schema schema, HeaderHierarchy headers) {
+    private Map<String, Object> parseMap(String[] rawValues, Schema schema,
+            HeaderHierarchy headers) {
         Map<String, HeaderHierarchy> children = headers.getChildren();
         Map<String, Object> map = new LinkedHashMap<>(children.size() * 4 / 3);
         for (HeaderHierarchy child : children.values()) {

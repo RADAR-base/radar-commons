@@ -105,8 +105,19 @@ public class RecordGenerator<K extends SpecificRecord> {
         }
     }
 
+    /**
+     * Get the header with correct prefixes.
+     * @return generated header
+     */
     public List<String> getHeader() {
-        return header;
+        List<String> withPrefix = new ArrayList<>(header);
+        for (int i = 0; i < 3; i++) {
+            withPrefix.set(i, "key." + withPrefix.get(i));
+        }
+        for (int i = 3; i < header.size(); i++) {
+            withPrefix.set(i, "value." + withPrefix.get(i));
+        }
+        return withPrefix;
     }
 
     /** Get given schema field, and throw an IllegalArgumentException if it does not exists. */
