@@ -73,8 +73,8 @@ public class RecordGeneratorTest {
         RecordGenerator<ObservationKey> generator = new RecordGenerator<>(config,
                 ObservationKey.class);
         assertEquals(
-                Arrays.asList("projectId", "userId", "sourceId",
-                        "time", "timeReceived", "x", "y", "z"),
+                Arrays.asList("key.projectId", "key.userId", "key.sourceId",
+                        "value.time", "value.timeReceived", "value.x", "value.y", "value.z"),
                 generator.getHeader());
     }
 }

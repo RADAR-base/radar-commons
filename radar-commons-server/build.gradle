@@ -22,12 +22,12 @@ dependencies {
     api project(':radar-commons')
 
     // For POJO classes and ConfigLoader
-    implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
-    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: jacksonYamlVersion
+    implementation(platform("com.fasterxml.jackson:jackson-bom:$jacksonVersion"))
+    implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind'
+    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml'
 
     api group: 'org.apache.avro', name: 'avro', version: avroVersion
 
-    implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind' , version: jacksonVersion
     implementation group: 'org.apache.kafka', name: 'kafka-clients', version: kafkaVersion
 
     testImplementation group: 'org.mockito', name: 'mockito-core', version: mockitoVersion

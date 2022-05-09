@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.apache.avro.Schema;
+import org.apache.avro.generic.IndexedRecord;
 import org.apache.avro.specific.SpecificRecord;
 import org.radarbase.util.SpecificAvroConvertible;
 
@@ -52,7 +53,7 @@ public class AggregateListCollector implements RecordCollector, SpecificAvroConv
     }
 
     @Override
-    public AggregateListCollector add(SpecificRecord record) {
+    public AggregateListCollector add(IndexedRecord record) {
         for (NumericAggregateCollector collector : collectors) {
             collector.add(record);
         }

@@ -29,24 +29,32 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.function.Consumer;
 
 /**
  * A YAML Config file loader, to load YAML files into equivalent POJO Objects.
  */
 public class YamlConfigLoader {
     public static final JsonFactory YAML_FACTORY = new YAMLFactory();
-    private static final ObjectMapper YAML_MAPPER = new ObjectMapper(YAML_FACTORY);
 
-    static {
-        YAML_MAPPER.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+    private final ObjectMapper yamlMapper = new ObjectMapper(YAML_FACTORY);
+
+    public YamlConfigLoader() {
+        this((mapper) -> { });
+    }
+
+    /** Config loader that does some additional object mapper configuration after initialization. */
+    public YamlConfigLoader(Consumer<ObjectMapper> mapperConfigurator) {
+        yamlMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
         // only serialize fields, not getters, etc.
-        YAML_MAPPER.setVisibility(YAML_MAPPER.getSerializationConfig().getDefaultVisibilityChecker()
+        yamlMapper.setVisibility(yamlMapper.getSerializationConfig().getDefaultVisibilityChecker()
                 .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
                 .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
                 .withIsGetterVisibility(JsonAutoDetect.Visibility.NONE)
                 .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
                 .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
-        YAML_MAPPER.addMixIn(ServerConfig.class, ServerConfigMixin.class);
+        yamlMapper.addMixIn(ServerConfig.class, ServerConfigMixin.class);
+        mapperConfigurator.accept(yamlMapper);
     }
 
     /**
@@ -59,14 +67,14 @@ public class YamlConfigLoader {
      */
     public <T> T load(Path file, Class<T> configClass) throws IOException {
         try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
-            return YAML_MAPPER.readValue(reader, configClass);
+            return yamlMapper.readValue(reader, configClass);
         }
     }
 
     /** Store config into given YAML file. */
     public void store(Path file, Object config) throws IOException {
         try (Writer writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-            YAML_MAPPER.writeValue(writer, config);
+            yamlMapper.writeValue(writer, config);
         }
     }
 
@@ -74,7 +82,7 @@ public class YamlConfigLoader {
      * Pretty-print the given object as a YAML string.
      */
     public String prettyString(Object config) {
-        ObjectMapper prettyPrintMapper = YAML_MAPPER.copy();
+        ObjectMapper prettyPrintMapper = yamlMapper.copy();
         // pretty print
         prettyPrintMapper.enable(SerializationFeature.INDENT_OUTPUT);
         // make ConfigRadar the root element

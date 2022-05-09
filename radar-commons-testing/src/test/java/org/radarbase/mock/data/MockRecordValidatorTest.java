@@ -26,10 +26,11 @@ import java.util.Arrays;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.radarbase.mock.config.MockDataConfig;
+import org.radarbase.producer.rest.SchemaRetriever;
 import org.radarcns.monitor.application.ApplicationServerStatus;
+import org.radarcns.kafka.ObservationKey;
 import org.radarcns.passive.phone.PhoneAcceleration;
 import org.radarcns.passive.phone.PhoneLight;
 
@@ -38,6 +39,7 @@ public class MockRecordValidatorTest {
     public TemporaryFolder folder = new TemporaryFolder();
 
     private Path root;
+    private SchemaRetriever retriever;
 
     private MockDataConfig makeConfig() throws IOException {
         return makeConfig(folder);
@@ -46,10 +48,12 @@ public class MockRecordValidatorTest {
     @Before
     public void setUp() {
         root = folder.getRoot().toPath();
+        retriever = null;
     }
 
     public static MockDataConfig makeConfig(TemporaryFolder folder) throws IOException {
         MockDataConfig config = new MockDataConfig();
+        config.setKeySchema(ObservationKey.class.getName());
         config.setDataFile(folder.newFile().getAbsolutePath());
         config.setValueSchema(PhoneLight.class.getName());
         config.setValueField("light");
@@ -63,12 +67,12 @@ public class MockRecordValidatorTest {
         config.setValueSchema(ApplicationServerStatus.class.getName());
 
         try (Writer writer = Files.newBufferedWriter(config.getDataFile(root))) {
-            writer.append("projectId,userId,sourceId,time,serverStatus,ipAddress\n");
+            writer.append("key.projectId,key.userId,key.sourceId,value.time,value.serverStatus,value.ipAddress\n");
             writer.append("test,a,b,1,UNKNOWN,\n");
             writer.append("test,a,b,2,CONNECTED,\n");
         }
 
-        new MockRecordValidator(config, 2_000L, root).validate();
+        new MockRecordValidator(config, 2_000L, root, retriever).validate();
     }
 
 
@@ -79,7 +83,7 @@ public class MockRecordValidatorTest {
         config.setValueField("serverStatus");
         CsvGenerator generator = new CsvGenerator();
         generator.generate(config, 2_000L, root);
-        new MockRecordValidator(config, 2_000L, root).validate();
+        new MockRecordValidator(config, 2_000L, root, retriever).validate();
     }
 
     @Test
@@ -89,7 +93,7 @@ public class MockRecordValidatorTest {
         MockDataConfig config = makeConfig();
         generator.generate(config, 100_000L, root);
 
-        new MockRecordValidator(config, 100_000L, root).validate();
+        new MockRecordValidator(config, 100_000L, root, retriever).validate();
     }
 
     @Test
@@ -107,7 +111,7 @@ public class MockRecordValidatorTest {
         MockDataConfig config = makeConfig();
 
         try (Writer writer = Files.newBufferedWriter(config.getDataFile(root))) {
-            writer.append("projectId,userId,sourceId,time,timeReceived,light\n");
+            writer.append("key.projectId,key.userId,key.sourceId,value.time,value.timeReceived,value.light\n");
             writer.append("test,a,b,1,1,1\n");
             writer.append("test,a,b,1,2,1\n");
         }
@@ -120,7 +124,7 @@ public class MockRecordValidatorTest {
         MockDataConfig config = makeConfig();
 
         try (Writer writer = Files.newBufferedWriter(config.getDataFile(root))) {
-            writer.append("projectId,userId,sourceId,time,timeReceived,light\n");
+            writer.append("key.projectId,key.userId,key.sourceId,value.time,value.timeReceived,value.light\n");
             writer.append("test,a,b,1,1,1\n");
             writer.append("test,a,c,1,2,1\n");
         }
@@ -133,7 +137,7 @@ public class MockRecordValidatorTest {
         MockDataConfig config = makeConfig();
 
         try (Writer writer = Files.newBufferedWriter(config.getDataFile(root))) {
-            writer.append("projectId,userId,sourceId,time,timeReceived,light\n");
+            writer.append("key.projectId,key.userId,key.sourceId,value.time,value.timeReceived,value.light\n");
             writer.append("test,a,b,1,1,1\n");
             writer.append("test,a,b,1,0,1\n");
         }
@@ -147,7 +151,7 @@ public class MockRecordValidatorTest {
         MockDataConfig config = makeConfig();
 
         try (Writer writer = Files.newBufferedWriter(config.getDataFile(root))) {
-            writer.append("projectId,userId,time,timeReceived,light\n");
+            writer.append("key.projectId,key.userId,key.sourceId,value.time,value.timeReceived,value.light\n");
             writer.append("test,a,1,1,1\n");
             writer.append("test,a,1,2,1\n");
         }
@@ -160,7 +164,7 @@ public class MockRecordValidatorTest {
         MockDataConfig config = makeConfig();
 
         try (Writer writer = Files.newBufferedWriter(config.getDataFile(root))) {
-            writer.append("projectId,userId,sourceId,time,light\n");
+            writer.append("key.projectId,key.userId,key.sourceId,value.time,value.timeReceived,value.light\n");
             writer.append("test,a,b,1,1\n");
             writer.append("test,a,b,1,2\n");
         }
@@ -173,12 +177,12 @@ public class MockRecordValidatorTest {
         MockDataConfig config = makeConfig();
 
         try (Writer writer = Files.newBufferedWriter(config.getDataFile(root))) {
-            writer.append("projectId,userId,sourceId,time,timeReceived,light\n");
+            writer.append("key.projectId,key.userId,key.sourceId,value.time,value.timeReceived,value.light\n");
             writer.append("test,a,b,1,1\n");
             writer.append("test,a,b,1,2,1\n");
         }
 
-        assertValidateThrows(ArrayIndexOutOfBoundsException.class, config);
+        assertValidateThrows(IllegalArgumentException.class, config);
     }
 
     @Test
@@ -186,7 +190,7 @@ public class MockRecordValidatorTest {
         MockDataConfig config = makeConfig();
 
         try (Writer writer = Files.newBufferedWriter(config.getDataFile(root))) {
-            writer.append("projectId,userId,sourceId,time,timeReceived,light\n");
+            writer.append("key.projectId,key.userId,key.sourceId,value.time,value.timeReceived,value.light\n");
             writer.append("test,a,b,1,1,a\n");
             writer.append("test,a,b,1,2,b\n");
         }
@@ -201,7 +205,7 @@ public class MockRecordValidatorTest {
         config.setValueFields(Arrays.asList("x", "y", "z"));
 
         try (Writer writer = Files.newBufferedWriter(config.getDataFile(root))) {
-            writer.append("projectId,userId,sourceId,time,timeReceived,x,y,z\n");
+            writer.append("key.projectId,key.userId,key.sourceId,value.time,value.timeReceived,value.x,value.y,value.z\n");
             writer.append("test,a,b,1,1,1,1,1\n");
             writer.append("test,a,b,1,2,1,1,1\n");
         }
@@ -210,11 +214,11 @@ public class MockRecordValidatorTest {
     }
 
     private <T extends Throwable> void assertValidateThrows(Class<T> ex, MockDataConfig config) {
-        MockRecordValidator validator = new MockRecordValidator(config, 2_000L, root);
+        MockRecordValidator validator = new MockRecordValidator(config, 2_000L, root, retriever);
         assertThrows(ex, validator::validate);
     }
 
     private void assertValidate(MockDataConfig config) {
-        new MockRecordValidator(config, 2_000L, root).validate();
+        new MockRecordValidator(config, 2_000L, root, retriever).validate();
     }
 }

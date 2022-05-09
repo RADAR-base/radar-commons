@@ -55,7 +55,7 @@ public class CsvGeneratorTest {
         Path p = Paths.get(config.getDataFile());
         try (Reader reader = Files.newBufferedReader(p);
                 CSVReader parser = new CSVReader(reader)) {
-            String[] headers = {"projectId", "userId", "sourceId", "time", "timeReceived", "light"};
+            String[] headers = {"key.projectId", "key.userId", "key.sourceId", "value.time", "value.timeReceived", "value.light"};
             assertArrayEquals(headers, parser.readNext());
 
             int n = 0;

@@ -1,6 +1,6 @@
 package org.radarbase.stream.collector;
 
-import org.apache.avro.specific.SpecificRecord;
+import org.apache.avro.generic.IndexedRecord;
 
 public interface RecordCollector {
     /**
@@ -8,5 +8,5 @@ public interface RecordCollector {
      * @param record new sample that has to be analysed
      * @throws IllegalStateException if this collector was constructed without a schema.
      */
-    RecordCollector add(SpecificRecord record);
+    RecordCollector add(IndexedRecord record);
 }

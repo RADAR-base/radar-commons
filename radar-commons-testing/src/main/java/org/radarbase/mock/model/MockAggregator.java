@@ -19,13 +19,14 @@ package org.radarbase.mock.model;
 import com.opencsv.exceptions.CsvValidationException;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.avro.Schema;
 import org.radarbase.mock.config.MockDataConfig;
-import org.radarcns.kafka.ObservationKey;
 import org.radarbase.mock.data.MockCsvParser;
+import org.radarbase.producer.rest.SchemaRetriever;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,13 +41,16 @@ public class MockAggregator {
     private static final Logger logger = LoggerFactory.getLogger(MockAggregator.class);
     private final List<MockDataConfig> mockDataConfigs;
     private final Path root;
+    private final SchemaRetriever retriever;
 
     /**
      * Default constructor.
      */
-    public MockAggregator(List<MockDataConfig> mockDataConfigs, Path root) {
+    public MockAggregator(List<MockDataConfig> mockDataConfigs, Path root,
+            SchemaRetriever retriever) {
         this.mockDataConfigs = mockDataConfigs;
         this.root = root;
+        this.retriever = retriever;
     }
 
     /**
@@ -55,7 +59,7 @@ public class MockAggregator {
      * @return {@code Map} of key {@code MockDataConfig} and value {@code ExpectedValue}. {@link
      * ExpectedDoubleValue}.
      **/
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "rawtypes"})
     public Map<MockDataConfig, ExpectedValue> simulate() throws IOException {
 
         Map<MockDataConfig, ExpectedValue> expectedValue = new HashMap<>();
@@ -66,7 +70,9 @@ public class MockAggregator {
                 continue;
             }
 
-            try (MockCsvParser<ObservationKey> parser = new MockCsvParser<>(config, root)) {
+            Instant now = Instant.now();
+            try (MockCsvParser parser = new MockCsvParser(config, root, now,
+                    retriever)) {
                 Schema valueSchema = config.parseAvroTopic().getValueSchema();
                 List<String> valueFields = config.getValueFields();
 
