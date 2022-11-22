@@ -1,7 +1,7 @@
 package org.radarbase.util
 
-import org.junit.Assert
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 import java.util.*
 import java.util.concurrent.ThreadLocalRandom
 import kotlin.text.Charsets.UTF_8
@@ -15,7 +15,7 @@ class Base64Test {
         while (i < 2000) {
             val src = ByteArray(i)
             random.nextBytes(src)
-            Assert.assertEquals(
+            assertEquals(
                 Base64Encoder.encode(src),
                 String(javaEncoder.encode(src), UTF_8),
             )

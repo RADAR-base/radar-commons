@@ -1,3 +1,7 @@
+plugins {
+    kotlin("plugin.serialization")
+}
+
 description = "RADAR Common utilities library."
 
 //---------------------------------------------------------------------------//
@@ -13,17 +17,21 @@ repositories {
 dependencies {
     val avroVersion: String by project
     api("org.apache.avro:avro:$avroVersion")
+    api(kotlin("reflect"))
 
     val ktorVersion: String by project
 
-    implementation("io.ktor:ktor-client-core:$ktorVersion")
-    implementation("io.ktor:ktor-client-cio:$ktorVersion")
+    api(platform("io.ktor:ktor-bom:$ktorVersion"))
+    api("io.ktor:ktor-client-core")
+    api("io.ktor:ktor-client-cio")
+    api("io.ktor:ktor-client-auth")
+    implementation("io.ktor:ktor-client-content-negotiation")
+    implementation("io.ktor:ktor-serialization-kotlinx-json")
 
-    // to implement producers and consumers
-    val okhttpVersion: String by project
-    api("com.squareup.okhttp3:okhttp:$okhttpVersion")
-    val orgJsonVersion: String by project
-    api("org.json:json:$orgJsonVersion")
+    api("org.radarbase:managementportal-client:0.9.0-SNAPSHOT")
+
+    val coroutinesVersion: String by project
+    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
 
     // The production code uses the SLF4J logging API at compile time
     val slf4jVersion: String by project
@@ -34,10 +42,11 @@ dependencies {
     testImplementation("com.fasterxml.jackson.core:jackson-databind")
     val radarSchemasVersion: String by project
     testImplementation("org.radarbase:radar-schemas-commons:$radarSchemasVersion")
-    val junitVersion: String by project
-    testImplementation("junit:junit:$junitVersion")
     val mockitoVersion: String by project
     testImplementation("org.mockito:mockito-core:$mockitoVersion")
+    val mockitoKotlinVersion: String by project
+    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion")
+    val okhttpVersion: String by project
     testImplementation("com.squareup.okhttp3:mockwebserver:$okhttpVersion")
     testRuntimeOnly("org.slf4j:slf4j-simple:$slf4jVersion")
 }

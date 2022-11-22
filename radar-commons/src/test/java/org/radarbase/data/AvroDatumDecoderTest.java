@@ -16,11 +16,11 @@
 
 package org.radarbase.data;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import org.apache.avro.specific.SpecificData;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.radarbase.topic.AvroTopic;
 import org.radarcns.kafka.ObservationKey;
 import org.radarcns.passive.empatica.EmpaticaE4BloodVolumePulse;

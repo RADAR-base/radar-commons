@@ -20,6 +20,9 @@ interface RecordData<K: Any, V: Any> : Iterable<V> {
      */
     val key: K
 
+    /** Source ID linked to record data, if any. */
+    val sourceId: String?
+
     /**
      * Whether the list of values is empty.
      * @return true if empty, false otherwise.

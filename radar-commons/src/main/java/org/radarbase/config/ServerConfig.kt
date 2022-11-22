@@ -15,8 +15,6 @@
  */
 package org.radarbase.config
 
-import okhttp3.HttpUrl
-import okhttp3.HttpUrl.Companion.toHttpUrl
 import java.net.InetSocketAddress
 import java.net.MalformedURLException
 import java.net.Proxy
@@ -112,19 +110,6 @@ class ServerConfig {
             } catch (ex: MalformedURLException) {
                 throw IllegalStateException("Already parsed a URL but it turned out invalid", ex)
             }
-        }
-
-    /**
-     * Get the server as an HttpUrl.
-     * @return HttpUrl to the server
-     * @throws IllegalStateException if the URL is invalid
-     */
-    val httpUrl: HttpUrl
-        get() {
-            if (protocol == null) {
-                protocol = "http"
-            }
-            return urlString.toHttpUrl()
         }
 
     /**

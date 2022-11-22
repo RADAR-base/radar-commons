@@ -19,6 +19,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
  */
 plugins {
     kotlin("jvm") version "1.7.21" apply false
+    kotlin("plugin.serialization") version "1.7.21" apply false
     id("com.github.davidmc24.gradle.plugin.avro") version "1.5.0" apply false
     id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
     id("com.github.ben-manes.versions") version "0.44.0"
@@ -34,7 +35,7 @@ val githubIssueUrl = "https://github.com/$githubRepoName/issues"
 val website = "https://radar-base.org"
 
 allprojects {
-    version = "0.15.1-SNAPSHOT"
+    version = "0.16.0-SNAPSHOT"
     group = "org.radarbase"
 }
 
@@ -67,6 +68,15 @@ subprojects {
         mavenLocal()
         maven(url = "https://packages.confluent.io/maven/")
         maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
+    }
+
+    dependencies {
+        val coroutinesVersion: String by project
+        configurations["testImplementation"]("org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutinesVersion")
+
+        val junitVersion: String by project
+        configurations["testImplementation"]("org.junit.jupiter:junit-jupiter-api:$junitVersion")
+        configurations["testRuntimeOnly"]("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
     }
 
     afterEvaluate {
@@ -184,6 +194,8 @@ subprojects {
     //---------------------------------------------------------------------------//
 
     tasks.withType<Test> {
+        useJUnitPlatform()
+
         val stdout = LinkedList<String>()
         beforeTest(closureOf<TestDescriptor> {
             stdout.clear()

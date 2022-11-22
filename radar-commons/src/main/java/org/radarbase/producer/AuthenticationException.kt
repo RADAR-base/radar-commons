@@ -15,18 +15,10 @@
  */
 package org.radarbase.producer
 
-import java.io.IOException
-
 /**
  * Failed to authenticate to server.
  */
-class AuthenticationException : IOException {
-    constructor() : super() {}
-    constructor(message: String?, cause: Throwable?) : super(message, cause) {}
+class AuthenticationException : RuntimeException {
     constructor(message: String?) : super(message) {}
-    constructor(cause: Throwable?) : super(cause) {}
-
-    companion object {
-        private const val serialVersionUID: Long = 1
-    }
+    constructor(message: String?, cause: Throwable?) : super(message, cause) {}
 }

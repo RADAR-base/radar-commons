@@ -18,7 +18,7 @@ plugins {
     application
 }
 
-val applicationRuntimeOnly by configurations.creating
+val applicationRuntimeOnly: Configuration by configurations.creating
 
 application {
     mainClass.set("org.radarbase.mock.MockProducer")
@@ -53,13 +53,16 @@ dependencies {
     val confluentVersion: String by project
     implementation("io.confluent:kafka-avro-serializer:$confluentVersion")
 
+    val ktorVersion: String by project
+    implementation(platform("io.ktor:ktor-bom:$ktorVersion"))
+    implementation("io.ktor:ktor-serialization-kotlinx-json")
+
     val slf4jVersion: String by project
     applicationRuntimeOnly("org.slf4j:slf4j-simple:$slf4jVersion")
 
-    // Direct producer uses KafkaAvroSerializer if initialized
-    val junitVersion: String by project
-    testImplementation("junit:junit:$junitVersion")
     val hamcrestVersion: String by project
     testImplementation("org.hamcrest:hamcrest:$hamcrestVersion")
     testImplementation("org.slf4j:slf4j-simple:$slf4jVersion")
+    val mockitoVersion: String by project
+    testImplementation("org.mockito:mockito-core:$mockitoVersion")
 }

@@ -1,19 +1,22 @@
 package org.radarbase.topic
 
-import org.junit.Assert
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import java.util.*
 
 class KafkaTopicTest {
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun invalidTopicName() {
-        KafkaTopic("bla$")
+        assertThrows<IllegalArgumentException> {
+            KafkaTopic("bla$")
+        }
     }
 
     @Test
     fun testName() {
         val topic = KafkaTopic("aba")
-        Assert.assertEquals("aba", topic.name)
+        assertEquals("aba", topic.name)
     }
 
     @Test
@@ -30,7 +33,7 @@ class KafkaTopicTest {
         randomString.sort()
         randomTopic.sort()
         for (i in 0 until randomSize) {
-            Assert.assertEquals(randomString[i], randomTopic[i].name)
+            assertEquals(randomString[i], randomTopic[i].name)
         }
     }
 }

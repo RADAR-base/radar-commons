@@ -15,7 +15,11 @@
  */
 package org.radarbase.producer.rest
 
-import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
+import org.radarbase.util.TimedValue
+import org.radarbase.util.TimeoutConfig
 
 /**
  * Current connection status of a KafkaSender. After a timeout occurs this will turn to
@@ -30,65 +34,46 @@ import java.util.concurrent.TimeUnit
  * A connection state could be shared with multiple HTTP clients if they are talking to the same
  * server.
  *
- * @param timeout timeout
- * @param unit unit of the timeout
+ * @param timeoutConfig timeout config
  * @throws IllegalArgumentException if the timeout is not strictly positive.
  */
 class ConnectionState(
-    timeout: Long,
-    unit: TimeUnit,
+    private val timeoutConfig: TimeoutConfig,
 ) {
     /** State symbols of the connection.  */
     enum class State {
         CONNECTED, DISCONNECTED, UNKNOWN, UNAUTHORIZED
     }
 
-    private var timeout: Long = TimeUnit.MILLISECONDS.convert(timeout, unit)
-    private var lastConnection: Long = -1L
-
-    /** Current state of the connection.  */
-    @get:Synchronized
-    var state: State = State.UNKNOWN
-        get() {
-            if (field == State.CONNECTED && System.currentTimeMillis() - lastConnection >= timeout) {
-                field = State.UNKNOWN
-            }
-            return field
+    val state: Flow<State>
+        get() = mutableState.map {
+            if (it.value === State.CONNECTED && it.isExpired)
+                State.UNKNOWN
+            else
+                it.value
         }
-        private set
+
+    private val mutableState = MutableStateFlow(TimedValue(State.UNKNOWN, timeoutConfig))
+
+    init {
+        mutableState.tryEmit(TimedValue(State.UNKNOWN, timeoutConfig))
+    }
 
     /** For a sender to indicate that a connection attempt succeeded.  */
-    @Synchronized
-    fun didConnect() {
-        state = State.CONNECTED
-        lastConnection = System.currentTimeMillis()
+    suspend fun didConnect() {
+        mutableState.emit(TimedValue(State.CONNECTED, timeoutConfig))
     }
 
     /** For a sender to indicate that a connection attempt failed.  */
-    @Synchronized
-    fun didDisconnect() {
-        state = State.DISCONNECTED
+    suspend fun didDisconnect() {
+        mutableState.emit(TimedValue(State.DISCONNECTED, timeoutConfig))
     }
 
-    @Synchronized
-    fun wasUnauthorized() {
-        state = State.UNAUTHORIZED
+    suspend fun wasUnauthorized() {
+        mutableState.emit(TimedValue(State.UNAUTHORIZED, timeoutConfig))
     }
 
-    @Synchronized
-    fun reset() {
-        state = State.UNKNOWN
-    }
-
-    /**
-     * Set the timeout after which the state will go from CONNECTED to UNKNOWN.
-     * @param timeout timeout
-     * @param unit unit of the timeout
-     * @throws IllegalArgumentException if the timeout is not strictly positive
-     */
-    @Synchronized
-    fun setTimeout(timeout: Long, unit: TimeUnit) {
-        require(timeout > 0) { "Timeout must be strictly positive" }
-        this.timeout = TimeUnit.MILLISECONDS.convert(timeout, unit)
+    suspend fun reset() {
+        mutableState.emit(TimedValue(State.UNKNOWN, timeoutConfig))
     }
 }

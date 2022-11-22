@@ -39,6 +39,7 @@ class AvroDatumDecoder(
 ) : AvroDecoder {
     private val decoderFactory: DecoderFactory = DecoderFactory.get()
 
+    @Suppress("UNCHECKED_CAST")
     override fun <T> reader(schema: Schema, clazz: Class<out T>): AvroReader<T> {
         val reader = genericData.createDatumReader(schema) as DatumReader<T>
         return AvroRecordReader(schema, reader)

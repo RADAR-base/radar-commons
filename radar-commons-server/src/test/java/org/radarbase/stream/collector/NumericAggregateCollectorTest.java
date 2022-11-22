@@ -16,13 +16,14 @@
 
 package org.radarbase.stream.collector;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.radarcns.kafka.AggregateKey;
 import org.radarcns.monitor.application.ApplicationRecordCounts;
 import org.radarcns.passive.empatica.EmpaticaE4BloodVolumePulse;
@@ -35,7 +36,7 @@ public class NumericAggregateCollectorTest {
 
     private NumericAggregateCollector valueCollector;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         this.valueCollector = new NumericAggregateCollector("test", true);
     }
@@ -105,21 +106,27 @@ public class NumericAggregateCollectorTest {
         assertEquals(36.8508954, valueCollector.getMean(), 0);
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testAddRecordWithoutSchema() {
-        valueCollector.add(new EmpaticaE4BloodVolumePulse(0d, 0d, 0f));
+        assertThrows(IllegalStateException.class, () ->
+            valueCollector.add(new EmpaticaE4BloodVolumePulse(0d, 0d, 0f))
+        );
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testWrongRecordType() {
-        this.valueCollector = new NumericAggregateCollector("isPlugged",
-                PhoneBatteryLevel.getClassSchema(), false);
+        assertThrows(IllegalArgumentException.class, () ->
+                this.valueCollector = new NumericAggregateCollector("isPlugged",
+                        PhoneBatteryLevel.getClassSchema(), false)
+        );
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testWrongFieldName() {
-        this.valueCollector = new NumericAggregateCollector("doesNotExist",
-                PhoneBatteryLevel.getClassSchema(), false);
+        assertThrows(IllegalArgumentException.class, () ->
+                this.valueCollector = new NumericAggregateCollector("doesNotExist",
+                        PhoneBatteryLevel.getClassSchema(), false)
+        );
     }
 
     @Test

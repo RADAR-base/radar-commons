@@ -15,16 +15,24 @@
  */
 package org.radarbase.producer
 
+import io.ktor.client.*
+import io.ktor.client.engine.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.*
+import kotlinx.coroutines.channels.BroadcastChannel
+import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharedFlow
 import org.apache.avro.SchemaValidationException
+import org.radarbase.producer.rest.ConnectionState
 import org.radarbase.topic.AvroTopic
-import java.io.Closeable
 import java.io.IOException
 
 /**
  * Thread-safe sender. Calling [.close] must be done after all [KafkaTopicSender]
  * senders created with [.sender] have been called.
  */
-interface KafkaSender : Closeable {
+interface KafkaSender {
     /** Get a non thread-safe sender instance.  */
     @Throws(IOException::class, SchemaValidationException::class)
     fun <K: Any, V: Any> sender(topic: AvroTopic<K, V>): KafkaTopicSender<K, V>
@@ -36,16 +44,7 @@ interface KafkaSender : Closeable {
      * in the current request or in a previous one.
      */
     @Throws(AuthenticationException::class)
-    fun resetConnection(): Boolean
+    suspend fun resetConnection(): Boolean
 
-    /**
-     * Get the current connection state to Kafka. If the connection state is unknown, this will
-     * trigger a connection check.
-     * @return true if connected, false if not connected.
-     * @throws AuthenticationException if the headers caused an authentication error
-     * in a previous request or during an additional connection
-     * check.
-     */
-    @get:Throws(AuthenticationException::class)
-    val isConnected: Boolean
+    val connectionState: Flow<ConnectionState.State>
 }

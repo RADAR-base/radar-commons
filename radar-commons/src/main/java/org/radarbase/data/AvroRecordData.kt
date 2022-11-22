@@ -1,5 +1,6 @@
 package org.radarbase.data
 
+import org.apache.avro.generic.IndexedRecord
 import org.radarbase.topic.AvroTopic
 
 /**
@@ -22,6 +23,12 @@ class AvroRecordData<K: Any, V: Any>(
 ) : RecordData<K, V> {
     init {
         require(records.isNotEmpty()) { "Records should not be empty." }
+    }
+
+    override val sourceId: String? by lazy {
+        val sourceIdField = topic.keySchema.getField("sourceId") ?: return@lazy null
+        if (key !is IndexedRecord) return@lazy null
+        key.get(sourceIdField.pos()).toString()
     }
 
     override fun iterator(): Iterator<V> = records.iterator()

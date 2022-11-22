@@ -16,13 +16,13 @@
 
 package org.radarbase.mock;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import java.util.Iterator;
 import org.apache.avro.specific.SpecificRecord;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.radarbase.data.Record;
 import org.radarbase.mock.config.MockDataConfig;
 import org.radarbase.mock.data.RecordGenerator;
@@ -35,7 +35,7 @@ import org.radarcns.passive.empatica.EmpaticaE4Acceleration;
 public class RecordGeneratorTest {
 
     @Test
-    public void generate() throws Exception {
+    public void generate() {
         MockDataConfig config = new MockDataConfig();
         config.setTopic("test");
         config.setFrequency(10);
@@ -65,7 +65,7 @@ public class RecordGeneratorTest {
     }
 
     @Test
-    public void getHeaders() throws Exception {
+    public void getHeaders() {
         MockDataConfig config = new MockDataConfig();
         config.setTopic("test");
         config.setValueSchema(EmpaticaE4Acceleration.class.getName());

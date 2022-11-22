@@ -41,9 +41,6 @@ dependencies {
     testImplementation("io.confluent:kafka-avro-serializer:$confluentVersion")
     val radarSchemasVersion: String by project
     testImplementation("org.radarbase:radar-schemas-commons:$radarSchemasVersion")
-    // Direct producer uses KafkaAvroSerializer if initialized
-    val junitVersion: String by project
-    testImplementation("junit:junit:$junitVersion")
     val slf4jVersion: String by project
     testRuntimeOnly("org.slf4j:slf4j-simple:$slf4jVersion")
 }

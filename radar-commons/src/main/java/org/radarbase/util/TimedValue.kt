@@ -2,7 +2,7 @@ package org.radarbase.util
 
 class TimedValue<T: Any>(
     val value: T,
-    private val cacheConfig: CacheConfig,
+    cacheConfig: TimeoutConfig,
 ) : TimedVariable(cacheConfig) {
     override fun equals(other: Any?): Boolean {
         if (this === other) {

@@ -20,7 +20,6 @@ import org.apache.avro.io.DatumWriter
 import org.apache.avro.io.Encoder
 import org.apache.avro.io.EncoderFactory
 import org.radarbase.data.AvroEncoder.AvroWriter
-import org.radarbase.producer.rest.ParsedSchemaMetadata
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 
@@ -46,7 +45,6 @@ class AvroRecordWriter<T: Any>(
     } else {
         encoderFactory.jsonEncoder(schema, out)
     }
-    override var readerSchema: ParsedSchemaMetadata? = null
 
     init {
         encoder = if (binary) {

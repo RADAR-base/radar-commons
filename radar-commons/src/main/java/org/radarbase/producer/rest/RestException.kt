@@ -15,6 +15,7 @@
  */
 package org.radarbase.producer.rest
 
+import io.ktor.http.*
 import java.io.IOException
 
 /**
@@ -23,16 +24,16 @@ import java.io.IOException
 class RestException
 /**
  * Request with status code and response body.
- * @param statusCode HTTP status code
+ * @param status HTTP status code
  * @param body response body.
  */(
-    val statusCode: Int,
-    val body: String?,
+    val status: HttpStatusCode,
+    body: String? = null,
     cause: Throwable? = null,
 ) : IOException(
     buildString(150) {
         append("REST call failed (HTTP code ")
-        append(statusCode)
+        append(status)
         if (body == null) {
             append(')')
         } else {

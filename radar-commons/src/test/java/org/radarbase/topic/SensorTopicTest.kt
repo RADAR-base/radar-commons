@@ -18,8 +18,9 @@ package org.radarbase.topic
 import org.apache.avro.Schema
 import org.apache.avro.SchemaBuilder
 import org.apache.avro.generic.GenericRecord
-import org.junit.Assert
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.radarcns.kafka.ObservationKey
 import org.radarcns.passive.phone.PhoneAcceleration
 
@@ -52,7 +53,7 @@ class SensorTopicTest {
         )
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun missingUserId() {
         val keySchema = SchemaBuilder.record("key").fields()
             .name("sourceId").type(Schema.create(Schema.Type.STRING)).noDefault()
@@ -62,14 +63,17 @@ class SensorTopicTest {
             .name("timeReceived").type(Schema.create(Schema.Type.DOUBLE)).noDefault()
             .name("value").type(Schema.create(Schema.Type.DOUBLE)).noDefault()
             .endRecord()
-        SensorTopic(
-            "test",
-            keySchema, valueSchema,
-            GenericRecord::class.java, GenericRecord::class.java
-        )
+
+        assertThrows<IllegalArgumentException> {
+            SensorTopic(
+                "test",
+                keySchema, valueSchema,
+                GenericRecord::class.java, GenericRecord::class.java
+            )
+        }
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun missingTime() {
         val keySchema = SchemaBuilder.record("key").fields()
             .name("userId").type(Schema.create(Schema.Type.STRING)).noDefault()
@@ -79,25 +83,29 @@ class SensorTopicTest {
             .name("timeReceived").type(Schema.create(Schema.Type.DOUBLE)).noDefault()
             .name("value").type(Schema.create(Schema.Type.DOUBLE)).noDefault()
             .endRecord()
-        SensorTopic(
-            "test",
-            keySchema, valueSchema,
-            GenericRecord::class.java, GenericRecord::class.java
-        )
+        assertThrows<IllegalArgumentException> {
+            SensorTopic(
+                "test",
+                keySchema, valueSchema,
+                GenericRecord::class.java, GenericRecord::class.java
+            )
+        }
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun notARecord() {
         val keySchema = Schema.create(Schema.Type.STRING)
         val valueSchema = SchemaBuilder.record("value").fields()
             .name("timeReceived").type(Schema.create(Schema.Type.DOUBLE)).noDefault()
             .name("value").type(Schema.create(Schema.Type.DOUBLE)).noDefault()
             .endRecord()
-        SensorTopic(
-            "test",
-            keySchema, valueSchema,
-            GenericRecord::class.java, GenericRecord::class.java
-        )
+        assertThrows<IllegalArgumentException> {
+            SensorTopic(
+                "test",
+                keySchema, valueSchema,
+                GenericRecord::class.java, GenericRecord::class.java
+            )
+        }
     }
 
     @Test
@@ -111,24 +119,28 @@ class SensorTopicTest {
             ObservationKey.getClassSchema(), PhoneAcceleration.getClassSchema(),
             ObservationKey::class.java, PhoneAcceleration::class.java
         )
-        Assert.assertEquals(expected, topic)
+        assertEquals(expected, topic)
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun parseUnexistingKey() {
-        SensorTopic.parse<ObservationKey, PhoneAcceleration>(
-            "test",
-            "unexisting." + ObservationKey::class.java.name,
-            PhoneAcceleration::class.java.name
-        )
+        assertThrows<IllegalArgumentException> {
+            SensorTopic.parse<ObservationKey, PhoneAcceleration>(
+                "test",
+                "unexisting." + ObservationKey::class.java.name,
+                PhoneAcceleration::class.java.name
+            )
+        }
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun parseUnexistingValue() {
-        SensorTopic.parse<ObservationKey, PhoneAcceleration>(
-            "test",
-            ObservationKey::class.java.name,
-            "unexisting." + PhoneAcceleration::class.java.name
-        )
+        assertThrows<IllegalArgumentException> {
+            SensorTopic.parse<ObservationKey, PhoneAcceleration>(
+                "test",
+                ObservationKey::class.java.name,
+                "unexisting." + PhoneAcceleration::class.java.name
+            )
+        }
     }
 }

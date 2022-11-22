@@ -16,9 +16,9 @@
 
 package org.radarbase.mock;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvValidationException;
@@ -28,9 +28,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.radarbase.mock.config.MockDataConfig;
 import org.radarbase.mock.data.CsvGenerator;
 import org.radarbase.mock.data.MockRecordValidatorTest;
@@ -38,19 +37,16 @@ import org.radarbase.mock.data.RecordGenerator;
 import org.radarcns.kafka.ObservationKey;
 
 public class CsvGeneratorTest {
-    @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
-
-    private MockDataConfig makeConfig() throws IOException {
+        private MockDataConfig makeConfig(Path folder) throws IOException {
         return MockRecordValidatorTest.makeConfig(folder);
     }
 
     @Test
-    public void generateMockConfig() throws IOException, CsvValidationException {
+    public void generateMockConfig(@TempDir Path folder) throws IOException, CsvValidationException {
         CsvGenerator generator = new CsvGenerator();
 
-        MockDataConfig config = makeConfig();
-        generator.generate(config, 100_000L, folder.getRoot().toPath());
+        MockDataConfig config = makeConfig(folder);
+        generator.generate(config, 100_000L, folder.getRoot());
 
         Path p = Paths.get(config.getDataFile());
         try (Reader reader = Files.newBufferedReader(p);
@@ -74,10 +70,10 @@ public class CsvGeneratorTest {
     }
 
     @Test
-    public void generateGenerator() throws IOException, CsvValidationException {
+    public void generateGenerator(@TempDir Path folder) throws IOException, CsvValidationException {
         CsvGenerator generator = new CsvGenerator();
 
-        MockDataConfig config = makeConfig();
+        MockDataConfig config = makeConfig(folder);
 
         final String time = Double.toString(System.currentTimeMillis() / 1000d);
 

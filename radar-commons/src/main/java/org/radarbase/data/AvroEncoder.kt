@@ -16,8 +16,6 @@
 package org.radarbase.data
 
 import org.apache.avro.Schema
-import org.apache.avro.SchemaValidationException
-import org.radarbase.producer.rest.ParsedSchemaMetadata
 import java.io.IOException
 
 /** Encode Avro values with a given encoder. The encoder may take into account the schema
@@ -25,7 +23,11 @@ import java.io.IOException
 interface AvroEncoder {
     /** Create a new writer. This method is thread-safe, but the class it returns is not.  */
     @Throws(IOException::class)
-    fun <T: Any> writer(schema: Schema, clazz: Class<out T>): AvroWriter<T>
+    fun <T: Any> writer(schema: Schema, clazz: Class<out T>): AvroWriter<T> =
+        writer(schema, clazz, schema)
+    @Throws(IOException::class)
+    fun <T: Any> writer(schema: Schema, clazz: Class<out T>, readerSchema: Schema): AvroWriter<T>
+
     interface AvroWriter<T: Any> {
         /**
          * Encode an object. This method is not thread-safe. Call
@@ -35,17 +37,5 @@ interface AvroEncoder {
          */
         @Throws(IOException::class)
         fun encode(`object`: T): ByteArray
-        /**
-         * Get the schema that the server lists.
-         * @return schema as set by setReaderSchema or null if not called yet.
-         */
-        /**
-         * Update the schema that the server is lists for the current topic.
-         * @param readerSchema schema listed by the schema registry.
-         * @throws SchemaValidationException if the server schema is incompatible with the writer
-         * schema.
-         */
-        @set:Throws(SchemaValidationException::class)
-        var readerSchema: ParsedSchemaMetadata?
     }
 }

@@ -5,9 +5,9 @@ import org.apache.avro.generic.GenericData
 import org.apache.avro.specific.SpecificData
 import org.apache.avro.specific.SpecificRecord
 import org.radarbase.data.AvroEncoder.AvroWriter
-import org.radarbase.producer.rest.AvroDataMapper
-import org.radarbase.producer.rest.AvroDataMapperFactory
-import org.radarbase.producer.rest.ParsedSchemaMetadata
+import org.radarbase.producer.avro.AvroDataMapper
+import org.radarbase.producer.avro.AvroDataMapperFactory
+import org.radarbase.producer.avro.AvroDataMapperFactory.validationException
 import java.io.IOException
 
 /**
@@ -18,66 +18,45 @@ import java.io.IOException
 class RemoteSchemaEncoder(
     private val binary: Boolean,
 ) : AvroEncoder {
-    override fun <T: Any> writer(schema: Schema, clazz: Class<out T>): AvroWriter<T> {
-        return SchemaEncoderWriter(schema, clazz)
+    override fun <T: Any> writer(schema: Schema, clazz: Class<out T>, readerSchema: Schema): AvroWriter<T> {
+        return SchemaEncoderWriter(binary, schema, clazz, readerSchema)
     }
 
-    private inner class SchemaEncoderWriter<T: Any>(
-        private val schema: Schema,
-        clazz: Class<out T>
+    class SchemaEncoderWriter<T: Any>(
+        binary: Boolean,
+        schema: Schema,
+        clazz: Class<out T>,
+        readerSchema: Schema,
     ) : AvroWriter<T> {
         private val recordEncoder: AvroEncoder
-        private var encoder: AvroWriter<Any>? = null
-        private var isGeneric = false
-        override var readerSchema: ParsedSchemaMetadata? = null
-            set(value) {
-                value ?: return
-                val currentField = field
-                if (currentField != null && value.schema == currentField.schema) {
-                    return
-                }
-                try {
-                    if (!isGeneric) {
-                        mapper = AvroDataMapperFactory.IDENTITY_MAPPER
-                        encoder = recordEncoder.writer(schema, Any::class.java)
-                    } else {
-                        mapper = AvroDataMapperFactory.instance.createMapper(
-                            schema,
-                            value.schema,
-                            null
-                        )
-                        encoder = recordEncoder.writer(value.schema, Any::class.java)
-                    }
-                    field = value
-                } catch (ex: IOException) {
-                    throw IllegalStateException("Cannot construct Avro writer", ex)
-                }
-            }
-
-        private var mapper: AvroDataMapper? = null
+        private val encoder: AvroWriter<Any>
+        private val isGeneric: Boolean
+        private val mapper: AvroDataMapper
 
         init {
+            if (schema.type !== Schema.Type.RECORD) throw validationException(schema, readerSchema, "Can only map records.")
             val genericData: GenericData
             val classLoader = Thread.currentThread().contextClassLoader
+            val useReaderSchema: Schema
             if (SpecificRecord::class.java.isAssignableFrom(clazz)) {
                 genericData = SpecificData(classLoader)
+                useReaderSchema = schema
                 isGeneric = false
             } else {
                 genericData = GenericData(classLoader)
+                useReaderSchema = readerSchema
                 isGeneric = true
             }
             recordEncoder = AvroDatumEncoder(genericData, binary)
+            mapper = AvroDataMapperFactory.createMapper(schema, useReaderSchema, null)
+            encoder = recordEncoder.writer(useReaderSchema, Any::class.java)
         }
 
         @Throws(IOException::class)
-        override fun encode(`object`: T): ByteArray {
-            val localEncoder = checkNotNull(encoder) { "Did not initialize reader schema yet " }
-            val localMapper = checkNotNull(mapper) { "Did not initialize reader schema yet" }
-            return localEncoder.encode(
-                requireNotNull(localMapper.convertAvro(`object`)) {
-                    "Cannot map $`object` to Avro"
-                }
-            )
-        }
+        override fun encode(`object`: T): ByteArray = encoder.encode(
+            requireNotNull(mapper.convertAvro(`object`)) {
+                "Cannot map $`object` to Avro"
+            }
+        )
     }
 }

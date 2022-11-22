@@ -1,7 +1,7 @@
 package org.radarbase.util
 
 open class TimedVariable(
-    private val cacheConfig: CacheConfig,
+    private val cacheConfig: TimeoutConfig,
 ) {
     protected val expiry: Long = cacheConfig.currentExpiryTime
 

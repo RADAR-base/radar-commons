@@ -26,7 +26,7 @@ import java.util.Map;
 import org.apache.avro.Schema;
 import org.radarbase.mock.config.MockDataConfig;
 import org.radarbase.mock.data.MockCsvParser;
-import org.radarbase.producer.rest.SchemaRetriever;
+import org.radarbase.producer.schema.SchemaRetriever;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
