@@ -29,8 +29,8 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.radarbase.mock.config.MockDataConfig;
 import org.radarbase.producer.rest.SchemaRetriever;
-import org.radarcns.monitor.application.ApplicationServerStatus;
 import org.radarcns.kafka.ObservationKey;
+import org.radarcns.monitor.application.ApplicationServerStatus;
 import org.radarcns.passive.phone.PhoneAcceleration;
 import org.radarcns.passive.phone.PhoneLight;
 

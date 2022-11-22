@@ -77,7 +77,7 @@ public class MockCsvParser implements Closeable {
         } catch (IllegalStateException ex) {
             Objects.requireNonNull(retriever, "Cannot instantiate value schema without "
                     + "schema retriever.");
-            keySchema = AvroTopic.parseSpecificRecord(config.getKeySchema()).getSchema();
+            keySchema = AvroTopic.Companion.parseSpecificRecord(config.getKeySchema()).getSchema();
             valueSchema = retriever.getBySubjectAndVersion(
                     config.getTopic(), true, 0).getSchema();
         }

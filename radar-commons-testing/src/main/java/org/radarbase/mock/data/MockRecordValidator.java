@@ -98,12 +98,12 @@ public class MockRecordValidator {
     private void checkRecord(Record<GenericRecord, GenericRecord> record,
             Record<GenericRecord, GenericRecord> last, long line) {
         double previousTime = time;
-        time = (Double) record.value.get(timePos);
+        time = (Double) record.getValue().get(timePos);
 
         if (last == null) {
             // no checks, only update initial time stamp
             startTime = time;
-        } else if (!last.key.equals(record.key)) {
+        } else if (!last.getKey().equals(record.getKey())) {
             error("It is possible to test only one user/source at time.", line, null);
         } else if (time < previousTime) {
             error("Time must increase row by row.", line, null);

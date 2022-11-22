@@ -16,8 +16,6 @@
 
 package org.radarbase.stream.collector;
 
-import static org.radarbase.util.Serialization.floatToDouble;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -124,7 +122,7 @@ public class NumericAggregateCollector implements RecordCollector, SpecificAvroC
 
     /** Add a single sample. */
     public NumericAggregateCollector add(float value) {
-        return this.add(floatToDouble(value));
+        return this.add(Double.parseDouble(String.valueOf(value)));
     }
 
     /**

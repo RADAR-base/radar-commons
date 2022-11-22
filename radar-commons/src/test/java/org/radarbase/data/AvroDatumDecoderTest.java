@@ -21,9 +21,9 @@ import static org.junit.Assert.assertEquals;
 import java.io.IOException;
 import org.apache.avro.specific.SpecificData;
 import org.junit.Test;
+import org.radarbase.topic.AvroTopic;
 import org.radarcns.kafka.ObservationKey;
 import org.radarcns.passive.empatica.EmpaticaE4BloodVolumePulse;
-import org.radarbase.topic.AvroTopic;
 
 /**
  * Created by nivethika on 24-2-17.

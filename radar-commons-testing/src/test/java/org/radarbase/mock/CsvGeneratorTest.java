@@ -31,11 +31,11 @@ import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.radarbase.mock.data.MockRecordValidatorTest;
-import org.radarcns.kafka.ObservationKey;
 import org.radarbase.mock.config.MockDataConfig;
 import org.radarbase.mock.data.CsvGenerator;
+import org.radarbase.mock.data.MockRecordValidatorTest;
 import org.radarbase.mock.data.RecordGenerator;
+import org.radarcns.kafka.ObservationKey;
 
 public class CsvGeneratorTest {
     @Rule

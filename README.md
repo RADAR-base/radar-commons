@@ -1,12 +1,10 @@
 # RADAR-Commons
-[![Build Status](https://travis-ci.org/RADAR-base/radar-commons.svg?branch=master)](https://travis-ci.org/RADAR-base/radar-commons)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/9fe7a419c83e4798af671e468c7e91cf)](https://www.codacy.com/app/RADAR-base/radar-commons?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=RADAR-base/radar-commons&amp;utm_campaign=Badge_Grade)
 
 Common utilities library containing basic schemas, streaming features, testing bridges and utils.
 
 # Usage
 
-Add the RADAR-Commons library to your project with Gradle by updating your `build.gradle` file with:
+Add the RADAR-Commons library to your project with Gradle by updating your `build.gradle.kts` file with:
 
 ```gradle
 repositories {
@@ -14,7 +12,7 @@ repositories {
 }
 
 dependencies {
-    implementation group: 'org.radarbase', name: 'radar-commons', version: '0.15.0'
+    implementation("org.radarbase:radar-commons:0.15.0")
 }
 ```
 
@@ -65,11 +63,11 @@ For server utilities, include `radar-commons-server`:
 ```gradle
 repositories {
     mavenCentral()
-    maven { url 'https://packages.confluent.io/maven/' }
+    maven(url = "https://packages.confluent.io/maven/")
 }
 
 dependencies {
-    implementation group: 'org.radarbase', name: 'radar-commons-server', version: '0.15.0'
+    implementation("org.radarbase:radar-commons-server:0.15.0")
 }
 ```
 
@@ -78,11 +76,11 @@ For mocking clients of the RADAR-base infrastructure, use that 'radar-commons-te
 ```gradle
 repositories {
     mavenCentral()
-    maven { url 'https://packages.confluent.io/maven/' }
+    maven(url = "https://packages.confluent.io/maven/")
 }
 
 dependencies {
-    testImplementation group: 'org.radarbase', name: 'radar-commons-testing', version: '0.15.0'
+    testImplementation("org.radarbase:radar-commons-testing:0.15.0")
 }
 ```
 
@@ -98,16 +96,16 @@ For latest code use `dev` branch. This is released on JFrog's OSS Artifactory. T
 
 ```gradle
 repositories {
-    maven { url  'https://oss.sonatype.org/content/repositories/snapshots' }
+    maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
 }
 
 configurations.all {
     // Check for updates every build
-    resolutionStrategy.cacheChangingModulesFor 0, 'SECONDS'
+    resolutionStrategy.cacheChangingModulesFor(0, "SECONDS")
 }
 
 dependencies {
-    implementation group: 'org.radarbase', name: 'radar-commons', version: '0.15.1-SNAPSHOT'
+    implementation("org.radarbase:radar-commons:0.15.1-SNAPSHOT")
 }
 ```
 

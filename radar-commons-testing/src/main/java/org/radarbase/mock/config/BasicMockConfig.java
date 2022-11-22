@@ -97,10 +97,6 @@ public class BasicMockConfig {
         this.restProxy = restProxy;
     }
 
-    public boolean isDirectProducer() {
-        return this.producerMode.trim().equalsIgnoreCase("direct");
-    }
-
     public boolean isUnsafeProducer() {
         return this.producerMode.trim().equalsIgnoreCase("unsafe");
     }

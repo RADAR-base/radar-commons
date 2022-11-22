@@ -16,13 +16,7 @@
 
 package org.radarbase.mock;
 
-import static io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG;
-import static org.apache.kafka.clients.producer.ProducerConfig.BOOTSTRAP_SERVERS_CONFIG;
-import static org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG;
-import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG;
-
 import com.opencsv.exceptions.CsvValidationException;
-import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,9 +24,9 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import kotlin.Unit;
 import okhttp3.Credentials;
 import okhttp3.FormBody;
 import okhttp3.Headers;
@@ -46,18 +40,17 @@ import org.json.JSONObject;
 import org.radarbase.config.ServerConfig;
 import org.radarbase.config.YamlConfigLoader;
 import org.radarbase.mock.config.AuthConfig;
+import org.radarbase.mock.config.BasicMockConfig;
 import org.radarbase.mock.config.MockDataConfig;
 import org.radarbase.mock.data.MockCsvParser;
 import org.radarbase.mock.data.RecordGenerator;
 import org.radarbase.producer.BatchedKafkaSender;
 import org.radarbase.producer.KafkaSender;
-import org.radarbase.producer.direct.DirectSender;
 import org.radarbase.producer.rest.ConnectionState;
 import org.radarbase.producer.rest.RestClient;
 import org.radarbase.producer.rest.RestSender;
 import org.radarbase.producer.rest.SchemaRetriever;
 import org.radarcns.kafka.ObservationKey;
-import org.radarbase.mock.config.BasicMockConfig;
 import org.radarcns.passive.empatica.EmpaticaE4Acceleration;
 import org.radarcns.passive.empatica.EmpaticaE4BatteryLevel;
 import org.radarcns.passive.empatica.EmpaticaE4BloodVolumePulse;
@@ -100,7 +93,12 @@ public class MockProducer {
     public MockProducer(BasicMockConfig mockConfig, Path root) throws IOException {
         int numDevices = mockConfig.getNumberOfDevices();
 
-        retriever = new SchemaRetriever(mockConfig.getSchemaRegistry(), 10);
+        RestClient restClient = RestClient.Companion.globalRestClient(builder -> {
+            builder.setServer(mockConfig.getSchemaRegistry());
+            builder.timeout(10, TimeUnit.SECONDS);
+            return Unit.INSTANCE;
+        });
+        retriever = new SchemaRetriever(restClient);
         List<KafkaSender> tmpSenders = null;
 
         try {
@@ -155,29 +153,8 @@ public class MockProducer {
     private List<KafkaSender> createSenders(
             BasicMockConfig mockConfig, int numDevices, AuthConfig authConfig) throws IOException {
 
-        if (mockConfig.isDirectProducer()) {
-            return createDirectSenders(numDevices, mockConfig.getSchemaRegistry().getUrlString(),
-                    mockConfig.getBrokerPaths());
-        } else {
-            return createRestSenders(numDevices, retriever, mockConfig.getRestProxy(),
-                    mockConfig.hasCompression(), authConfig);
-        }
-    }
-
-    /** Create senders that directly produce data to Kafka. */
-    private List<KafkaSender> createDirectSenders(int numDevices,
-            String retrieverUrl, String brokerPaths) {
-        List<KafkaSender> result = new ArrayList<>(numDevices);
-        for (int i = 0; i < numDevices; i++) {
-            Properties properties = new Properties();
-            properties.put(KEY_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
-            properties.put(VALUE_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
-            properties.put(SCHEMA_REGISTRY_URL_CONFIG, retrieverUrl);
-            properties.put(BOOTSTRAP_SERVERS_CONFIG, brokerPaths);
-
-            result.add(new DirectSender(properties));
-        }
-        return result;
+        return createRestSenders(numDevices, retriever, mockConfig.getRestProxy(),
+                mockConfig.hasCompression(), authConfig);
     }
 
     private String requestAccessToken(OkHttpClient okHttpClient, AuthConfig authConfig)
@@ -224,18 +201,20 @@ public class MockProducer {
         }
 
         for (int i = 0; i < numDevices; i++) {
-            RestClient httpClient = RestClient.newClient()
-                    .server(restProxy)
-                    .gzipCompression(useCompression)
-                    .timeout(10, TimeUnit.SECONDS)
-                    .build();
+            RestClient httpClient = RestClient.Companion.newRestClient(builder -> {
+                    builder.setServer(restProxy);
+                    builder.gzipCompression(useCompression);
+                    builder.timeout(10, TimeUnit.SECONDS);
+                    return Unit.INSTANCE;
+            });
 
-            RestSender restSender = new RestSender.Builder()
-                    .schemaRetriever(retriever)
-                    .httpClient(httpClient)
-                    .connectionState(sharedState)
-                    .headers(headers)
-                    .build();
+            RestSender restSender = RestSender.Companion.restSender(builder -> {
+                    builder.setSchemaRetriever(retriever);
+                    builder.setHttpClient(httpClient);
+                    builder.setConnectionState(sharedState);
+                    builder.setHeaders(headers.newBuilder());
+                    return Unit.INSTANCE;
+            });
             result.add(new BatchedKafkaSender(restSender, 1000, 1000));
         }
         return result;

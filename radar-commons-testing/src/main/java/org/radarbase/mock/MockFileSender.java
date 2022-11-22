@@ -47,7 +47,7 @@ public class MockFileSender {
         try (KafkaTopicSender topicSender = sender.sender(parser.getTopic())) {
             while (parser.hasNext()) {
                 Record record = parser.next();
-                topicSender.send(record.key, record.value);
+                topicSender.send(record.getKey(), record.getValue());
             }
         } catch (SchemaValidationException e) {
             throw new IOException("Failed to match schemas", e);

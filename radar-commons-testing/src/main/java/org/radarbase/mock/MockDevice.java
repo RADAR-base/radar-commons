@@ -87,7 +87,7 @@ public class MockDevice<K extends SpecificRecord> extends Thread {
                         int frequency = generators.get(i).getConfig().getFrequency();
                         if (frequency > 0 && beat % (baseFrequency / frequency) == 0) {
                             Record<K, SpecificRecord> record = recordIterators.get(i).next();
-                            topicSenders.get(i).send(record.key, record.value);
+                            topicSenders.get(i).send(record.getKey(), record.getValue());
                         }
                     }
                 }
