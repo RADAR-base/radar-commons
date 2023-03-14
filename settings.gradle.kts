@@ -15,6 +15,7 @@
  */
 
 include(":radar-commons")
+include(":radar-commons-kotlin")
 include(":radar-commons-testing")
 include(":radar-commons-server")
 
