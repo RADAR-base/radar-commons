@@ -17,3 +17,21 @@
 include(":radar-commons")
 include(":radar-commons-testing")
 include(":radar-commons-server")
+
+pluginManagement {
+    plugins {
+        val kotlinVersion: String by settings
+        kotlin("jvm") version kotlinVersion
+        kotlin("plugin.serialization") version kotlinVersion
+
+        val avroPluginVersion: String by settings
+        id("com.github.davidmc24.gradle.plugin.avro") version avroPluginVersion
+        val nexusPluginVersion: String by settings
+        id("io.github.gradle-nexus.publish-plugin") version nexusPluginVersion
+
+        val dependencyUpdatePluginVersion: String by settings
+        id("com.github.ben-manes.versions") version dependencyUpdatePluginVersion
+        val dokkaVersion: String by settings
+        id("org.jetbrains.dokka") version dokkaVersion
+    }
+}

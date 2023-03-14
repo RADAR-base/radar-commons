@@ -18,13 +18,10 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
  * limitations under the License.
  */
 plugins {
-    kotlin("jvm") version "1.7.21" apply false
-    kotlin("plugin.serialization") version "1.7.21" apply false
-    id("com.github.davidmc24.gradle.plugin.avro") version "1.5.0" apply false
-    id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
-    id("com.github.ben-manes.versions") version "0.44.0"
-    id("org.jetbrains.dokka") version "1.7.20" apply false
-    idea
+    kotlin("jvm") apply false
+    id("org.jetbrains.dokka") apply false
+    id("com.github.ben-manes.versions")
+    id("io.github.gradle-nexus.publish-plugin")
     `maven-publish`
     signing
 }
@@ -46,7 +43,6 @@ subprojects {
     apply(plugin = "java")
     apply(plugin = "java-library")
     apply(plugin = "org.jetbrains.kotlin.jvm")
-    apply(plugin = "idea")
 
     tasks.withType<JavaCompile> {
         targetCompatibility = JavaVersion.VERSION_11.toString()
@@ -55,8 +51,8 @@ subprojects {
     tasks.withType<KotlinCompile> {
         kotlinOptions {
             jvmTarget = "11"
-            languageVersion = "1.7"
-            apiVersion = "1.7"
+            languageVersion = "1.8"
+            apiVersion = "1.8"
         }
     }
 
@@ -84,12 +80,6 @@ subprojects {
             named("implementation") {
                 resolutionStrategy.cacheChangingModulesFor(0, "SECONDS")
             }
-        }
-    }
-
-    idea {
-        module {
-            isDownloadSources = true
         }
     }
 
@@ -201,8 +191,8 @@ subprojects {
             stdout.clear()
         })
 
-        onOutput(KotlinClosure2<TestDescriptor, TestOutputEvent, Unit>({ td, toe ->
-            stdout.addAll(toe.getMessage().split("(?m)$").toList())
+        onOutput(KotlinClosure2<TestDescriptor, TestOutputEvent, Unit>({ _, toe ->
+            stdout.addAll(toe.message.split("(?m)$").toList())
             while (stdout.size > 100) {
                 stdout.remove()
             }
@@ -258,5 +248,6 @@ nexusPublishing {
 }
 
 tasks.wrapper {
-    gradleVersion = "7.5.1"
+    val gradleWrapperVersion: String by project
+    gradleVersion = gradleWrapperVersion
 }

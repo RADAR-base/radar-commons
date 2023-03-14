@@ -15,7 +15,9 @@
  */
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-apply(plugin = "com.github.davidmc24.gradle.plugin.avro")
+plugins {
+    id("com.github.davidmc24.gradle.plugin.avro")
+}
 
 description = "RADAR Common server library utilities."
 
