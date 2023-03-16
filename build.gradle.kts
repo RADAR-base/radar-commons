@@ -1,5 +1,4 @@
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
-import java.util.LinkedList
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 /*
@@ -63,7 +62,6 @@ subprojects {
         mavenCentral()
         mavenLocal()
         maven(url = "https://packages.confluent.io/maven/")
-        maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
     }
 
     dependencies {
@@ -186,15 +184,18 @@ subprojects {
     tasks.withType<Test> {
         useJUnitPlatform()
 
-        val stdout = LinkedList<String>()
+        val numberOfLines = 100
+        val stdout = ArrayDeque<String>(numberOfLines)
         beforeTest(closureOf<TestDescriptor> {
             stdout.clear()
         })
 
         onOutput(KotlinClosure2<TestDescriptor, TestOutputEvent, Unit>({ _, toe ->
-            stdout.addAll(toe.message.split("(?m)$").toList())
-            while (stdout.size > 100) {
-                stdout.remove()
+            toe.message.split("(?m)$").forEach { line ->
+                if (stdout.size == numberOfLines) {
+                    stdout.removeFirst()
+                }
+                stdout.addLast(line)
             }
         }))
 
