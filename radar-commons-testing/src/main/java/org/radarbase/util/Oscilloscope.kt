@@ -18,6 +18,9 @@ package org.radarbase.util
 import kotlinx.coroutines.delay
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.nanoseconds
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Oscilloscope gives out a regular beat, at a given frequency per second. The intended way to use
@@ -27,7 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger
 class Oscilloscope(
     private val frequency: Int
 ) {
-    private val timeStep: Long = 1_000_000_000L / frequency
+    private val timeStep: Duration = 1.seconds / frequency
     private val baseTime: Long = System.nanoTime()
     private var iteration: AtomicInteger = AtomicInteger(0)
 
@@ -46,11 +49,10 @@ class Oscilloscope(
     suspend fun beat(): Int {
         val currentTime = System.nanoTime()
         val currentIteration = iteration.getAndIncrement()
-        val timeToSleep = baseTime + currentIteration * timeStep - currentTime
-        if (timeToSleep > 0) {
-            val millis = (timeToSleep / 1_000_000L).coerceAtLeast(1L)
-            logger.info("delaying {} millis", millis)
-            delay(millis)
+        val timeToSleep = (baseTime - currentTime).nanoseconds + timeStep * currentIteration
+        if (timeToSleep > Duration.ZERO) {
+            logger.info("delaying {} millis", timeToSleep.inWholeMilliseconds)
+            delay(timeToSleep)
         }
         return currentIteration % frequency + 1
     }

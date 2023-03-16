@@ -38,6 +38,7 @@ description = "RADAR Common testing library mocking code and utilities."
 dependencies {
     api(project(":radar-commons"))
     api(project(":radar-commons-server"))
+    api(project(":radar-commons-kotlin"))
     val avroVersion: String by project
     api("org.apache.avro:avro:$avroVersion")
     val radarSchemasVersion: String by project

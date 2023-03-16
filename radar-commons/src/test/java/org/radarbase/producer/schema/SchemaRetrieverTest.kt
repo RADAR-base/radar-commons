@@ -31,7 +31,7 @@ import org.radarbase.producer.rest.RestKafkaSenderTest.Companion.enqueueJson
 import org.radarbase.producer.schema.SchemaRetriever.Companion.schemaRetriever
 import org.radarbase.producer.schema.SchemaRetriever.Companion.subject
 import java.io.IOException
-import java.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SchemaRetrieverTest {
@@ -49,7 +49,7 @@ class SchemaRetrieverTest {
                 defaultRequest {
                     url("http://${mockServer.hostName}:${mockServer.port}/base/")
                 }
-                timeout(Duration.ofSeconds(1))
+                timeout(1.seconds)
             }
         }
     }
@@ -118,58 +118,5 @@ class SchemaRetrieverTest {
             "{\"schema\":\"{\\\"type\\\":\\\"record\\\",\\\"name\\\":\\\"C\\\",\\\"namespace\\\":\\\"org.radarcns\\\",\\\"doc\\\":\\\"that C\\\",\\\"fields\\\":[{\\\"name\\\":\\\"a\\\",\\\"type\\\":\\\"int\\\",\\\"doc\\\":\\\"that a\\\",\\\"default\\\":10}]}\"}",
             request.body.readUtf8()
         )
-    }
-
-    @Test
-    fun getOrSetSchemaMetadataSet() = runTest {
-        mockServer.enqueue(MockResponse().setResponseCode(404))
-        mockServer.enqueueJson("{\"id\":10}")
-        mockServer.enqueueJson("{\"id\":10, \"version\": 2}")
-        var metadata = retriever.getOrSet(
-            "bla",
-            true,
-            Schema.create(Schema.Type.STRING),
-            -1
-        )
-        assertEquals(10, metadata.id)
-        assertEquals(Schema.create(Schema.Type.STRING), metadata.schema)
-        assertEquals(3, mockServer.requestCount.toLong())
-        mockServer.takeRequest()
-        val request = mockServer.takeRequest()
-        assertEquals("{\"schema\":\"\\\"string\\\"\"}", request.body.readUtf8())
-        assertEquals("/base/subjects/bla-value/versions", request.path)
-        metadata = retriever.getOrSet(
-            "bla",
-            true,
-            Schema.create(Schema.Type.STRING),
-            -1
-        )
-        assertEquals(10, metadata.id)
-        assertEquals(Schema.create(Schema.Type.STRING), metadata.schema)
-    }
-
-    @Test
-    fun getOrSetSchemaMetadataGet() = runTest {
-        mockServer.enqueueJson("{\"id\":10,\"version\":2,\"schema\":\"\\\"string\\\"\"}")
-        var metadata = retriever.getOrSet(
-            "bla",
-            true,
-            Schema.create(Schema.Type.STRING),
-            2
-        )
-        assertEquals(10, metadata.id)
-        assertEquals(2, metadata.version)
-        assertEquals(Schema.create(Schema.Type.STRING), metadata.schema)
-        assertEquals(1, mockServer.requestCount.toLong())
-        val request = mockServer.takeRequest()
-        assertEquals("/base/subjects/bla-value/versions/2", request.path)
-        metadata = retriever.getOrSet(
-            "bla",
-            true,
-            Schema.create(Schema.Type.STRING),
-            2
-        )
-        assertEquals(10, metadata.id)
-        assertEquals(Schema.create(Schema.Type.STRING), metadata.schema)
     }
 }

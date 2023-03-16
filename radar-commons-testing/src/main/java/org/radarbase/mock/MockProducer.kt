@@ -26,8 +26,8 @@ import kotlinx.coroutines.*
 import org.apache.avro.SchemaValidationException
 import org.radarbase.config.ServerConfig
 import org.radarbase.config.YamlConfigLoader
-import org.radarbase.management.auth.ClientCredentialsConfig
-import org.radarbase.management.auth.clientCredentials
+import org.radarbase.ktor.auth.ClientCredentialsConfig
+import org.radarbase.ktor.auth.clientCredentials
 import org.radarbase.mock.config.AuthConfig
 import org.radarbase.mock.config.BasicMockConfig
 import org.radarbase.mock.config.MockDataConfig
@@ -40,18 +40,17 @@ import org.radarbase.producer.rest.ConnectionState
 import org.radarbase.producer.rest.RestKafkaSender.Companion.restKafkaSender
 import org.radarbase.producer.schema.SchemaRetriever
 import org.radarbase.producer.schema.SchemaRetriever.Companion.schemaRetriever
-import org.radarbase.util.TimeoutConfig
 import org.radarcns.kafka.ObservationKey
 import org.radarcns.passive.empatica.*
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.time.Duration
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.system.exitProcess
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * A Mock Producer class that can be used to stream data. It can use MockFileSender and MockDevice
@@ -68,13 +67,13 @@ class MockProducer @JvmOverloads constructor(
     private var files: MutableList<MockFileSender>
     private val senders: List<KafkaSender>
     private val retriever: SchemaRetriever
-    private var job: Job? = null
+    private val job: Job = SupervisorJob()
 
     init {
         val numDevices = mockConfig.numberOfDevices
         retriever = schemaRetriever(mockConfig.schemaRegistry.urlString) {
             httpClient {
-                timeout(Duration.ofSeconds(10))
+                timeout(10.seconds)
             }
         }
         val dataConfigs = mockConfig.data
@@ -128,10 +127,12 @@ class MockProducer @JvmOverloads constructor(
         useCompression: Boolean,
         authConfig: AuthConfig?
     ): List<KafkaSender> {
-        val sharedState = ConnectionState(TimeoutConfig(Duration.ofSeconds(10)))
+        val scope = CoroutineScope(job)
+        val sharedState = ConnectionState(10.seconds, scope)
         return (0 until numDevices)
             .map {
                 restKafkaSender {
+                    this.scope = scope
                     schemaRetriever = retriever
                     connectionState = sharedState
 
@@ -154,7 +155,7 @@ class MockProducer @JvmOverloads constructor(
                         if (useCompression) {
                             install(GzipContentEncoding)
                         }
-                        timeout(Duration.ofSeconds(10))
+                        timeout(10.seconds)
                     }
                 }
             }
@@ -163,8 +164,7 @@ class MockProducer @JvmOverloads constructor(
     /** Start sending data.  */
     @Throws(IOException::class)
     suspend fun start() {
-        job = SupervisorJob()
-        withContext(Dispatchers.Default + job!!) {
+        withContext(Dispatchers.Default + job) {
             for (device in devices) {
                 launch {
                     with(device) {
@@ -179,14 +179,13 @@ class MockProducer @JvmOverloads constructor(
                 }
             }
         }
-        job = null
     }
 
     /** Stop sending data and clean up all resources.  */
     @Throws(IOException::class, InterruptedException::class, SchemaValidationException::class)
     suspend fun shutdown() {
-        job?.run {
-            logger.info("Shutting down mock devices")
+        logger.info("Shutting down mock devices")
+        job.run {
             cancel()
             join()
         }
@@ -196,42 +195,48 @@ class MockProducer @JvmOverloads constructor(
     }
 
     private fun defaultDataConfig(): List<MockDataConfig> {
-        val acceleration = MockDataConfig()
-        acceleration.topic = "android_empatica_e4_acceleration"
-        acceleration.frequency = 32
-        acceleration.valueSchema = EmpaticaE4Acceleration::class.java.name
-        acceleration.setInterval(-2.0, 2.0)
-        acceleration.valueFields = listOf("x", "y", "z")
-        val battery = MockDataConfig()
-        battery.topic = "android_empatica_e4_battery_level"
-        battery.valueSchema = EmpaticaE4BatteryLevel::class.java.name
-        battery.frequency = 1
-        battery.setInterval(0.0, 1.0)
-        battery.setValueField("batteryLevel")
-        val bvp = MockDataConfig()
-        bvp.topic = "android_empatica_e4_blood_volume_pulse"
-        bvp.valueSchema = EmpaticaE4BloodVolumePulse::class.java.name
-        bvp.frequency = 64
-        bvp.setInterval(60.0, 90.0)
-        bvp.setValueField("bloodVolumePulse")
-        val eda = MockDataConfig()
-        eda.topic = "android_empatica_e4_electrodermal_activity"
-        eda.valueSchema = EmpaticaE4ElectroDermalActivity::class.java.name
-        eda.setValueField("electroDermalActivity")
-        eda.frequency = 4
-        eda.setInterval(0.01, 0.05)
-        val ibi = MockDataConfig()
-        ibi.topic = "android_empatica_e4_inter_beat_interval"
-        ibi.valueSchema = EmpaticaE4InterBeatInterval::class.java.name
-        ibi.setValueField("interBeatInterval")
-        ibi.frequency = 1
-        ibi.setInterval(40.0, 150.0)
-        val temperature = MockDataConfig()
-        temperature.topic = "android_empatica_e4_temperature"
-        temperature.valueSchema = EmpaticaE4Temperature::class.java.name
-        temperature.frequency = 4
-        temperature.setInterval(20.0, 60.0)
-        temperature.setValueField("temperature")
+        val acceleration = MockDataConfig().apply {
+            topic = "android_empatica_e4_acceleration"
+            frequency = 32
+            valueSchema = EmpaticaE4Acceleration::class.java.name
+            setInterval(-2.0, 2.0)
+            valueFields = listOf("x", "y", "z")
+        }
+        val battery = MockDataConfig().apply {
+            topic = "android_empatica_e4_battery_level"
+            valueSchema = EmpaticaE4BatteryLevel::class.java.name
+            frequency = 1
+            setInterval(0.0, 1.0)
+            setValueField("batteryLevel")
+        }
+        val bvp = MockDataConfig().apply {
+            topic = "android_empatica_e4_blood_volume_pulse"
+            valueSchema = EmpaticaE4BloodVolumePulse::class.java.name
+            frequency = 64
+            setInterval(60.0, 90.0)
+            setValueField("bloodVolumePulse")
+        }
+        val eda = MockDataConfig().apply {
+            topic = "android_empatica_e4_electrodermal_activity"
+            valueSchema = EmpaticaE4ElectroDermalActivity::class.java.name
+            setValueField("electroDermalActivity")
+            frequency = 4
+            setInterval(0.01, 0.05)
+        }
+        val ibi = MockDataConfig().apply {
+            topic = "android_empatica_e4_inter_beat_interval"
+            valueSchema = EmpaticaE4InterBeatInterval::class.java.name
+            setValueField("interBeatInterval")
+            frequency = 1
+            setInterval(40.0, 150.0)
+        }
+        val temperature = MockDataConfig().apply {
+            topic = "android_empatica_e4_temperature"
+            valueSchema = EmpaticaE4Temperature::class.java.name
+            frequency = 4
+            setInterval(20.0, 60.0)
+            setValueField("temperature")
+        }
         return listOf(acceleration, battery, bvp, eda, ibi, temperature)
     }
 

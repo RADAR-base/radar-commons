@@ -19,16 +19,15 @@ dependencies {
     api("org.apache.avro:avro:$avroVersion")
     api(kotlin("reflect"))
 
-    val ktorVersion: String by project
+    implementation(project(":radar-commons-kotlin"))
 
+    val ktorVersion: String by project
     api(platform("io.ktor:ktor-bom:$ktorVersion"))
     api("io.ktor:ktor-client-core")
     api("io.ktor:ktor-client-cio")
     api("io.ktor:ktor-client-auth")
     implementation("io.ktor:ktor-client-content-negotiation")
     implementation("io.ktor:ktor-serialization-kotlinx-json")
-
-    api("org.radarbase:managementportal-client:0.9.0-SNAPSHOT")
 
     val coroutinesVersion: String by project
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")

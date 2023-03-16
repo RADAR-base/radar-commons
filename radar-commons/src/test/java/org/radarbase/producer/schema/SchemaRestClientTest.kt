@@ -29,8 +29,8 @@ import org.junit.jupiter.api.Test
 import org.radarbase.producer.io.timeout
 import org.radarbase.producer.rest.RestKafkaSenderTest.Companion.enqueueJson
 import java.io.IOException
-import java.time.Duration
 import java.util.*
+import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SchemaRestClientTest {
@@ -41,7 +41,7 @@ class SchemaRestClientTest {
         mockServer = MockWebServer()
         retriever = SchemaRestClient(
             HttpClient(CIO) {
-                timeout(Duration.ofSeconds(1))
+                timeout(1.seconds)
             },
             baseUrl = "http://${mockServer.hostName}:${mockServer.port}/base/"
         )

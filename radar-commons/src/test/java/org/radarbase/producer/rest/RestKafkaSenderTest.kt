@@ -75,7 +75,7 @@ class RestKafkaSenderTest {
     @Throws(Exception::class)
     fun sender() = runTest {
         sender = sender.config {
-            ioContext = coroutineContext
+            scope = this@runTest
             with(headers) {
                 append("Cookie", "ab")
                 append("Cookie", "bc")
@@ -119,7 +119,7 @@ class RestKafkaSenderTest {
     @Throws(Exception::class)
     fun sendBinary() = runTest {
         sender = sender.config {
-            ioContext = coroutineContext
+            scope = this@runTest
             contentType = RestKafkaSender.KAFKA_REST_BINARY_ENCODING
         }
         val keySchema = ObservationKey.getClassSchema()
@@ -163,7 +163,7 @@ class RestKafkaSenderTest {
     @Throws(Exception::class)
     fun sendTwo() = runTest {
         sender = sender.config {
-            ioContext = coroutineContext
+            scope = this@runTest
         }
         val keySchema = ObservationKey.getClassSchema()
         val valueSchema = PhoneLight.getClassSchema()
@@ -204,7 +204,7 @@ class RestKafkaSenderTest {
     @Throws(Exception::class)
     fun resetConnection() = runTest {
         sender = sender.config {
-            ioContext = coroutineContext
+            scope = this@runTest
         }
         var nRequests = 0
         webServer.enqueue(MockResponse().setResponseCode(500))
@@ -226,7 +226,7 @@ class RestKafkaSenderTest {
     @Throws(Exception::class)
     fun resetConnectionUnauthorized() = runTest {
         sender = sender.config {
-            ioContext = coroutineContext
+            scope = this@runTest
         }
         webServer.enqueue(MockResponse().setResponseCode(401))
         webServer.enqueue(MockResponse().setResponseCode(401))

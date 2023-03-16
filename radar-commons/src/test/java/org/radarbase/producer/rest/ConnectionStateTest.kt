@@ -15,51 +15,43 @@
  */
 package org.radarbase.producer.rest
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.last
-import kotlinx.coroutines.flow.single
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
-import org.radarbase.util.TimeoutConfig
-import org.slf4j.LoggerFactory
-import java.time.Duration
 import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.milliseconds
 
 class ConnectionStateTest {
     @Test
     @Timeout(1, unit = TimeUnit.SECONDS)
     fun testState() = runBlocking {
-        var state = ConnectionState(TimeoutConfig(Duration.ofMillis(10)))
-        logger.info("initial state set")
+        var state = ConnectionState(10.milliseconds)
         state.assertEqualTo(ConnectionState.State.UNKNOWN)
-        logger.info("setting to didConnect")
         state.didConnect()
         state.assertEqualTo(ConnectionState.State.CONNECTED)
         state.didDisconnect()
         state.assertEqualTo(ConnectionState.State.DISCONNECTED)
-        delay(15)
+        delay(15.milliseconds)
         state.assertEqualTo(ConnectionState.State.DISCONNECTED)
         state.didConnect()
-        delay(15)
+        delay(15.milliseconds)
         state.assertEqualTo(ConnectionState.State.UNKNOWN)
-        state = ConnectionState(TimeoutConfig(Duration.ofMillis(25)))
+        state.scope.cancel()
+        state = ConnectionState(25.milliseconds)
         state.didConnect()
         state.assertEqualTo(ConnectionState.State.CONNECTED)
-        delay(10)
+        delay(10.milliseconds)
         state.assertEqualTo(ConnectionState.State.CONNECTED)
-        delay(15)
+        delay(20.milliseconds)
         state.assertEqualTo(ConnectionState.State.UNKNOWN)
+        state.scope.cancel()
     }
 
-    private suspend fun ConnectionState.assertEqualTo(expected: ConnectionState.State) {
+    private suspend inline fun ConnectionState.assertEqualTo(expected: ConnectionState.State) {
         assertEquals(expected, state.first())
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(ConnectionStateTest::class.java)
     }
 }

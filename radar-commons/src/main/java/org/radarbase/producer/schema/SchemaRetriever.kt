@@ -21,30 +21,29 @@ import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import org.apache.avro.Schema
-import org.radarbase.producer.rest.RestException
+import org.radarbase.kotlin.coroutines.CacheConfig
+import org.radarbase.kotlin.coroutines.CachedValue
 import org.radarbase.util.RadarProducerDsl
-import org.radarbase.util.TimedInt
-import org.radarbase.util.TimedValue
-import org.radarbase.util.TimedVariable.Companion.prune
-import org.radarbase.util.TimeoutConfig
-import org.slf4j.LoggerFactory
 import java.io.IOException
-import java.time.Duration
 import java.util.*
 import java.util.Objects.hash
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 import kotlin.coroutines.CoroutineContext
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.minutes
+
+typealias VersionCache = ConcurrentMap<Int, CachedValue<ParsedSchemaMetadata>>
 
 /**
  * Retriever of an Avro Schema.
  */
 open class SchemaRetriever(config: Config) {
-    private val idCache: ConcurrentMap<Int, TimedValue<Schema>> = ConcurrentHashMap()
-    private val schemaCache: ConcurrentMap<Schema, TimedInt> = ConcurrentHashMap()
-    private val subjectVersionCache: ConcurrentMap<String, ConcurrentMap<Int, TimedInt>> =
-        ConcurrentHashMap()
+    private val schemaCache: ConcurrentMap<Schema, CachedValue<ParsedSchemaMetadata>> = ConcurrentHashMap()
+    private val subjectVersionCache: ConcurrentMap<String, VersionCache> = ConcurrentHashMap()
 
     private val baseUrl = config.baseUrl
     private val ioContext = config.ioContext
@@ -58,57 +57,32 @@ open class SchemaRetriever(config: Config) {
      * @return schema ID
      */
     @Throws(IOException::class)
-    suspend fun addSchema(topic: String, ofValue: Boolean, schema: Schema): Int {
+    suspend fun addSchema(topic: String, ofValue: Boolean, schema: Schema): Int = coroutineScope {
         val subject = subject(topic, ofValue)
-        val id = restClient.addSchema(subject, schema)
-        cache(ParsedSchemaMetadata(id, null, schema), subject, false)
-        return id
-    }
+        val metadata = restClient.addSchema(subject, schema)
 
-    /**
-     * Get schema metadata, and if none is found, add a new schema.
-     *
-     * @param version version to get or 0 if the latest version can be used.
-     */
-    @Throws(IOException::class)
-    open suspend fun getOrSet(
-        topic: String,
-        ofValue: Boolean,
-        schema: Schema,
-        version: Int
-    ): ParsedSchemaMetadata {
-        return try {
-            getByVersion(topic, ofValue, version)
-        } catch (ex: RestException) {
-            if (ex.status == HttpStatusCode.NotFound) {
-                logger.warn("Schema for {} value was not yet added to the schema registry.", topic)
-                addSchema(topic, ofValue, schema)
-                metadata(topic, ofValue, schema, version <= 0)
-            } else {
-                throw ex
+        launch {
+            cachedMetadata(subject, metadata.schema).set(metadata)
+        }
+        if (metadata.version != null) {
+            launch {
+                cachedVersion(subject, metadata.version).set(metadata)
             }
         }
+        metadata.id
     }
 
-    /** Get a schema by its ID.  */
-    @Throws(IOException::class)
-    suspend fun getById(id: Int): Schema {
-        var value = idCache[id]
-        if (value == null || value.isExpired) {
-            value = TimedValue(restClient.retrieveSchemaById(id), schemaTimeout)
-            idCache[id] = value
-            schemaCache[value.value] = TimedInt(id, schemaTimeout)
+    private fun cachedMetadata(
+        subject: String,
+        schema: Schema
+    ): CachedValue<ParsedSchemaMetadata> = schemaCache.computeIfAbsent(schema) {
+        CachedValue(schemaTimeout) {
+            val metadata = restClient.requestMetadata(subject, schema)
+            if (metadata.version != null) {
+                cachedVersion(subject, metadata.version).set(metadata)
+            }
+            metadata
         }
-        return value.value
-    }
-
-    /** Gets a schema by ID and check that it is present in the given topic.  */
-    @Throws(IOException::class)
-    suspend fun getById(topic: String, ofValue: Boolean, id: Int): ParsedSchemaMetadata {
-        val schema = getById(id)
-        val subject = subject(topic, ofValue)
-        return cached(subject, id, null, schema)
-            ?: metadata(topic, ofValue, schema)
     }
 
     /** Get schema metadata. Cached schema metadata will be used if present.  */
@@ -123,25 +97,37 @@ open class SchemaRetriever(config: Config) {
             subject,
             ::ConcurrentHashMap
         )
-        val id = versionMap[version.coerceAtLeast(0)]
-        return if (id == null || id.isExpired) {
-            val metadata = restClient.retrieveSchemaMetadata(subject, version)
-            cache(metadata, subject, version <= 0)
-            metadata
-        } else {
-            val schema = getById(id.value)
-            val metadata = cached(subject, id.value, version, schema)
-            metadata ?: metadata(topic, ofValue, schema, version <= 0)
+        val metadata = versionMap.cachedVersion(subject, version).get()
+        if (version <= 0 && metadata.version != null) {
+            versionMap.cachedVersion(subject, metadata.version).set(metadata)
         }
+        return metadata
     }
 
-    /** Get all schema versions in a subject.  */
-    @Throws(IOException::class)
-    open suspend fun metadata(
-        topic: String,
-        ofValue: Boolean,
-        schema: Schema
-    ): ParsedSchemaMetadata = metadata(topic, ofValue, schema, false)
+    private suspend fun cachedVersion(
+        subject: String,
+        version: Int
+    ): CachedValue<ParsedSchemaMetadata> = subjectVersionCache
+        .computeIfAbsent(
+            subject,
+            ::ConcurrentHashMap
+        )
+        .cachedVersion(subject, version)
+
+    private suspend fun VersionCache.cachedVersion(
+        subject: String,
+        version: Int
+    ): CachedValue<ParsedSchemaMetadata> {
+        val useVersion = version.coerceAtLeast(0)
+        val versionId = computeIfAbsent(useVersion) {
+            CachedValue(schemaTimeout) {
+                val metadata = restClient.retrieveSchemaMetadata(subject, version)
+                cachedMetadata(subject, metadata.schema).set(metadata)
+                metadata
+            }
+        }
+        return versionId
+    }
 
     /** Get the metadata of a specific schema in a topic.  */
     @Throws(IOException::class)
@@ -149,75 +135,44 @@ open class SchemaRetriever(config: Config) {
         topic: String,
         ofValue: Boolean,
         schema: Schema,
-        ofLatestVersion: Boolean
     ): ParsedSchemaMetadata {
-        val id = schemaCache[schema]
         val subject = subject(topic, ofValue)
-        if (id != null && !id.isExpired) {
-            val metadata = cached(subject, id.value, null, schema)
-            if (metadata != null) {
-                return metadata
-            }
-        }
-        val metadata = restClient.requestMetadata(subject, schema)
-        cache(metadata, subject, ofLatestVersion)
-        return metadata
+        return cachedMetadata(subject, schema).get()
     }
 
-    /**
-     * Get cached metadata.
-     * @param subject schema registry subject
-     * @param id schema ID.
-     * @param reportedVersion version requested by the client. Null if no version was requested.
-     * This version will be used if the actual version was not cached.
-     * @param schema schema to use.
-     * @return metadata if present. Returns null if no metadata is cached or if no version is cached
-     * and the reportedVersion is null.
-     */
-    protected fun cached(
-        subject: String,
-        id: Int,
-        reportedVersion: Int?,
-        schema: Schema?
-    ): ParsedSchemaMetadata? {
-        var version = reportedVersion
-        if (version == null || version <= 0) {
-            version = subjectVersionCache[subject]?.find(id)
-            if (version == null || version <= 0) {
-                return null
+    private suspend fun <T> MutableCollection<CachedValue<T>>.prune() {
+        val iter = iterator()
+        while (iter.hasNext()) {
+            val staleValue = iter.next().getFromCache()
+                ?: continue
+
+            if (
+                staleValue is CachedValue.CacheError ||
+                (staleValue is CachedValue.CacheValue<T> &&
+                        staleValue.isExpired(schemaTimeout.refreshDuration))
+            ) {
+                iter.remove()
             }
         }
-        return ParsedSchemaMetadata(id, version, schema!!)
-    }
-
-    private fun ConcurrentMap<Int, TimedInt>.find(id: Int): Int? = entries
-        .find { (k, v) -> !v.isExpired && k != 0 && v.value == id }
-        ?.key
-
-    protected fun cache(metadata: ParsedSchemaMetadata, subject: String, latest: Boolean) {
-        val id = TimedInt(metadata.id, schemaTimeout)
-        schemaCache[metadata.schema] = id
-        if (metadata.version != null) {
-            val versionCache = subjectVersionCache.computeIfAbsent(
-                subject,
-                ::ConcurrentHashMap
-            )
-            versionCache[metadata.version] = id
-            if (latest) {
-                versionCache[0] = id
-            }
-        }
-        idCache[metadata.id] = TimedValue(metadata.schema, schemaTimeout)
     }
 
     /**
      * Remove expired entries from cache.
      */
-    fun pruneCache() {
-        schemaCache.prune()
-        idCache.prune()
-        for (versionMap in subjectVersionCache.values) {
-            versionMap.prune()
+    suspend fun pruneCache() = coroutineScope {
+        launch {
+            schemaCache.values.prune()
+        }
+
+        launch {
+            val subjectsIter = subjectVersionCache.values.iterator()
+            while (subjectsIter.hasNext()) {
+                val versionMap = subjectsIter.next()
+                versionMap.values.prune()
+                if (versionMap.isEmpty()) {
+                    subjectsIter.remove()
+                }
+            }
         }
     }
 
@@ -226,7 +181,6 @@ open class SchemaRetriever(config: Config) {
      */
     fun clearCache() {
         subjectVersionCache.clear()
-        idCache.clear()
         schemaCache.clear()
     }
 
@@ -235,7 +189,7 @@ open class SchemaRetriever(config: Config) {
         val baseUrl: String,
     ) {
         var httpClient: HttpClient? = null
-        var schemaTimeout: TimeoutConfig = DEFAULT_SCHEMA_TIMEOUT_CONFIG
+        var schemaTimeout: CacheConfig = DEFAULT_SCHEMA_TIMEOUT_CONFIG
         var ioContext: CoroutineContext = Dispatchers.IO
         fun httpClient(config: HttpClientConfig<*>.() -> Unit) {
             httpClient = httpClient?.config(config)
@@ -262,7 +216,9 @@ open class SchemaRetriever(config: Config) {
         val newConfig = toConfig().apply(config)
         return if (currentConfig != newConfig) {
             SchemaRetriever(newConfig)
-        } else this
+        } else {
+            this
+        }
     }
 
     private fun toConfig(): Config = Config(baseUrl = baseUrl).apply {
@@ -272,8 +228,10 @@ open class SchemaRetriever(config: Config) {
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(SchemaRetriever::class.java)
-        private val DEFAULT_SCHEMA_TIMEOUT_CONFIG = TimeoutConfig(Duration.ofDays(1))
+        private val DEFAULT_SCHEMA_TIMEOUT_CONFIG = CacheConfig(
+            refreshDuration = 1.days,
+            retryDuration = 1.minutes,
+        )
 
         fun schemaRetriever(baseUrl: String, config: Config.() -> Unit): SchemaRetriever {
             return SchemaRetriever(Config(baseUrl).apply(config))

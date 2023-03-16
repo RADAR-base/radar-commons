@@ -78,9 +78,13 @@ class SchemaRestClient(
 
     /** Add a schema to a subject.  */
     @Throws(IOException::class)
-    suspend fun addSchema(subject: String, schema: Schema): Int {
+    suspend fun addSchema(subject: String, schema: Schema): ParsedSchemaMetadata {
         val result = schemaPost("subjects/$subject/versions", schema)
-        return checkNotNull(result.id) { "Missing schema ID in request result" }
+        return ParsedSchemaMetadata(
+            id = checkNotNull(result.id) { "Missing schema ID in request result" },
+            version = result.version,
+            schema = schema,
+        )
     }
 
     /** Request metadata for a schema on a subject.  */

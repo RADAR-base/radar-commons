@@ -15,11 +15,10 @@
  */
 package org.radarbase.producer.rest
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.map
-import org.radarbase.util.TimedValue
-import org.radarbase.util.TimeoutConfig
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+import kotlin.coroutines.EmptyCoroutineContext
+import kotlin.time.Duration
 
 /**
  * Current connection status of a KafkaSender. After a timeout occurs this will turn to
@@ -34,46 +33,52 @@ import org.radarbase.util.TimeoutConfig
  * A connection state could be shared with multiple HTTP clients if they are talking to the same
  * server.
  *
- * @param timeoutConfig timeout config
+ * @param timeout timeout after which the connected state will be reset to unknown.
  * @throws IllegalArgumentException if the timeout is not strictly positive.
  */
 class ConnectionState(
-    private val timeoutConfig: TimeoutConfig,
+    private val timeout: Duration,
+    scope: CoroutineScope = CoroutineScope(EmptyCoroutineContext)
 ) {
     /** State symbols of the connection.  */
     enum class State {
         CONNECTED, DISCONNECTED, UNKNOWN, UNAUTHORIZED
     }
 
-    val state: Flow<State>
-        get() = mutableState.map {
-            if (it.value === State.CONNECTED && it.isExpired)
-                State.UNKNOWN
-            else
-                it.value
-        }
+    val scope = scope + Job()
 
-    private val mutableState = MutableStateFlow(TimedValue(State.UNKNOWN, timeoutConfig))
+    private val mutableState = MutableStateFlow(State.UNKNOWN)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val state: Flow<State> = mutableState
+        .transformLatest { state ->
+            emit(state)
+            if (state == State.CONNECTED) {
+                delay(timeout)
+                emit(State.UNKNOWN)
+            }
+        }
+        .shareIn(this.scope + Dispatchers.Unconfined, SharingStarted.Eagerly, replay = 1)
 
     init {
-        mutableState.tryEmit(TimedValue(State.UNKNOWN, timeoutConfig))
+        mutableState.value = State.UNKNOWN
     }
 
     /** For a sender to indicate that a connection attempt succeeded.  */
-    suspend fun didConnect() {
-        mutableState.emit(TimedValue(State.CONNECTED, timeoutConfig))
+    fun didConnect() {
+        mutableState.value = State.CONNECTED
     }
 
     /** For a sender to indicate that a connection attempt failed.  */
-    suspend fun didDisconnect() {
-        mutableState.emit(TimedValue(State.DISCONNECTED, timeoutConfig))
+    fun didDisconnect() {
+        mutableState.value = State.DISCONNECTED
     }
 
-    suspend fun wasUnauthorized() {
-        mutableState.emit(TimedValue(State.UNAUTHORIZED, timeoutConfig))
+    fun wasUnauthorized() {
+        mutableState.value = State.UNAUTHORIZED
     }
 
-    suspend fun reset() {
-        mutableState.emit(TimedValue(State.UNKNOWN, timeoutConfig))
+    fun reset() {
+        mutableState.value = State.UNKNOWN
     }
 }

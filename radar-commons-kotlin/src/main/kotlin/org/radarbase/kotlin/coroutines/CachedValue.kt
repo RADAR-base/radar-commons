@@ -2,8 +2,10 @@ package org.radarbase.kotlin.coroutines
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Semaphore
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.coroutines.coroutineContext
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
 import kotlin.time.TimeMark
@@ -18,7 +20,7 @@ internal typealias DeferredCache<T> = CompletableDeferred<CachedValue.CacheConte
  * for it to finish.
  */
 open class CachedValue<T>(
-    private val config: CacheConfig,
+    val config: CacheConfig,
     private val supplier: suspend () -> T,
 ) {
     private val cache = AtomicReference<CompletableDeferred<CacheContents<T>>>()
@@ -59,15 +61,40 @@ open class CachedValue<T>(
      * If no value is cache, it is not considered stale.
      */
     suspend fun isStale(duration: Duration? = null): Boolean {
+        val result = getFromCache()
+        return when {
+            result == null -> false
+            duration != null -> result.isExpired(duration)
+            else -> result.isExpired()
+        }
+    }
+
+    /**
+     * Get the current contents from cache. This will not cause a computation.
+     * @return contents if it is present in cache, null otherwise.
+     */
+    suspend fun getFromCache(): CacheContents<T>? {
         val currentDeferred = cache.get()
         if (currentDeferred == null || !currentDeferred.isCompleted) {
-            return false
+            return null
         }
-        val result = currentDeferred.await()
-        return if (duration == null) {
-            result.isExpired()
-        } else {
-            result.isExpired(duration)
+        return currentDeferred.await()
+    }
+
+    /**
+     * Set cached value.
+     */
+    suspend fun set(value: T) {
+        while (coroutineContext.isActive) {
+            val deferred = raceForDeferred().value
+
+            val newValue = CacheValue(value)
+            deferred.complete(newValue)
+            if (deferred.await() == newValue) {
+                return
+            } else {
+                cache.compareAndSet(deferred, null)
+            }
         }
     }
 
@@ -162,7 +189,7 @@ open class CachedValue<T>(
         return result
     }
 
-    private inline fun <R> CacheContents<R>.isExpired(
+    inline fun <R> CacheContents<R>.isExpired(
         evaluateValid: (R) -> Boolean = { true }
     ): Boolean = if (this is CacheError) {
         isExpired(config.exceptionCacheDuration)
@@ -181,7 +208,7 @@ open class CachedValue<T>(
     }
 
     @OptIn(ExperimentalTime::class)
-    internal sealed class CacheContents<T>(
+    sealed class CacheContents<T>(
         time: TimeMark? = null,
     ) {
         protected val time: TimeMark = time ?: TimeSource.Monotonic.markNow()
@@ -195,7 +222,7 @@ open class CachedValue<T>(
     }
 
     @OptIn(ExperimentalTime::class)
-    internal class CacheError<T>(
+    class CacheError<T> internal constructor(
         val exception: Throwable,
     ) : CacheContents<T>() {
         override fun isExpired(age: Duration): Boolean = exception is CancellationException || super.isExpired(age)
@@ -205,7 +232,7 @@ open class CachedValue<T>(
     }
 
     @OptIn(ExperimentalTime::class)
-    internal class CacheValue<T>(
+    class CacheValue<T> internal constructor(
         val value: T,
         time: TimeMark? = null,
     ) : CacheContents<T>(time) {

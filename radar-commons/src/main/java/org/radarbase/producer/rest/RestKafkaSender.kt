@@ -24,10 +24,9 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.util.reflect.*
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.withContext
 import org.apache.avro.SchemaValidationException
 import org.radarbase.data.RecordData
 import org.radarbase.producer.AuthenticationException
@@ -40,14 +39,13 @@ import org.radarbase.producer.io.unsafeSsl
 import org.radarbase.producer.schema.SchemaRetriever
 import org.radarbase.topic.AvroTopic
 import org.radarbase.util.RadarProducerDsl
-import org.radarbase.util.TimeoutConfig
 import org.slf4j.LoggerFactory
 import java.io.IOException
-import java.time.Duration
 import java.util.*
-import kotlin.coroutines.CoroutineContext
 import kotlin.reflect.javaType
 import kotlin.reflect.typeOf
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * RestSender sends records to the Kafka REST Proxy. It does so using an Avro JSON encoding. A new
@@ -55,6 +53,7 @@ import kotlin.reflect.typeOf
  * blocking and unbuffered, so flush, clear and close do not do anything.
  */
 class RestKafkaSender(config: Config) : KafkaSender {
+    val scope = config.scope
     private val allowUnsafe: Boolean = config.allowUnsafe
     private val contentType: ContentType = config.contentType
     val schemaRetriever: SchemaRetriever = requireNotNull(config.schemaRetriever) {
@@ -64,7 +63,8 @@ class RestKafkaSender(config: Config) : KafkaSender {
     val restClient: HttpClient
 
     private val _connectionState: ConnectionState = config.connectionState
-        ?: ConnectionState(TimeoutConfig(DEFAULT_TIMEOUT))
+        ?: ConnectionState(DEFAULT_TIMEOUT, scope)
+
     override val connectionState: Flow<ConnectionState.State>
         get() = _connectionState.state
 
@@ -73,7 +73,6 @@ class RestKafkaSender(config: Config) : KafkaSender {
     private val connectionTimeout: Duration = config.connectionTimeout
     private val contentEncoding = config.contentEncoding
     private val originalHttpClient = config.httpClient
-    private val ioContext: CoroutineContext = config.ioContext
 
     /**
      * Construct a RestSender.
@@ -119,15 +118,13 @@ class RestKafkaSender(config: Config) : KafkaSender {
         override val topic: AvroTopic<K, V>,
     ) : KafkaTopicSender<K, V> {
         @OptIn(ExperimentalStdlibApi::class)
-        override suspend fun send(records: RecordData<K, V>) {
+        override suspend fun send(records: RecordData<K, V>) = scope.async {
             try {
-                val response: HttpResponse = withContext(Dispatchers.IO) {
-                    restClient.post {
-                        url("topics/${topic.name}")
-                        val kType = typeOf<RecordData<Any, Any>>()
-                        val reifiedType = kType.javaType
-                        setBody(records, TypeInfo(RecordData::class, reifiedType, kType))
-                    }
+                val response: HttpResponse = restClient.post {
+                    url("topics/${topic.name}")
+                    val kType = typeOf<RecordData<Any, Any>>()
+                    val reifiedType = kType.javaType
+                    setBody(records, TypeInfo(RecordData::class, reifiedType, kType))
                 }
                 if (response.status.isSuccess()) {
                     _connectionState.didConnect()
@@ -148,7 +145,7 @@ class RestKafkaSender(config: Config) : KafkaSender {
                 _connectionState.didDisconnect()
                 throw ex
             }
-        }
+        }.await()
     }
 
     @Throws(SchemaValidationException::class)
@@ -198,6 +195,7 @@ class RestKafkaSender(config: Config) : KafkaSender {
     }
 
     private fun toConfig() = Config().apply {
+        scope = this@RestKafkaSender.scope
         baseUrl = this@RestKafkaSender.baseUrl
         httpClient = this@RestKafkaSender.originalHttpClient
         schemaRetriever = this@RestKafkaSender.schemaRetriever
@@ -206,18 +204,17 @@ class RestKafkaSender(config: Config) : KafkaSender {
         contentEncoding = this@RestKafkaSender.contentEncoding
         connectionTimeout = this@RestKafkaSender.connectionTimeout
         allowUnsafe = this@RestKafkaSender.allowUnsafe
-        ioContext = this@RestKafkaSender.ioContext
     }
 
     @RadarProducerDsl
     class Config {
-        var ioContext: CoroutineContext = Dispatchers.IO
+        var scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
         var baseUrl: String? = null
         var schemaRetriever: SchemaRetriever? = null
         var connectionState: ConnectionState? = null
         var httpClient: HttpClient? = null
         var headers = HeadersBuilder()
-        var connectionTimeout: Duration = Duration.ofSeconds(30)
+        var connectionTimeout: Duration = 30.seconds
         var contentEncoding: String? = null
         var allowUnsafe: Boolean = false
         var contentType: ContentType = KAFKA_REST_JSON_ENCODING
@@ -239,14 +236,14 @@ class RestKafkaSender(config: Config) : KafkaSender {
                     baseUrl == other.baseUrl &&
                     connectionTimeout == other.connectionTimeout &&
                     contentEncoding == other.contentEncoding &&
-                    ioContext == other.ioContext
+                    scope == other.scope
         }
         override fun hashCode(): Int = headers.hashCode()
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(RestKafkaSender::class.java)
-        val DEFAULT_TIMEOUT: Duration = Duration.ofSeconds(20)
+        val DEFAULT_TIMEOUT: Duration = 20.seconds
         val KAFKA_REST_BINARY_ENCODING = ContentType("application", "vnd.radarbase.avro.v1+binary")
         val KAFKA_REST_JSON_ENCODING = ContentType("application", "vnd.kafka+json")
         const val GZIP_CONTENT_ENCODING = "gzip"

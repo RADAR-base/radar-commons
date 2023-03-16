@@ -4,12 +4,12 @@ import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
 import java.security.cert.X509Certificate
-import java.time.Duration
+import kotlin.time.Duration
 import javax.net.ssl.X509TrustManager
 
 fun HttpClientConfig<*>.timeout(duration: Duration) {
     install(HttpTimeout) {
-        val millis = duration.toMillis()
+        val millis = duration.inWholeMilliseconds
         connectTimeoutMillis = millis
         socketTimeoutMillis = millis
         requestTimeoutMillis = millis
