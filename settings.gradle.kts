@@ -20,19 +20,14 @@ include(":radar-commons-testing")
 include(":radar-commons-server")
 
 pluginManagement {
+    val kotlin = "1.8.10"
+    val avro = "1.6.0"
+    val dependencyUpdate = "0.46.0"
+    val nexus = "1.3.0"
+    val dokka = "1.8.10"
+
     plugins {
-        val kotlinVersion: String by settings
-        kotlin("jvm") version kotlinVersion
-        kotlin("plugin.serialization") version kotlinVersion
-
-        val avroPluginVersion: String by settings
-        id("com.github.davidmc24.gradle.plugin.avro") version avroPluginVersion
-        val nexusPluginVersion: String by settings
-        id("io.github.gradle-nexus.publish-plugin") version nexusPluginVersion
-
-        val dependencyUpdatePluginVersion: String by settings
-        id("com.github.ben-manes.versions") version dependencyUpdatePluginVersion
-        val dokkaVersion: String by settings
-        id("org.jetbrains.dokka") version dokkaVersion
+        kotlin("plugin.serialization") version kotlin
+        id("com.github.davidmc24.gradle.plugin.avro") version avro
     }
 }

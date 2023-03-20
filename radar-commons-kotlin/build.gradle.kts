@@ -5,15 +5,12 @@ plugins {
 description = "Library for Kotlin utility classes and functions"
 
 dependencies {
-    val slf4jVersion: String by project
-    implementation("org.slf4j:slf4j-api:$slf4jVersion")
+    implementation("org.slf4j:slf4j-api:${Versions.slf4j}")
 
-    val coroutinesVersion: String by project
-    api(platform("org.jetbrains.kotlinx:kotlinx-coroutines-bom:$coroutinesVersion"))
+    api(platform("org.jetbrains.kotlinx:kotlinx-coroutines-bom:${Versions.coroutines}"))
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core")
 
-    val ktorVersion: String by project
-    api(platform("io.ktor:ktor-bom:$ktorVersion"))
+    api(platform("io.ktor:ktor-bom:${Versions.ktor}"))
     api("io.ktor:ktor-client-auth")
     implementation("io.ktor:ktor-client-content-negotiation")
     implementation("io.ktor:ktor-serialization-kotlinx-json")

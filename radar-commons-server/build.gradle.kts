@@ -26,26 +26,19 @@ dependencies {
     api(project(":radar-commons"))
 
     // For POJO classes and ConfigLoader
-    val jacksonVersion: String by project
-    implementation(platform("com.fasterxml.jackson:jackson-bom:$jacksonVersion"))
+    implementation(platform("com.fasterxml.jackson:jackson-bom:${Versions.jackson}"))
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml")
     implementation("com.fasterxml.jackson.core:jackson-databind")
 
-    val avroVersion: String by project
-    api("org.apache.avro:avro:$avroVersion")
+    api("org.apache.avro:avro:${Versions.avro}")
 
-    val kafkaVersion: String by project
-    implementation("org.apache.kafka:kafka-clients:$kafkaVersion")
+    implementation("org.apache.kafka:kafka-clients:${Versions.kafka}")
 
-    val mockitoVersion: String by project
-    testImplementation("org.mockito:mockito-core:$mockitoVersion")
+    testImplementation("org.mockito:mockito-core:${Versions.mockito}")
     // Direct producer uses KafkaAvroSerializer if initialized
-    val confluentVersion: String by project
-    testImplementation("io.confluent:kafka-avro-serializer:$confluentVersion")
-    val radarSchemasVersion: String by project
-    testImplementation("org.radarbase:radar-schemas-commons:$radarSchemasVersion")
-    val slf4jVersion: String by project
-    testRuntimeOnly("org.slf4j:slf4j-simple:$slf4jVersion")
+    testImplementation("io.confluent:kafka-avro-serializer:${Versions.confluent}")
+    testImplementation("org.radarbase:radar-schemas-commons:${Versions.radarSchemas}")
+    testRuntimeOnly("org.slf4j:slf4j-simple:${Versions.slf4j}")
 }
 
 val generateAvroJava by tasks

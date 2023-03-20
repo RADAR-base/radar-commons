@@ -15,37 +15,28 @@ repositories {
 
 // In this section you declare the dependencies for your production and test code
 dependencies {
-    val avroVersion: String by project
-    api("org.apache.avro:avro:$avroVersion")
+    api("org.apache.avro:avro:${Versions.avro}")
     api(kotlin("reflect"))
 
     implementation(project(":radar-commons-kotlin"))
 
-    val ktorVersion: String by project
-    api(platform("io.ktor:ktor-bom:$ktorVersion"))
+    api(platform("io.ktor:ktor-bom:${Versions.ktor}"))
     api("io.ktor:ktor-client-core")
     api("io.ktor:ktor-client-cio")
     api("io.ktor:ktor-client-auth")
     implementation("io.ktor:ktor-client-content-negotiation")
     implementation("io.ktor:ktor-serialization-kotlinx-json")
 
-    val coroutinesVersion: String by project
-    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
+    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
 
     // The production code uses the SLF4J logging API at compile time
-    val slf4jVersion: String by project
-    implementation("org.slf4j:slf4j-api:$slf4jVersion")
+    implementation("org.slf4j:slf4j-api:${Versions.slf4j}")
 
-    val jacksonVersion: String by project
-    testImplementation(platform("com.fasterxml.jackson:jackson-bom:$jacksonVersion"))
+    testImplementation(platform("com.fasterxml.jackson:jackson-bom:${Versions.jackson}"))
     testImplementation("com.fasterxml.jackson.core:jackson-databind")
-    val radarSchemasVersion: String by project
-    testImplementation("org.radarbase:radar-schemas-commons:$radarSchemasVersion")
-    val mockitoVersion: String by project
-    testImplementation("org.mockito:mockito-core:$mockitoVersion")
-    val mockitoKotlinVersion: String by project
-    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion")
-    val okhttpVersion: String by project
-    testImplementation("com.squareup.okhttp3:mockwebserver:$okhttpVersion")
-    testRuntimeOnly("org.slf4j:slf4j-simple:$slf4jVersion")
+    testImplementation("org.radarbase:radar-schemas-commons:${Versions.radarSchemas}")
+    testImplementation("org.mockito:mockito-core:${Versions.mockito}")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:${Versions.mockitoKotlin}")
+    testImplementation("com.squareup.okhttp3:mockwebserver:${Versions.okhttp}")
+    testRuntimeOnly("org.slf4j:slf4j-simple:${Versions.slf4j}")
 }

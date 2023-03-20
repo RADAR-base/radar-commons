@@ -39,31 +39,23 @@ dependencies {
     api(project(":radar-commons"))
     api(project(":radar-commons-server"))
     api(project(":radar-commons-kotlin"))
-    val avroVersion: String by project
-    api("org.apache.avro:avro:$avroVersion")
-    val radarSchemasVersion: String by project
-    api("org.radarbase:radar-schemas-commons:$radarSchemasVersion")
 
-    val opencsvVersion: String by project
-    implementation("com.opencsv:opencsv:$opencsvVersion")
-    val jacksonVersion: String by project
-    implementation(platform("com.fasterxml.jackson:jackson-bom:$jacksonVersion"))
+    api("org.apache.avro:avro:${Versions.avro}")
+    api("org.radarbase:radar-schemas-commons:${Versions.radarSchemas}")
+
+    implementation("com.opencsv:opencsv:${Versions.opencsv}")
+    implementation(platform("com.fasterxml.jackson:jackson-bom:${Versions.jackson}"))
     implementation("com.fasterxml.jackson.core:jackson-databind")
-    val kafkaVersion: String by project
-    implementation("org.apache.kafka:kafka-clients:$kafkaVersion")
-    val confluentVersion: String by project
-    implementation("io.confluent:kafka-avro-serializer:$confluentVersion")
 
-    val ktorVersion: String by project
-    implementation(platform("io.ktor:ktor-bom:$ktorVersion"))
+    implementation("org.apache.kafka:kafka-clients:${Versions.kafka}")
+    implementation("io.confluent:kafka-avro-serializer:${Versions.confluent}")
+
+    implementation(platform("io.ktor:ktor-bom:${Versions.ktor}"))
     implementation("io.ktor:ktor-serialization-kotlinx-json")
 
-    val slf4jVersion: String by project
-    applicationRuntimeOnly("org.slf4j:slf4j-simple:$slf4jVersion")
+    applicationRuntimeOnly("org.slf4j:slf4j-simple:${Versions.slf4j}")
 
-    val hamcrestVersion: String by project
-    testImplementation("org.hamcrest:hamcrest:$hamcrestVersion")
-    testImplementation("org.slf4j:slf4j-simple:$slf4jVersion")
-    val mockitoVersion: String by project
-    testImplementation("org.mockito:mockito-core:$mockitoVersion")
+    testImplementation("org.hamcrest:hamcrest:${Versions.hamcrest}")
+    testImplementation("org.slf4j:slf4j-simple:${Versions.slf4j}")
+    testImplementation("org.mockito:mockito-core:${Versions.mockito}")
 }
