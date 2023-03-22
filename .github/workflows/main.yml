@@ -35,7 +35,7 @@ jobs:
         run: ./gradlew check
 
       - name: Check version
-        run:
+        run: |
           projectVersion=$(./gradlew properties | grep '^version:.*$')
           pluginVersion=$(./gradlew :radar-commons-plugin:properties | grep '^version:.*$')
           if [ "$projectVersion" != "$pluginVersion" ]; then
