@@ -26,7 +26,7 @@ jobs:
       - name: Check version
         run: |
           projectVersion=$(./gradlew properties | grep '^version:.*$')
-          pluginVersion=$(./gradlew :radar-commons-plugin:properties | grep '^version:.*$')
+          pluginVersion=$(./gradlew :radar-commons-gradle:properties | grep '^version:.*$')
           if [ "$projectVersion" != "$pluginVersion" ]; then
             echo "Project version $projectVersion does not match plugin version $pluginVersion"
             exit 1
@@ -57,4 +57,4 @@ jobs:
       - name: Publish gradle plugin
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew :radar-commons-plugin:publish
+        run: ./gradlew :radar-commons-gradle:publish
