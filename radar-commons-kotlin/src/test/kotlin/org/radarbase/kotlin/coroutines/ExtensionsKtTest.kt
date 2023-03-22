@@ -60,7 +60,6 @@ class ExtensionsKtTest {
         assertThat(inBlockingTime, greaterThan(100.milliseconds))
     }
 
-
     @Test
     fun testForkJoinFirst() = runBlocking {
         val inBlockingTime = measureTime {

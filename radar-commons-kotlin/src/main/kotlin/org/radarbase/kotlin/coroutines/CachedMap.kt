@@ -17,10 +17,10 @@
 package org.radarbase.kotlin.coroutines
 
 /** Set of data that is cached for a duration of time. */
-class CachedMap<K,V>(
+class CachedMap<K, V>(
     cacheConfig: CacheConfig = CacheConfig(),
-    supplier: suspend () -> Map<K,V>,
-): CachedValue<Map<K, V>>(cacheConfig, supplier) {
+    supplier: suspend () -> Map<K, V>,
+) : CachedValue<Map<K, V>>(cacheConfig, supplier) {
     /** Whether the cache contains [key]. If it does not contain the value and [CacheConfig.retryDuration]
      * has passed since the last try, it will update the cache and try once more. */
     suspend fun contains(key: K): Boolean = test { key in it }

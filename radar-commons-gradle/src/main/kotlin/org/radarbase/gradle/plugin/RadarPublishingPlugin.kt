@@ -1,3 +1,5 @@
+package org.radarbase.gradle.plugin
+
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.file.DuplicatesStrategy
@@ -17,7 +19,7 @@ import org.gradle.plugins.signing.SigningPlugin
 import org.jetbrains.dokka.gradle.DokkaPlugin
 
 fun Project.radarPublishing(configure: RadarPublishingExtension.() -> Unit) {
-    configure<RadarPublishingExtension>(configure)
+    configure(configure)
 }
 
 interface RadarPublishingExtension {
@@ -70,8 +72,8 @@ class RadarPublishingPlugin : Plugin<Project> {
         assemble.dependsOn(sourcesJar)
         assemble.dependsOn(dokkaJar)
 
-        val publisingExtension = extensions.getByName<PublishingExtension>("publishing")
-        val mavenJar by publisingExtension.publications.creating(MavenPublication::class) {
+        val publishingExtension = extensions.getByName<PublishingExtension>("publishing")
+        val mavenJar by publishingExtension.publications.creating(MavenPublication::class) {
             from(components["java"])
 
             artifact(sourcesJar)

@@ -10,22 +10,22 @@ import org.radarbase.producer.io.FunctionalWriteChannelContent
 import org.radarbase.producer.schema.ParsedSchemaMetadata
 import org.slf4j.LoggerFactory
 
-class BinaryRecordContent<V: Any>(
+class BinaryRecordContent<V : Any>(
     private val records: RecordData<*, V>,
     keySchemaMetadata: ParsedSchemaMetadata,
     valueSchemaMetadata: ParsedSchemaMetadata,
-): AvroRecordContent {
+) : AvroRecordContent {
     private val valueEncoder = RemoteSchemaEncoder.SchemaEncoderWriter(
         binary = true,
         schema = records.topic.valueSchema,
         clazz = records.topic.valueClass,
-        readerSchema = valueSchemaMetadata.schema
+        readerSchema = valueSchemaMetadata.schema,
     )
     private val sourceId = records.sourceId
         ?: throw AvroDataMapperFactory.validationException(
             records.topic.keySchema,
             keySchemaMetadata.schema,
-            "Cannot map record without source ID"
+            "Cannot map record without source ID",
         )
 
     private val keySchemaVersion = requireNotNull(keySchemaMetadata.version) {

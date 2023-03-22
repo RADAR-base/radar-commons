@@ -4,9 +4,9 @@ plugins {
 
 description = "RADAR Common utilities library."
 
-//---------------------------------------------------------------------------//
+// ---------------------------------------------------------------------------//
 // Sources and classpath configurations                                      //
-//---------------------------------------------------------------------------//
+// ---------------------------------------------------------------------------//
 
 // In this section you declare where to find the dependencies of your project
 repositories {

@@ -1,21 +1,19 @@
 package org.radarbase.kotlin.coroutines
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.slf4j.LoggerFactory
-import java.time.Duration
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicLong
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.ExperimentalTime
-import kotlin.time.TimeMark
-import kotlin.time.TimeSource
 
-@OptIn(ExperimentalTime::class, DelicateCoroutinesApi::class)
+@OptIn(DelicateCoroutinesApi::class)
 internal class CachedValueTest {
     private lateinit var config: CacheConfig
 
@@ -27,7 +25,7 @@ internal class CachedValueTest {
         config = CacheConfig(
             refreshDuration = 20.milliseconds,
             retryDuration = 10.milliseconds,
-            exceptionCacheDuration = 10.milliseconds
+            exceptionCacheDuration = 10.milliseconds,
         )
     }
 
@@ -89,24 +87,23 @@ internal class CachedValueTest {
             assertThat(
                 "Retry because predicate does not match",
                 cache.query({ it + 1 }, { it > 2 }),
-                equalTo(CachedValue.CacheMiss(3))
+                equalTo(CachedValue.CacheMiss(3)),
             )
             assertThat("No refresh within threshold", cache.query({ it + 1 }, { it > 2 }), equalTo(CachedValue.CacheHit(3)))
             delay(10)
             assertThat(
                 "No retry because predicate matches",
                 cache.query({ it + 1 }, { it > 2 }),
-                equalTo(CachedValue.CacheHit(3))
+                equalTo(CachedValue.CacheHit(3)),
             )
             delay(10)
             assertThat(
                 "Refresh after refresh threshold since last retry",
                 cache.query({ it + 1 }, { it > 2 }),
-                equalTo(CachedValue.CacheMiss(4))
+                equalTo(CachedValue.CacheMiss(4)),
             )
         }
     }
-
 
     @Test
     fun getMultithreaded() {
@@ -117,7 +114,7 @@ internal class CachedValueTest {
         }
 
         runBlocking {
-            (0 .. 5)
+            (0..5)
                 .forkJoin {
                     cache.get()
                 }
@@ -131,16 +128,18 @@ internal class CachedValueTest {
 
     @Test
     fun getMulti2threaded() {
-        val cache = CachedValue(config.copy(
-            maxSimultaneousCompute = 2
-        )) {
+        val cache = CachedValue(
+            config.copy(
+                maxSimultaneousCompute = 2,
+            ),
+        ) {
             calls.incrementAndGet()
             delay(50.milliseconds)
             calls.get()
         }
 
         runBlocking {
-            val values = (0 .. 5)
+            val values = (0..5)
                 .forkJoin {
                     cache.get()
                 }
@@ -153,7 +152,6 @@ internal class CachedValueTest {
 
         assertThat("Two threads should be computing the value", calls.get(), `is`(2))
     }
-
 
     @Test
     fun throwTest() {

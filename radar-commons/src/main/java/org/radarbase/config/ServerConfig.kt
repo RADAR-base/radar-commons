@@ -34,6 +34,7 @@ class ServerConfig {
     /** Server protocol.  */
     /** Set server protocol.  */
     var protocol: String? = null
+
     /**
      * Set the absolute path. If the path is empty, it will be set to the root. The path
      * will be ended with a single slash. The path will be prepended with a single slash if needed.
@@ -125,8 +126,8 @@ class ServerConfig {
 
             check(
                 protocol == null ||
-                        protocol.equals("http", ignoreCase = true) ||
-                        protocol.equals("https", ignoreCase = true)
+                    protocol.equals("http", ignoreCase = true) ||
+                    protocol.equals("https", ignoreCase = true),
             ) { "Server is not an HTTP(S) server, so it cannot use a HTTP proxyHost." }
             return Proxy(Proxy.Type.HTTP, InetSocketAddress(proxyHost, proxyPort))
         }
@@ -142,11 +143,11 @@ class ServerConfig {
         }
         other as ServerConfig
         return host == other.host &&
-                port == other.port &&
-                isUnsafe == other.isUnsafe &&
-                protocol == other.protocol &&
-                proxyHost == other.proxyHost &&
-                proxyPort == other.proxyPort
+            port == other.port &&
+            isUnsafe == other.isUnsafe &&
+            protocol == other.protocol &&
+            proxyHost == other.proxyHost &&
+            proxyPort == other.proxyPort
     }
 
     override fun hashCode(): Int {

@@ -8,7 +8,7 @@ import org.radarbase.producer.io.FunctionalWriteChannelContent
 import org.radarbase.producer.schema.ParsedSchemaMetadata
 import org.slf4j.LoggerFactory
 
-class JsonRecordContent<K: Any, V: Any>(
+class JsonRecordContent<K : Any, V : Any>(
     private val records: RecordData<K, V>,
     private val keySchemaMetadata: ParsedSchemaMetadata,
     private val valueSchemaMetadata: ParsedSchemaMetadata,
@@ -17,13 +17,13 @@ class JsonRecordContent<K: Any, V: Any>(
         binary = false,
         schema = records.topic.keySchema,
         clazz = records.topic.keyClass,
-        readerSchema = keySchemaMetadata.schema
+        readerSchema = keySchemaMetadata.schema,
     )
     private val valueEncoder = RemoteSchemaEncoder.SchemaEncoderWriter(
         binary = false,
         schema = records.topic.valueSchema,
         clazz = records.topic.valueClass,
-        readerSchema = valueSchemaMetadata.schema
+        readerSchema = valueSchemaMetadata.schema,
     )
 
     override fun createContent(): OutgoingContent =

@@ -33,10 +33,11 @@ class SensorTopicTest {
         val keySchema = SchemaBuilder.record("key").fields()
             .name("projectId").type(
                 Schema.createUnion(
-                    Schema.create(Schema.Type.NULL), Schema.create(
-                        Schema.Type.STRING
-                    )
-                )
+                    Schema.create(Schema.Type.NULL),
+                    Schema.create(
+                        Schema.Type.STRING,
+                    ),
+                ),
             ).withDefault(null)
             .name("userId").type(Schema.create(Schema.Type.STRING)).noDefault()
             .name("sourceId").type(Schema.create(Schema.Type.STRING)).noDefault()
@@ -48,8 +49,10 @@ class SensorTopicTest {
             .endRecord()
         SensorTopic(
             "test",
-            keySchema, valueSchema,
-            GenericRecord::class.java, GenericRecord::class.java
+            keySchema,
+            valueSchema,
+            GenericRecord::class.java,
+            GenericRecord::class.java,
         )
     }
 
@@ -67,8 +70,10 @@ class SensorTopicTest {
         assertThrows<IllegalArgumentException> {
             SensorTopic(
                 "test",
-                keySchema, valueSchema,
-                GenericRecord::class.java, GenericRecord::class.java
+                keySchema,
+                valueSchema,
+                GenericRecord::class.java,
+                GenericRecord::class.java,
             )
         }
     }
@@ -86,8 +91,10 @@ class SensorTopicTest {
         assertThrows<IllegalArgumentException> {
             SensorTopic(
                 "test",
-                keySchema, valueSchema,
-                GenericRecord::class.java, GenericRecord::class.java
+                keySchema,
+                valueSchema,
+                GenericRecord::class.java,
+                GenericRecord::class.java,
             )
         }
     }
@@ -102,8 +109,10 @@ class SensorTopicTest {
         assertThrows<IllegalArgumentException> {
             SensorTopic(
                 "test",
-                keySchema, valueSchema,
-                GenericRecord::class.java, GenericRecord::class.java
+                keySchema,
+                valueSchema,
+                GenericRecord::class.java,
+                GenericRecord::class.java,
             )
         }
     }
@@ -112,12 +121,15 @@ class SensorTopicTest {
     fun parseTopic() {
         val topic: SensorTopic<ObservationKey, PhoneAcceleration> = SensorTopic.parse(
             "test",
-            ObservationKey::class.java.name, PhoneAcceleration::class.java.name
+            ObservationKey::class.java.name,
+            PhoneAcceleration::class.java.name,
         )
         val expected = SensorTopic(
             "test",
-            ObservationKey.getClassSchema(), PhoneAcceleration.getClassSchema(),
-            ObservationKey::class.java, PhoneAcceleration::class.java
+            ObservationKey.getClassSchema(),
+            PhoneAcceleration.getClassSchema(),
+            ObservationKey::class.java,
+            PhoneAcceleration::class.java,
         )
         assertEquals(expected, topic)
     }
@@ -128,7 +140,7 @@ class SensorTopicTest {
             SensorTopic.parse<ObservationKey, PhoneAcceleration>(
                 "test",
                 "unexisting." + ObservationKey::class.java.name,
-                PhoneAcceleration::class.java.name
+                PhoneAcceleration::class.java.name,
             )
         }
     }
@@ -139,7 +151,7 @@ class SensorTopicTest {
             SensorTopic.parse<ObservationKey, PhoneAcceleration>(
                 "test",
                 ObservationKey::class.java.name,
-                "unexisting." + PhoneAcceleration::class.java.name
+                "unexisting." + PhoneAcceleration::class.java.name,
             )
         }
     }

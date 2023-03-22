@@ -36,6 +36,7 @@ import kotlin.time.Duration.Companion.seconds
 class SchemaRestClientTest {
     private lateinit var mockServer: MockWebServer
     private lateinit var retriever: SchemaRestClient
+
     @BeforeEach
     fun setUp() {
         mockServer = MockWebServer()
@@ -43,7 +44,7 @@ class SchemaRestClientTest {
             HttpClient(CIO) {
                 timeout(1.seconds)
             },
-            baseUrl = "http://${mockServer.hostName}:${mockServer.port}/base/"
+            baseUrl = "http://${mockServer.hostName}:${mockServer.port}/base/",
         )
     }
 

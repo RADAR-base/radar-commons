@@ -72,7 +72,7 @@ class RollingTimeAverage(
             } else {
                 val time = Duration.between(windowStart, deque.last.time)
                 val removedRate = Duration.between(localFirstTime.time, windowStart).toMillis() /
-                        Duration.between(localFirstTime.time, deque.first.time).toMillis().toDouble()
+                    Duration.between(localFirstTime.time, deque.first.time).toMillis().toDouble()
                 val removedValue = localFirstTime.value + deque.first.value * removedRate
                 1000.0 * (total - removedValue) / time.toMillis()
             }
@@ -85,7 +85,7 @@ class RollingTimeAverage(
         get() = average.roundToInt()
 
     private class TimeCount(
-        val value: Double
+        val value: Double,
     ) {
         val time: Instant = Instant.now()
     }

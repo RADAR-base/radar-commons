@@ -59,6 +59,7 @@ class RestKafkaSender(config: Config) : KafkaSender {
     val schemaRetriever: SchemaRetriever = requireNotNull(config.schemaRetriever) {
         "Missing schemaRetriever from configuration"
     }
+
     /** Get the current REST client.  */
     val restClient: HttpClient
 
@@ -90,14 +91,14 @@ class RestKafkaSender(config: Config) : KafkaSender {
         install(ContentNegotiation) {
             this.register(
                 KAFKA_REST_BINARY_ENCODING,
-                AvroContentConverter(schemaRetriever, binary = true)
+                AvroContentConverter(schemaRetriever, binary = true),
             )
             this.register(
                 KAFKA_REST_JSON_ENCODING,
-                AvroContentConverter(schemaRetriever, binary = false)
+                AvroContentConverter(schemaRetriever, binary = false),
             )
         }
-        when(contentEncoding) {
+        when (contentEncoding) {
             GZIP_CONTENT_ENCODING -> install(GzipContentEncoding)
             else -> {}
         }
@@ -114,7 +115,7 @@ class RestKafkaSender(config: Config) : KafkaSender {
         }
     }
 
-    inner class RestKafkaTopicSender<K: Any, V: Any>(
+    inner class RestKafkaTopicSender<K : Any, V : Any>(
         override val topic: AvroTopic<K, V>,
     ) : KafkaTopicSender<K, V> {
         @OptIn(ExperimentalStdlibApi::class)
@@ -175,7 +176,9 @@ class RestKafkaSender(config: Config) : KafkaSender {
                 val bodyString = response.bodyAsText()
                 logger.warn(
                     "Failed to make heartbeat request to {} (HTTP status code {}): {}",
-                    restClient, response.status, bodyString
+                    restClient,
+                    response.status,
+                    bodyString,
                 )
                 ConnectionState.State.DISCONNECTED
             }
@@ -229,14 +232,14 @@ class RestKafkaSender(config: Config) : KafkaSender {
             if (other == null || javaClass != other.javaClass) return false
             other as Config
             return schemaRetriever == other.schemaRetriever &&
-                    connectionState == other.connectionState &&
-                    headers.build() == other.headers.build() &&
-                    httpClient == other.httpClient &&
-                    contentType == other.contentType &&
-                    baseUrl == other.baseUrl &&
-                    connectionTimeout == other.connectionTimeout &&
-                    contentEncoding == other.contentEncoding &&
-                    scope == other.scope
+                connectionState == other.connectionState &&
+                headers.build() == other.headers.build() &&
+                httpClient == other.httpClient &&
+                contentType == other.contentType &&
+                baseUrl == other.baseUrl &&
+                connectionTimeout == other.connectionTimeout &&
+                contentEncoding == other.contentEncoding &&
+                scope == other.scope
         }
         override fun hashCode(): Int = headers.hashCode()
     }

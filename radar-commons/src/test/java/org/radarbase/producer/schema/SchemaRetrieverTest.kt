@@ -92,7 +92,7 @@ class SchemaRetrieverTest {
             retriever.getByVersion(
                 "bla",
                 false,
-                2
+                2,
             )
         }
     }
@@ -107,7 +107,7 @@ class SchemaRetrieverTest {
         var request = mockServer.takeRequest()
         assertEquals("{\"schema\":\"\\\"string\\\"\"}", request.body.readUtf8())
         val schemaFields = listOf(
-            Schema.Field("a", Schema.create(Schema.Type.INT), "that a", 10)
+            Schema.Field("a", Schema.create(Schema.Type.INT), "that a", 10),
         )
         val record = Schema.createRecord("C", "that C", "org.radarcns", false, schemaFields)
         mockServer.enqueueJson("{\"id\":11}")
@@ -116,7 +116,7 @@ class SchemaRetrieverTest {
         request = mockServer.takeRequest()
         assertEquals(
             "{\"schema\":\"{\\\"type\\\":\\\"record\\\",\\\"name\\\":\\\"C\\\",\\\"namespace\\\":\\\"org.radarcns\\\",\\\"doc\\\":\\\"that C\\\",\\\"fields\\\":[{\\\"name\\\":\\\"a\\\",\\\"type\\\":\\\"int\\\",\\\"doc\\\":\\\"that a\\\",\\\"default\\\":10}]}\"}",
-            request.body.readUtf8()
+            request.body.readUtf8(),
         )
     }
 }

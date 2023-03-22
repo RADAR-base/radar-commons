@@ -34,7 +34,7 @@ class AvroDatumEncoder(
 
     @Suppress("UNCHECKED_CAST")
     @Throws(IOException::class)
-    override fun <T: Any> writer(schema: Schema, clazz: Class<out T>, readerSchema: Schema): AvroWriter<T> {
+    override fun <T : Any> writer(schema: Schema, clazz: Class<out T>, readerSchema: Schema): AvroWriter<T> {
         val writer = genericData.createDatumWriter(schema) as DatumWriter<T>
         return AvroRecordWriter(encoderFactory, schema, writer, binary)
     }

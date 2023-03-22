@@ -31,8 +31,10 @@ import java.time.Instant
  * unique User_ID and Source_ID and having increasing timestamp at each raw.
  */
 class MockRecordValidator(
-    private val config: MockDataConfig, private val duration: Long, private val root: Path,
-    private val retriever: SchemaRetriever
+    private val config: MockDataConfig,
+    private val duration: Long,
+    private val root: Path,
+    private val retriever: SchemaRetriever,
 ) {
     private var timePos = 0
     private var time: Double
@@ -88,7 +90,7 @@ class MockRecordValidator(
     private fun checkRecord(
         record: Record<GenericRecord, GenericRecord>,
         last: Record<GenericRecord, GenericRecord>?,
-        line: Long
+        line: Long,
     ) {
         val previousTime = time
         time = record.value[timePos] as Double
@@ -129,15 +131,17 @@ class MockRecordValidator(
         val margin = 50L
         if (duration <= interval - margin || duration > interval + 1000L + margin) {
             error(
-                "Data does not cover " + duration + " milliseconds but "
-                        + interval + " instead.", -1L, null
+                "Data does not cover " + duration + " milliseconds but " +
+                    interval + " instead.",
+                -1L,
+                null,
             )
         }
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(
-            MockRecordValidator::class.java
+            MockRecordValidator::class.java,
         )
     }
 }

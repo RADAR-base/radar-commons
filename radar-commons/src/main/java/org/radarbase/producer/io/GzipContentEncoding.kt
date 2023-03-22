@@ -10,7 +10,6 @@ import io.ktor.util.cio.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.coroutineScope
 
-
 /**
  * A plugin that allows you to enable specified compression algorithms (such as `gzip` and `deflate`) and configure their settings.
  * This plugin serves two primary purposes:
@@ -72,7 +71,6 @@ class GzipContentEncoding private constructor() {
             return any { el -> el.trim { it <= ' ' }.equals(value, ignoreCase = true) }
         }
     }
-
 
     private class GzipReadChannel(
         private val original: ByteReadChannel,

@@ -85,7 +85,10 @@ class RestKafkaSenderTest {
         val valueSchema = PhoneLight.getClassSchema()
         val topic = AvroTopic(
             "test",
-            keySchema, valueSchema, ObservationKey::class.java, PhoneLight::class.java
+            keySchema,
+            valueSchema,
+            ObservationKey::class.java,
+            PhoneLight::class.java,
         )
         val topicSender = sender.sender(topic)
         val key = ObservationKey("test", "a", "b")
@@ -126,7 +129,10 @@ class RestKafkaSenderTest {
         val valueSchema = PhoneLight.getClassSchema()
         val topic = AvroTopic(
             "test",
-            keySchema, valueSchema, ObservationKey::class.java, PhoneLight::class.java
+            keySchema,
+            valueSchema,
+            ObservationKey::class.java,
+            PhoneLight::class.java,
         )
         val topicSender = sender.sender(topic)
         val key = ObservationKey("test", "a", "b")
@@ -169,7 +175,10 @@ class RestKafkaSenderTest {
         val valueSchema = PhoneLight.getClassSchema()
         val topic = AvroTopic(
             "test",
-            keySchema, valueSchema, ObservationKey::class.java, PhoneLight::class.java
+            keySchema,
+            valueSchema,
+            ObservationKey::class.java,
+            PhoneLight::class.java,
         )
         val topicSender = sender.sender(topic)
         val key = ObservationKey("test", "a", "b")
@@ -257,7 +266,7 @@ class RestKafkaSenderTest {
     @Throws(
         IOException::class,
         InterruptedException::class,
-        SchemaValidationException::class
+        SchemaValidationException::class,
     )
     fun withCompression() = runTest {
         sender = sender.config {
@@ -268,7 +277,10 @@ class RestKafkaSenderTest {
         val valueSchema = PhoneLight.getClassSchema()
         val topic = AvroTopic(
             "test",
-            keySchema, valueSchema, ObservationKey::class.java, PhoneLight::class.java
+            keySchema,
+            valueSchema,
+            ObservationKey::class.java,
+            PhoneLight::class.java,
         )
         val topicSender = sender.sender(topic)
         val key = ObservationKey("test", "a", "b")
@@ -316,12 +328,12 @@ class RestKafkaSenderTest {
 
         fun MockWebServer.enqueueJson(
             body: String,
-            builder: MockResponse.() -> Unit = {}
+            builder: MockResponse.() -> Unit = {},
         ) = enqueue(
             MockResponse()
                 .setBody(body)
                 .setHeader("Content-Type", "application/json; charset=utf-8")
-                .apply(builder)
+                .apply(builder),
         )
     }
 }

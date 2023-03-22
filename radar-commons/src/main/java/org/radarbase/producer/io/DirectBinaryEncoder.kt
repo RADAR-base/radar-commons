@@ -47,7 +47,7 @@ import java.util.*
  * @see Decoder
  */
 class DirectBinaryEncoder(
-    var out: ByteWriteChannel
+    var out: ByteWriteChannel,
 ) : BinaryEncoder() {
     // the buffer is used for writing floats, doubles, and large longs.
     private val buf = ByteArray(12)

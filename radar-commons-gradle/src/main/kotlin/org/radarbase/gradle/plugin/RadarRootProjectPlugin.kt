@@ -1,22 +1,44 @@
+package org.radarbase.gradle.plugin
+
 import io.github.gradlenexus.publishplugin.NexusPublishExtension
 import io.github.gradlenexus.publishplugin.NexusPublishPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.provider.Property
 import org.gradle.api.tasks.wrapper.Wrapper
 import org.gradle.kotlin.dsl.apply
 import org.gradle.kotlin.dsl.configure
+import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.named
-import org.gradle.kotlin.dsl.repositories
 
-class RootConventionsPlugin : Plugin<Project> {
+fun Project.radarRootProject(configure: RadarRootProjectExtension.() -> Unit) {
+    configure(configure)
+}
+
+interface RadarRootProjectExtension {
+    val group: Property<String>
+    val projectVersion: Property<String>
+    val gradleVersion: Property<String>
+}
+
+class RadarRootProjectPlugin : Plugin<Project> {
     override fun apply(project: Project) = with(project) {
-        allprojects {
-            version = Versions.project
-            group = "org.radarbase"
+        val extension = extensions.create<RadarRootProjectExtension>("radarRootProject").apply {
+            group.convention("org.radarbase")
+            gradleVersion.convention(Versions.wrapper)
         }
 
-        tasks.named<Wrapper>("wrapper") {
-            gradleVersion = Versions.wrapper
+        allprojects {
+            afterEvaluate {
+                version = extension.projectVersion.get()
+                group = extension.group.get()
+            }
+        }
+
+        afterEvaluate {
+            tasks.named<Wrapper>("wrapper") {
+                gradleVersion = extension.gradleVersion.get()
+            }
         }
 
         apply<NexusPublishPlugin>()

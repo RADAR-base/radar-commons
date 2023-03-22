@@ -46,8 +46,8 @@ package org.radarbase.util
  *
  * Note: needed because it is only included in Android API level 26.
  *
- * @author  Xueming Shen
- * @since   1.8
+ * @author Xueming Shen
+ * @since 1.8
  */
 object Base64Encoder {
     /**
@@ -68,9 +68,9 @@ object Base64Encoder {
      * byte array using the [Base64] encoding scheme. The returned byte
      * array is of the length of the resulting bytes.
      *
-     * @param   src
+     * @param src
      * the byte array to encode
-     * @return  A newly-allocated byte array containing the resulting
+     * @return A newly-allocated byte array containing the resulting
      * encoded bytes.
      */
     fun encode(src: ByteArray): String {
@@ -81,15 +81,15 @@ object Base64Encoder {
         var srcP = 0
         while (srcP < fullDataLen) {
             val bits = (src[srcP].toInt() and 0xff).shl(16) or
-                    (src[srcP + 1].toInt() and 0xff).shl(8) or
-                    (src[srcP + 2].toInt() and 0xff)
+                (src[srcP + 1].toInt() and 0xff).shl(8) or
+                (src[srcP + 2].toInt() and 0xff)
             dst[dstP++] = BASE_64_CHAR[bits.ushr(18) and 0x3f]
             dst[dstP++] = BASE_64_CHAR[bits.ushr(12) and 0x3f]
             dst[dstP++] = BASE_64_CHAR[bits.ushr(6) and 0x3f]
             dst[dstP++] = BASE_64_CHAR[bits and 0x3f]
             srcP += 3
         }
-        if (srcP < srcLen) {               // 1 or 2 leftover bytes
+        if (srcP < srcLen) { // 1 or 2 leftover bytes
             val b0 = src[srcP++].toInt() and 0xff
             dst[dstP++] = BASE_64_CHAR[b0 shr 2]
             if (srcP == srcLen) {

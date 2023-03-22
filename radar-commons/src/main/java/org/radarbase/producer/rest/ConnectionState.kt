@@ -38,7 +38,7 @@ import kotlin.time.Duration
  */
 class ConnectionState(
     private val timeout: Duration,
-    scope: CoroutineScope = CoroutineScope(EmptyCoroutineContext)
+    scope: CoroutineScope = CoroutineScope(EmptyCoroutineContext),
 ) {
     /** State symbols of the connection.  */
     enum class State {

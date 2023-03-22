@@ -61,7 +61,7 @@ suspend fun <T> Future<T>.suspendGet(
  */
 suspend inline fun <T, R> Iterable<T>.forkJoin(
     coroutineContext: CoroutineContext = Dispatchers.Default,
-    crossinline transform: suspend CoroutineScope.(T) -> R
+    crossinline transform: suspend CoroutineScope.(T) -> R,
 ): List<R> = coroutineScope {
     map { t -> async(coroutineContext) { transform(t) } }
         .awaitAll()
@@ -75,7 +75,7 @@ suspend inline fun <T, R> Iterable<T>.forkJoin(
  */
 suspend inline fun <T> consumeFirst(
     coroutineContext: CoroutineContext = Dispatchers.Default,
-    crossinline producer: suspend CoroutineScope.(emit: suspend (T) -> Unit) -> Unit
+    crossinline producer: suspend CoroutineScope.(emit: suspend (T) -> Unit) -> Unit,
 ): T = coroutineScope {
     val channel = Channel<T>()
 
@@ -97,7 +97,7 @@ suspend inline fun <T> consumeFirst(
  * true. Each value is transformed and evaluated in its own async context. If no transformed value
  * satisfies predicate, null is returned.
  */
-suspend fun <T, R>  Iterable<T>.forkFirstOfOrNull(
+suspend fun <T, R> Iterable<T>.forkFirstOfOrNull(
     coroutineContext: CoroutineContext = EmptyCoroutineContext,
     transform: suspend CoroutineScope.(T) -> R,
     predicate: suspend CoroutineScope.(R) -> Boolean,
@@ -111,9 +111,9 @@ suspend fun <T, R>  Iterable<T>.forkFirstOfOrNull(
     emit(null)
 }
 
-suspend fun <T, R>  Iterable<T>.forkFirstOfNotNullOrNull(
+suspend fun <T, R> Iterable<T>.forkFirstOfNotNullOrNull(
     coroutineContext: CoroutineContext = EmptyCoroutineContext,
-    transform: suspend CoroutineScope.(T) -> R?
+    transform: suspend CoroutineScope.(T) -> R?,
 ): R? = forkFirstOfOrNull(coroutineContext, transform) { it != null }
 
 /**
@@ -123,7 +123,7 @@ suspend fun <T, R>  Iterable<T>.forkFirstOfNotNullOrNull(
  */
 suspend fun <T> Iterable<T>.forkAny(
     coroutineContext: CoroutineContext = EmptyCoroutineContext,
-    predicate: suspend CoroutineScope.(T) -> Boolean
+    predicate: suspend CoroutineScope.(T) -> Boolean,
 ): Boolean = forkFirstOfOrNull(coroutineContext, predicate) { it } ?: false
 
 operator fun <T> Set<T>.plus(elements: Set<T>): Set<T> = when {

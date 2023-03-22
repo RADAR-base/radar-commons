@@ -18,11 +18,11 @@ import java.io.IOException
 class RemoteSchemaEncoder(
     private val binary: Boolean,
 ) : AvroEncoder {
-    override fun <T: Any> writer(schema: Schema, clazz: Class<out T>, readerSchema: Schema): AvroWriter<T> {
+    override fun <T : Any> writer(schema: Schema, clazz: Class<out T>, readerSchema: Schema): AvroWriter<T> {
         return SchemaEncoderWriter(binary, schema, clazz, readerSchema)
     }
 
-    class SchemaEncoderWriter<T: Any>(
+    class SchemaEncoderWriter<T : Any>(
         binary: Boolean,
         schema: Schema,
         clazz: Class<out T>,
@@ -56,7 +56,7 @@ class RemoteSchemaEncoder(
         override fun encode(`object`: T): ByteArray = encoder.encode(
             requireNotNull(mapper.convertAvro(`object`)) {
                 "Cannot map $`object` to Avro"
-            }
+            },
         )
     }
 }

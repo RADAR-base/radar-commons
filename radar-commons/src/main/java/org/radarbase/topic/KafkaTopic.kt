@@ -23,12 +23,14 @@ package org.radarbase.topic
  * possible underscores.
 */
 open class KafkaTopic(
-    val name: String
+    val name: String,
 ) : Comparable<KafkaTopic> {
     init {
         require(name.matches(TOPIC_NAME_PATTERN)) {
-            ("Kafka topic " + name + " is not ASCII-alphanumeric "
-                    + "with possible underscores.")
+            (
+                "Kafka topic " + name + " is not ASCII-alphanumeric " +
+                    "with possible underscores."
+                )
         }
     }
 

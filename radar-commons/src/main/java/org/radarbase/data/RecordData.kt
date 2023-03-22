@@ -7,7 +7,7 @@ import org.radarbase.topic.AvroTopic
  * @param <K> key type
  * @param <V> value type
 </V></K> */
-interface RecordData<K: Any, V: Any> : Iterable<V> {
+interface RecordData<K : Any, V : Any> : Iterable<V> {
     /**
      * Topic that the data belongs to.
      * @return Avro topic.

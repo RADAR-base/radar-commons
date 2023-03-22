@@ -25,10 +25,12 @@ object Strings {
      * Compiles a pattern that checks if it is contained in another string in a case-insensitive
      * way.
      */
-    fun String.toIgnoreCaseRegex(): Regex = toRegex(setOf(
-        RegexOption.IGNORE_CASE,
-        RegexOption.LITERAL
-    ))
+    fun String.toIgnoreCaseRegex(): Regex = toRegex(
+        setOf(
+            RegexOption.IGNORE_CASE,
+            RegexOption.LITERAL,
+        ),
+    )
 
     /**
      * Converts given bytes to a hex string.

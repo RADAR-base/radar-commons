@@ -19,7 +19,7 @@ class AvroContentConverter(
         contentType: ContentType,
         charset: Charset,
         typeInfo: TypeInfo,
-        value: Any?
+        value: Any?,
     ): OutgoingContent? {
         if (value !is RecordData<*, *>) return null
 
@@ -28,14 +28,14 @@ class AvroContentConverter(
                 schemaRetriever.metadata(
                     topic = value.topic.name,
                     ofValue = false,
-                    schema = value.topic.keySchema
+                    schema = value.topic.keySchema,
                 )
             }
             val valueSchema = async {
                 schemaRetriever.metadata(
                     topic = value.topic.name,
                     ofValue = true,
-                    schema = value.topic.valueSchema
+                    schema = value.topic.valueSchema,
                 )
             }
             val maker = if (binary) {
@@ -48,7 +48,7 @@ class AvroContentConverter(
                 JsonRecordContent(
                     records = value,
                     keySchemaMetadata = keySchema.await(),
-                    valueSchemaMetadata = valueSchema.await()
+                    valueSchemaMetadata = valueSchema.await(),
                 )
             }
             maker.createContent()

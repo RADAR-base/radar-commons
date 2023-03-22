@@ -190,13 +190,13 @@ open class CachedValue<T>(
     }
 
     inline fun <R> CacheContents<R>.isExpired(
-        evaluateValid: (R) -> Boolean = { true }
+        evaluateValid: (R) -> Boolean = { true },
     ): Boolean = if (this is CacheError) {
         isExpired(config.exceptionCacheDuration)
     } else {
         this as CacheValue
         isExpired(config.refreshDuration) ||
-                (!evaluateValid(value) && isExpired(config.retryDuration))
+            (!evaluateValid(value) && isExpired(config.retryDuration))
     }
 
     /**
@@ -227,6 +227,7 @@ open class CachedValue<T>(
     ) : CacheContents<T>() {
         override fun isExpired(age: Duration): Boolean = exception is CancellationException || super.isExpired(age)
         override fun getOrThrow(): T = throw exception
+
         @Suppress("UNCHECKED_CAST")
         override suspend fun <R> map(transform: suspend (T) -> R): CacheContents<R> = this as CacheError<R>
     }

@@ -32,7 +32,7 @@ fun Auth.clientCredentials(
     targetHost: String? = null,
 ): Flow<OAuth2AccessToken?> {
     requireNotNull(authConfig.clientId) { "Missing client ID" }
-    requireNotNull(authConfig.clientSecret) { "Missing client secret"}
+    requireNotNull(authConfig.clientSecret) { "Missing client secret" }
     val flow = MutableStateFlow<OAuth2AccessToken?>(null)
 
     clientCredentials {
@@ -48,7 +48,7 @@ fun Auth.clientCredentials(
                     append("grant_type", "client_credentials")
                     append("client_id", authConfig.clientId)
                     append("client_secret", authConfig.clientSecret)
-                }
+                },
             ) {
                 accept(ContentType.Application.Json)
                 markAsRequestTokenRequest()

@@ -28,7 +28,7 @@ import org.apache.avro.specific.SpecificRecord
  * @param keyClass actual key class
  * @param valueClass actual value class
 */
-class SensorTopic<K: Any, V: Any>(
+class SensorTopic<K : Any, V : Any>(
     name: String,
     keySchema: Schema,
     valueSchema: Schema,
@@ -62,8 +62,10 @@ class SensorTopic<K: Any, V: Any>(
             val parseAvro = AvroTopic.parse<K, V>(topic, keySchema, valueSchema)
             return SensorTopic(
                 parseAvro.name,
-                parseAvro.keySchema, parseAvro.valueSchema,
-                parseAvro.keyClass, parseAvro.valueClass
+                parseAvro.keySchema,
+                parseAvro.valueSchema,
+                parseAvro.keyClass,
+                parseAvro.valueClass,
             )
         }
     }

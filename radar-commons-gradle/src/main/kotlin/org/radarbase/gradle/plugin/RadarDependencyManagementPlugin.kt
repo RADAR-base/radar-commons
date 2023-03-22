@@ -1,25 +1,27 @@
+package org.radarbase.gradle.plugin
+
+import com.github.benmanes.gradle.versions.VersionsPlugin
+import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
 import org.gradle.api.provider.Property
-import org.gradle.kotlin.dsl.create
-import com.github.benmanes.gradle.versions.VersionsPlugin
-import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import org.gradle.kotlin.dsl.apply
 import org.gradle.kotlin.dsl.configure
+import org.gradle.kotlin.dsl.create
 
-fun Project.dependencyUpdates(configure: DependencyUpdatesPluginExtension.() -> Unit) {
-    configure<DependencyUpdatesPluginExtension>(configure)
+fun Project.radarDependencyManagement(configure: RadarDependencyManagementExtension.() -> Unit) {
+    configure(configure)
 }
 
-interface DependencyUpdatesPluginExtension {
+interface RadarDependencyManagementExtension {
     val regex: Property<String>
     val minorUpdatesOnly: Property<Boolean>
 }
 
-class DependencyUpdatesPlugin : Plugin<Project> {
+class RadarDependencyManagementPlugin : Plugin<Project> {
     override fun apply(project: Project): Unit = with(project) {
-        val extension = extensions.create<DependencyUpdatesPluginExtension>("radarDependencies").apply {
+        val extension = extensions.create<RadarDependencyManagementExtension>("radarDependencies").apply {
             regex.convention("(^[0-9,.v-]+(-r)?|RELEASE|FINAL|GA|-CE)$")
             minorUpdatesOnly.convention(false)
         }

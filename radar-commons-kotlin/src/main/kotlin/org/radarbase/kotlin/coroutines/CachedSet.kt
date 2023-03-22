@@ -24,7 +24,7 @@ package org.radarbase.kotlin.coroutines
 class CachedSet<T>(
     cacheConfig: CacheConfig = CacheConfig(),
     supplier: suspend () -> Set<T>,
-): CachedValue<Set<T>>(cacheConfig, supplier) {
+) : CachedValue<Set<T>>(cacheConfig, supplier) {
     /** Whether the cache contains [value]. If it does not contain the value and [CacheConfig.retryDuration]
      * has passed since the last try, it will update the cache and try once more. */
     suspend fun contains(value: T): Boolean = test { value in it }

@@ -74,7 +74,7 @@ open class SchemaRetriever(config: Config) {
 
     private fun cachedMetadata(
         subject: String,
-        schema: Schema
+        schema: Schema,
     ): CachedValue<ParsedSchemaMetadata> = schemaCache.computeIfAbsent(schema) {
         CachedValue(schemaTimeout) {
             val metadata = restClient.requestMetadata(subject, schema)
@@ -90,12 +90,12 @@ open class SchemaRetriever(config: Config) {
     suspend fun getByVersion(
         topic: String,
         ofValue: Boolean,
-        version: Int
+        version: Int,
     ): ParsedSchemaMetadata {
         val subject = subject(topic, ofValue)
         val versionMap = subjectVersionCache.computeIfAbsent(
             subject,
-            ::ConcurrentHashMap
+            ::ConcurrentHashMap,
         )
         val metadata = versionMap.cachedVersion(subject, version).get()
         if (version <= 0 && metadata.version != null) {
@@ -106,17 +106,17 @@ open class SchemaRetriever(config: Config) {
 
     private suspend fun cachedVersion(
         subject: String,
-        version: Int
+        version: Int,
     ): CachedValue<ParsedSchemaMetadata> = subjectVersionCache
         .computeIfAbsent(
             subject,
-            ::ConcurrentHashMap
+            ::ConcurrentHashMap,
         )
         .cachedVersion(subject, version)
 
     private suspend fun VersionCache.cachedVersion(
         subject: String,
-        version: Int
+        version: Int,
     ): CachedValue<ParsedSchemaMetadata> {
         val useVersion = version.coerceAtLeast(0)
         val versionId = computeIfAbsent(useVersion) {
@@ -148,8 +148,10 @@ open class SchemaRetriever(config: Config) {
 
             if (
                 staleValue is CachedValue.CacheError ||
-                (staleValue is CachedValue.CacheValue<T> &&
-                        staleValue.isExpired(schemaTimeout.refreshDuration))
+                (
+                    staleValue is CachedValue.CacheValue<T> &&
+                        staleValue.isExpired(schemaTimeout.refreshDuration)
+                    )
             ) {
                 iter.remove()
             }

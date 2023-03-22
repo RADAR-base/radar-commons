@@ -79,7 +79,9 @@ object AvroDataMapperFactory {
         }
         val resolvedFrom = if (from.type == Schema.Type.UNION) {
             nonNullUnionSchema(from)
-        } else from
+        } else {
+            from
+        }
 
         return if (from.type == Schema.Type.UNION && to.type != Schema.Type.UNION) {
             defaultVal ?: throw validationException(to, from, "Cannot map union to non-union without a default value")
@@ -134,8 +136,8 @@ object AvroDataMapperFactory {
     private fun mapBytes(from: Schema, to: Schema, defaultVal: Any?): AvroDataMapper {
         return if (from.type == Schema.Type.BYTES && to.type == Schema.Type.BYTES) {
             IDENTITY_MAPPER
-        } else if (from.type == Schema.Type.FIXED && to.type == Schema.Type.FIXED
-            && from.fixedSize == to.fixedSize
+        } else if (from.type == Schema.Type.FIXED && to.type == Schema.Type.FIXED &&
+            from.fixedSize == to.fixedSize
         ) {
             IDENTITY_MAPPER
         } else if (from.type == Schema.Type.FIXED && to.type == Schema.Type.BYTES) {
@@ -177,10 +179,10 @@ object AvroDataMapperFactory {
         }
         val fromFields = from.fields
         val toFields = arrayOfNulls<Schema.Field?>(
-            fromFields.size
+            fromFields.size,
         )
         val fieldMappers = arrayOfNulls<AvroDataMapper?>(
-            fromFields.size
+            fromFields.size,
         )
         val filledPositions = BooleanArray(to.fields.size)
         for (i in fromFields.indices) {
@@ -191,13 +193,15 @@ object AvroDataMapperFactory {
             fieldMappers[i] = createMapper(
                 fromField.schema(),
                 toField.schema(),
-                toField.defaultVal()
+                toField.defaultVal(),
             )
         }
         filledPositions.forEachIndexed { i, isFilled ->
             if (!isFilled && to.fields[i].defaultVal() == null) {
-                throw validationException(to, from,
-                    "Cannot map to record without default value for new field ${to.fields[i].name()}"
+                throw validationException(
+                    to,
+                    from,
+                    "Cannot map to record without default value for new field ${to.fields[i].name()}",
                 )
             }
         }
@@ -208,7 +212,7 @@ object AvroDataMapperFactory {
     private class RecordMapper constructor(
         private val toSchema: Schema,
         private val toFields: Array<Schema.Field?>,
-        private val fieldMappers: Array<AvroDataMapper?>
+        private val fieldMappers: Array<AvroDataMapper?>,
     ) : AvroDataMapper {
         override fun convertAvro(`object`: Any?): GenericRecord {
             val builder = GenericRecordBuilder(toSchema)
@@ -222,9 +226,11 @@ object AvroDataMapperFactory {
         }
 
         override fun toString(): String {
-            return ("RecordMapper{"
-                    + "fieldMappers=" + fieldMappers.contentToString()
-                    + ", toFields=" + toFields.contentToString() + '}')
+            return (
+                "RecordMapper{" +
+                    "fieldMappers=" + fieldMappers.contentToString() +
+                    ", toFields=" + toFields.contentToString() + '}'
+                )
         }
     }
 
@@ -253,7 +259,9 @@ object AvroDataMapperFactory {
     private inline fun <reified T> Any?.asAvroType(from: Schema, to: Schema): T {
         if (this !is T) {
             throw validationException(
-                to, from, "${to.type} type cannot be mapped from ${this?.javaClass?.name} Java type."
+                to,
+                from,
+                "${to.type} type cannot be mapped from ${this?.javaClass?.name} Java type.",
             )
         }
         return this
@@ -295,8 +303,10 @@ object AvroDataMapperFactory {
                     if (to.hasEnumSymbol("UNKNOWN")) {
                         defaultString = "UNKNOWN"
                     } else {
-                        throw validationException(to, from,
-                            "Cannot map enum symbols without default value"
+                        throw validationException(
+                            to,
+                            from,
+                            "Cannot map enum symbols without default value",
                         )
                     }
                 }
@@ -309,7 +319,7 @@ object AvroDataMapperFactory {
                         symbol
                     }
                 }
-                                }
+            }
         } else if (from.type == Schema.Type.ENUM && to.type == Schema.Type.STRING) {
             AvroDataMapper { it.toString() }
         } else {
@@ -342,7 +352,9 @@ object AvroDataMapperFactory {
                 Schema.Type.DOUBLE -> StringToNumberMapper(defaultVal, String::toDouble)
                 Schema.Type.FLOAT -> StringToNumberMapper(defaultVal, String::toFloat)
                 else -> throw validationException(
-                    to, from, "Cannot map numeric type with non-numeric type"
+                    to,
+                    from,
+                    "Cannot map numeric type with non-numeric type",
                 )
             }
         } else {
@@ -353,7 +365,9 @@ object AvroDataMapperFactory {
                 Schema.Type.FLOAT -> AvroDataMapper { it.asAvroType<Number>(from, to).toFloat() }
                 Schema.Type.STRING -> AvroDataMapper { it.toString() }
                 else -> throw validationException(
-                    to, from, "Cannot map numeric type with non-numeric type"
+                    to,
+                    from,
+                    "Cannot map numeric type with non-numeric type",
                 )
             }
         }
@@ -386,6 +400,8 @@ object AvroDataMapperFactory {
         to: Schema,
         message: String,
     ): SchemaValidationException = SchemaValidationException(
-        to, from, IllegalArgumentException(message)
+        to,
+        from,
+        IllegalArgumentException(message),
     )
 }

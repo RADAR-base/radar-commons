@@ -9,7 +9,7 @@ import java.io.IOException
 /**
  * Sender for a single topic. Should be created through a [KafkaSender].
  */
-interface KafkaTopicSender<K: Any, V: Any> {
+interface KafkaTopicSender<K : Any, V : Any> {
     val topic: AvroTopic<K, V>
 
     /**

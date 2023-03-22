@@ -82,8 +82,9 @@ class MockProducer @JvmOverloads constructor(
             val generators: List<RecordGenerator<ObservationKey>> = createGenerators(dataConfigs)
             val mockFiles: List<MockCsvParser> = createMockFiles(dataConfigs, root)
             senders = createSenders(
-                mockConfig, numDevices + mockFiles.size,
-                mockConfig.authConfig
+                mockConfig,
+                numDevices + mockFiles.size,
+                mockConfig.authConfig,
             )
 
             devices = ArrayList(numDevices)
@@ -109,13 +110,15 @@ class MockProducer @JvmOverloads constructor(
 
     @Throws(IOException::class)
     private fun createSenders(
-        mockConfig: BasicMockConfig, numDevices: Int, authConfig: AuthConfig
+        mockConfig: BasicMockConfig,
+        numDevices: Int,
+        authConfig: AuthConfig,
     ): List<KafkaSender> = createRestSenders(
         numDevices,
         retriever,
         mockConfig.restProxy,
         mockConfig.hasCompression(),
-        authConfig
+        authConfig,
     )
 
     /** Create senders that produce data to Kafka via the REST proxy.  */
@@ -125,7 +128,7 @@ class MockProducer @JvmOverloads constructor(
         retriever: SchemaRetriever,
         restProxy: ServerConfig,
         useCompression: Boolean,
-        authConfig: AuthConfig?
+        authConfig: AuthConfig?,
     ): List<KafkaSender> {
         val scope = CoroutineScope(job)
         val sharedState = ConnectionState(10.seconds, scope)
@@ -146,7 +149,7 @@ class MockProducer @JvmOverloads constructor(
                                     ClientCredentialsConfig(
                                         authConfig.tokenUrl,
                                         authConfig.clientId,
-                                        authConfig.clientSecret
+                                        authConfig.clientSecret,
                                     ).copyWithEnv(),
                                     restProxy.host,
                                 )
@@ -241,7 +244,7 @@ class MockProducer @JvmOverloads constructor(
     }
 
     private fun createGenerators(
-        configs: List<MockDataConfig>
+        configs: List<MockDataConfig>,
     ): List<RecordGenerator<ObservationKey>> = configs.mapNotNull { config ->
         if (config.dataFile == null) {
             RecordGenerator(config, ObservationKey::class.java)
@@ -253,7 +256,7 @@ class MockProducer @JvmOverloads constructor(
     @Throws(IOException::class, CsvValidationException::class)
     private fun createMockFiles(
         configs: List<MockDataConfig>,
-        dataRoot: Path?
+        dataRoot: Path?,
     ): List<MockCsvParser> {
         val now = Instant.now()
         var parent = dataRoot
@@ -314,19 +317,21 @@ class MockProducer @JvmOverloads constructor(
         @Throws(IOException::class, InterruptedException::class, SchemaValidationException::class)
         private fun waitForProducer(producer: MockProducer, duration: Long) {
             val isShutdown = AtomicBoolean(false)
-            Runtime.getRuntime().addShutdownHook(Thread {
-                try {
-                    if (!isShutdown.get()) {
-                        runBlocking {
-                            producer.shutdown()
+            Runtime.getRuntime().addShutdownHook(
+                Thread {
+                    try {
+                        if (!isShutdown.get()) {
+                            runBlocking {
+                                producer.shutdown()
+                            }
                         }
+                    } catch (ex: InterruptedException) {
+                        logger.warn("Shutdown interrupted", ex)
+                    } catch (ex: Exception) {
+                        logger.warn("Failed to shutdown producer", ex)
                     }
-                } catch (ex: InterruptedException) {
-                    logger.warn("Shutdown interrupted", ex)
-                } catch (ex: Exception) {
-                    logger.warn("Failed to shutdown producer", ex)
-                }
-            })
+                },
+            )
             if (duration <= 0L) {
                 try {
                     logger.info("Producing data until interrupted")

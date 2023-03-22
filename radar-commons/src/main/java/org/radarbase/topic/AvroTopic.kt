@@ -28,7 +28,7 @@ import java.util.*
  * @param keyClass Java class for keys
  * @param valueClass Java class for values
  */
-open class AvroTopic<K: Any, V: Any>(
+open class AvroTopic<K : Any, V : Any>(
     name: String,
     val keySchema: Schema,
     val valueSchema: Schema,
@@ -40,7 +40,9 @@ open class AvroTopic<K: Any, V: Any>(
         Array(fields.size) { i ->
             fields[i].schema().type
         }
-    } else null
+    } else {
+        null
+    }
         get() = field?.copyOf()
 
     /**
@@ -96,7 +98,7 @@ open class AvroTopic<K: Any, V: Any>(
          * @param schemaClass class name of the SpecificRecord to use
          * @param <K> class type to return
          * @return Instantiated class of given specific record class
-        </K> */
+         </K> */
         @Suppress("UNCHECKED_CAST")
         fun <K : SpecificRecord> parseSpecificRecord(schemaClass: String): K {
             return try {
@@ -108,12 +110,12 @@ open class AvroTopic<K: Any, V: Any>(
             } catch (ex: ClassCastException) {
                 throw IllegalArgumentException(
                     "Schema $schemaClass cannot be instantiated",
-                    ex
+                    ex,
                 )
             } catch (ex: ReflectiveOperationException) {
                 throw IllegalArgumentException(
                     "Schema $schemaClass cannot be instantiated",
-                    ex
+                    ex,
                 )
             }
         }

@@ -7,5 +7,5 @@ class UnsupportedMediaTypeException(
     contentType: ContentType?,
     contentEncoding: String?,
 ) : IOException(
-    "Unsupported media type ${contentType ?: "unknown"} with ${contentEncoding ?: "no"} encoding"
+    "Unsupported media type ${contentType ?: "unknown"} with ${contentEncoding ?: "no"} encoding",
 )

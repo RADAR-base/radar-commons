@@ -46,7 +46,7 @@ import java.nio.ByteBuffer
  *
  * @see Decoder
  */
-interface Encoder: Closeable {
+interface Encoder : Closeable {
     /**
      * "Writes" a null value. (Doesn't actually write anything, but advances the
      * state of the parser if this class is stateful.)
@@ -241,7 +241,7 @@ interface Encoder: Closeable {
      * out.writeBoolean(r.boolField);
      * }
      * out.writeArrayEnd();
-    </pre> *
+     </pre> *
      *
      * @throws AvroTypeException If this is a stateful writer and an array is not
      * expected
@@ -300,7 +300,7 @@ interface Encoder: Closeable {
      * out.writeBoolean(entry.getValue().boolField);
      * }
      * out.writeMapEnd();
-    </pre> *
+     </pre> *
      *
      * @throws AvroTypeException If this is a stateful writer and a map is not
      * expected
@@ -330,7 +330,7 @@ interface Encoder: Closeable {
      * out.writeIndex(1);
      * out.writeLong(record.longField);
      * out.writeBoolean(record.boolField);
-    </pre> *
+     </pre> *
      *
      * @throws AvroTypeException If this is a stateful writer and a map is not
      * expected

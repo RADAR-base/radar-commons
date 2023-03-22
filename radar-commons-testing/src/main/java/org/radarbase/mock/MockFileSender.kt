@@ -54,8 +54,10 @@ class MockFileSender(
     }
 
     override fun toString(): String {
-        return ("MockFileSender{"
-                + "parser=" + parser
-                + '}')
+        return (
+            "MockFileSender{" +
+                "parser=" + parser +
+                '}'
+            )
     }
 }

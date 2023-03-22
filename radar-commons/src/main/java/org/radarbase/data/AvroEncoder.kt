@@ -23,12 +23,13 @@ import java.io.IOException
 interface AvroEncoder {
     /** Create a new writer. This method is thread-safe, but the class it returns is not.  */
     @Throws(IOException::class)
-    fun <T: Any> writer(schema: Schema, clazz: Class<out T>): AvroWriter<T> =
+    fun <T : Any> writer(schema: Schema, clazz: Class<out T>): AvroWriter<T> =
         writer(schema, clazz, schema)
-    @Throws(IOException::class)
-    fun <T: Any> writer(schema: Schema, clazz: Class<out T>, readerSchema: Schema): AvroWriter<T>
 
-    interface AvroWriter<T: Any> {
+    @Throws(IOException::class)
+    fun <T : Any> writer(schema: Schema, clazz: Class<out T>, readerSchema: Schema): AvroWriter<T>
+
+    interface AvroWriter<T : Any> {
         /**
          * Encode an object. This method is not thread-safe. Call
          * [.setReaderSchema] before calling encode.

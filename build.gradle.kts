@@ -13,21 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import org.radarbase.gradle.plugin.radarKotlin
+import org.radarbase.gradle.plugin.radarPublishing
+import org.radarbase.gradle.plugin.radarRootProject
+
 plugins {
     kotlin("plugin.serialization") version Versions.Plugins.kotlinSerialization apply false
     id("com.github.davidmc24.gradle.plugin.avro") version Versions.Plugins.avro apply false
+    id("org.radarbase.radar-root-project")
+    id("org.radarbase.radar-dependency-management")
 }
 
 val githubRepoName = "RADAR-base/radar-commons"
 val githubUrl = "https://github.com/$githubRepoName"
 
-apply<RootConventionsPlugin>()
-apply<DependencyUpdatesPlugin>()
+radarRootProject {
+    projectVersion.set(Versions.project)
+}
 
 subprojects {
     // Apply the plugins
-    apply<KotlinConventionsPlugin>()
-    apply<RadarPublishingPlugin>()
+    apply(plugin = "org.radarbase.radar-kotlin")
+    apply(plugin = "org.radarbase.radar-publishing")
 
     dependencies {
         configurations["testImplementation"]("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.coroutines}")
@@ -49,6 +56,12 @@ subprojects {
                 organization.set("The Hyve")
             }
         }
+    }
+
+    radarKotlin {
+        javaVersion.set(Versions.java)
+        kotlinVersion.set(Versions.Plugins.kotlin)
+        junitVersion.set(Versions.junit)
     }
 
     //---------------------------------------------------------------------------//

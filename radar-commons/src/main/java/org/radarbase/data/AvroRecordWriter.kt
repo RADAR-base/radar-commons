@@ -33,7 +33,7 @@ import java.io.IOException
  * should be with JSON encoding.
  * @throws IOException if an encoder cannot be constructed.
  */
-class AvroRecordWriter<T: Any>(
+class AvroRecordWriter<T : Any>(
     encoderFactory: EncoderFactory,
     schema: Schema,
     private val writer: DatumWriter<T>,

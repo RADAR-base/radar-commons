@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class MockDevice<K : SpecificRecord>(
     sender: KafkaSender,
     private val key: K,
-    private val generators: List<RecordGenerator<K>>
+    private val generators: List<RecordGenerator<K>>,
 ) {
     private val baseFrequency: Int
     private val sender: KafkaSender

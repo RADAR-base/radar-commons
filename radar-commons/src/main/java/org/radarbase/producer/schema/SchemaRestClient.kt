@@ -24,10 +24,12 @@ class SchemaRestClient(
 ) {
     private val httpClient: HttpClient = httpClient.config {
         install(ContentNegotiation) {
-            json(Json {
-                ignoreUnknownKeys = true
-                coerceInputValues = true
-            })
+            json(
+                Json {
+                    ignoreUnknownKeys = true
+                    coerceInputValues = true
+                },
+            )
         }
         defaultRequest {
             url(baseUrl)
@@ -39,7 +41,7 @@ class SchemaRestClient(
     @Throws(IOException::class)
     suspend fun retrieveSchemaMetadata(
         subject: String,
-        version: Int
+        version: Int,
     ): ParsedSchemaMetadata {
         val isLatest = version <= 0
         val versionPath = if (isLatest) "latest" else version
@@ -62,7 +64,7 @@ class SchemaRestClient(
     @Throws(IOException::class)
     suspend fun schemaPost(
         path: String,
-        schema: Schema
+        schema: Schema,
     ): SchemaMetadata = withContext(ioContext) {
         val response = httpClient.post {
             url(path)
@@ -91,13 +93,13 @@ class SchemaRestClient(
     @Throws(IOException::class)
     suspend fun requestMetadata(
         subject: String,
-        schema: Schema
+        schema: Schema,
     ): ParsedSchemaMetadata = withContext(ioContext) {
         val result = schemaPost("subjects/$subject", schema)
         ParsedSchemaMetadata(
             id = checkNotNull(result.id) { "Missing schema ID in request result" },
             version = result.version,
-            schema = schema
+            schema = schema,
         )
     }
 

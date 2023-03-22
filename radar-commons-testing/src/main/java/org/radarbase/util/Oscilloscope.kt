@@ -28,7 +28,7 @@ import kotlin.time.Duration.Companion.seconds
  * [.willRestart] in the condition of the loop.
  */
 class Oscilloscope(
-    private val frequency: Int
+    private val frequency: Int,
 ) {
     private val timeStep: Duration = 1.seconds / frequency
     private val baseTime: Long = System.nanoTime()

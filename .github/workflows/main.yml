@@ -33,3 +33,12 @@ jobs:
       # Gradle check
       - name: Check
         run: ./gradlew check
+
+      - name: Check version
+        run:
+          projectVersion=$(./gradlew properties | grep '^version:.*$')
+          pluginVersion=$(./gradlew :radar-commons-plugin:properties | grep '^version:.*$')
+          if [ "$projectVersion" != "$pluginVersion" ]; then
+            echo "Project version $projectVersion does not match plugin version $pluginVersion"
+            exit 1
+          fi

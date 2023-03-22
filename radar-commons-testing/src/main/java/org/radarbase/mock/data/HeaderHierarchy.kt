@@ -12,7 +12,7 @@ import java.util.*
 class HeaderHierarchy(
     val name: String? = null,
     index: Int = -1,
-    private val parent: HeaderHierarchy? = null
+    private val parent: HeaderHierarchy? = null,
 ) {
     /** The index of current element. */
     val index: Int = index

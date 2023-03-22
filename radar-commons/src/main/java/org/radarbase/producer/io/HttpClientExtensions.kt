@@ -4,8 +4,8 @@ import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
 import java.security.cert.X509Certificate
-import kotlin.time.Duration
 import javax.net.ssl.X509TrustManager
+import kotlin.time.Duration
 
 fun HttpClientConfig<*>.timeout(duration: Duration) {
     install(HttpTimeout) {

@@ -50,7 +50,7 @@ class MockCsvParser constructor(
     private val config: MockDataConfig,
     root: Path?,
     private val startTime: Instant,
-    private val retriever: SchemaRetriever
+    private val retriever: SchemaRetriever,
 ) : Closeable {
     lateinit var topic: AvroTopic<GenericRecord, GenericRecord>
     private val csvReader: CSVReader
@@ -69,7 +69,7 @@ class MockCsvParser constructor(
         for (i in header.indices) {
             headers.add(
                 i,
-                header[i].split("\\.".toRegex()).dropLastWhile { it.isEmpty() }
+                header[i].split("\\.".toRegex()).dropLastWhile { it.isEmpty() },
             )
         }
         currentLine = csvReader.readNext()
@@ -88,8 +88,10 @@ class MockCsvParser constructor(
 
         topic = AvroTopic(
             config.topic,
-            keySchema, valueSchema,
-            GenericRecord::class.java, GenericRecord::class.java
+            keySchema,
+            valueSchema,
+            GenericRecord::class.java,
+            GenericRecord::class.java,
         )
     }
 
@@ -106,12 +108,12 @@ class MockCsvParser constructor(
         val key = parseRecord(
             currentLine,
             topic.keySchema,
-            checkNotNull(headers.children["key"]) { "Missing key fields" }
+            checkNotNull(headers.children["key"]) { "Missing key fields" },
         )
         val value = parseRecord(
             currentLine,
             topic.valueSchema,
-            checkNotNull(headers.children["value"]) { "Missing value fields" }
+            checkNotNull(headers.children["value"]) { "Missing value fields" },
         )
         incrementRow()
         return Record(key, value)
@@ -136,7 +138,7 @@ class MockCsvParser constructor(
     private fun parseRecord(
         rawValues: Array<String>?,
         schema: Schema,
-        headers: HeaderHierarchy
+        headers: HeaderHierarchy,
     ): GenericRecord {
         val record = GenericRecordBuilder(schema)
         val children = headers.children
@@ -155,7 +157,7 @@ class MockCsvParser constructor(
             Schema.Type.NULL, Schema.Type.INT, Schema.Type.LONG, Schema.Type.FLOAT, Schema.Type.DOUBLE, Schema.Type.BOOLEAN, Schema.Type.STRING, Schema.Type.ENUM, Schema.Type.BYTES -> parseScalar(
                 rawValues,
                 schema,
-                headers
+                headers,
             )
 
             Schema.Type.UNION -> parseUnion(rawValues, schema, headers)
@@ -163,8 +165,8 @@ class MockCsvParser constructor(
             Schema.Type.ARRAY -> parseArray(rawValues, schema, headers)
             Schema.Type.MAP -> parseMap(rawValues, schema, headers)
             else -> throw IllegalArgumentException(
-                "Cannot handle schemas of type "
-                        + schema.type + " in " + headers
+                "Cannot handle schemas of type " +
+                    schema.type + " in " + headers,
             )
         }
     }
@@ -172,7 +174,7 @@ class MockCsvParser constructor(
     private fun parseScalar(
         rawValues: Array<String>?,
         schema: Schema,
-        headers: HeaderHierarchy
+        headers: HeaderHierarchy,
     ): Any? {
         val fieldHeader = headers.index
         require(fieldHeader < rawValues!!.size) { "Row is missing value for " + headers.name }
@@ -183,8 +185,9 @@ class MockCsvParser constructor(
     }
 
     private fun parseMap(
-        rawValues: Array<String>?, schema: Schema,
-        headers: HeaderHierarchy
+        rawValues: Array<String>?,
+        schema: Schema,
+        headers: HeaderHierarchy,
     ): Map<String, Any?> = buildMap {
         for (child in headers.children.values) {
             put(child.name!!, parseValue(rawValues, schema.valueType, child))
@@ -194,7 +197,7 @@ class MockCsvParser constructor(
     private fun parseUnion(
         rawValues: Array<String>?,
         schema: Schema,
-        headers: HeaderHierarchy
+        headers: HeaderHierarchy,
     ): Any = requireNotNull(
         schema.types.firstNotNullOfOrNull { subSchema ->
             try {
@@ -203,13 +206,13 @@ class MockCsvParser constructor(
                 // skip bad union member
                 null
             }
-        }
+        },
     ) { "Cannot handle union types ${schema.types} in $headers" }
 
     private fun parseArray(
         rawValues: Array<String>?,
         schema: Schema,
-        headers: HeaderHierarchy
+        headers: HeaderHierarchy,
     ): List<Any?> {
         val children = headers.children
         val arrayLength = children.keys.stream()
@@ -242,7 +245,7 @@ class MockCsvParser constructor(
         private fun parseScalar(
             fieldString: String?,
             schema: Schema,
-            headers: HeaderHierarchy
+            headers: HeaderHierarchy,
         ): Any? {
             return when (schema.type) {
                 Schema.Type.NULL -> if (fieldString.isNullOrEmpty() || fieldString == "null") {
@@ -259,8 +262,8 @@ class MockCsvParser constructor(
                 Schema.Type.ENUM -> parseEnum(schema, fieldString)
                 Schema.Type.BYTES -> parseBytes(fieldString)
                 else -> throw IllegalArgumentException(
-                    "Cannot handle scalar schema of type "
-                            + schema.type + " in " + headers
+                    "Cannot handle scalar schema of type " +
+                        schema.type + " in " + headers,
                 )
             }
         }

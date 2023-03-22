@@ -33,16 +33,21 @@ class BinaryRecordContentTest {
     fun writeToStream() = runTest {
         val k = ObservationKey("test", "a", "b")
         val v = EmpaticaE4BloodVolumePulse(
-            0.0, 0.0,
-            0.0f
+            0.0,
+            0.0,
+            0.0f,
         )
         val t = AvroTopic(
-            "t", k.schema, v.schema, k.javaClass, v.javaClass
+            "t",
+            k.schema,
+            v.schema,
+            k.javaClass,
+            v.javaClass,
         )
         val request = BinaryRecordContent(
             AvroRecordData(t, k, listOf(v)),
             ParsedSchemaMetadata(2, 1, k.schema),
-            ParsedSchemaMetadata(4, 2, v.schema)
+            ParsedSchemaMetadata(4, 2, v.schema),
         )
 
         val channel = ByteChannel()
@@ -83,10 +88,10 @@ class BinaryRecordContentTest {
                             0,
                             0,
                             0,
-                            0
-                        )
-                    )
-                )
+                            0,
+                        ),
+                    ),
+                ),
             )
             .setProjectId(null)
             .setUserId(null)
@@ -119,7 +124,7 @@ class BinaryRecordContentTest {
                                 values[1].toDouble(),
                                 values[2].toFloat(),
                                 values[3].toFloat(),
-                                values[4].toFloat()
+                                values[4].toFloat(),
                             )
                             val out = ByteArrayOutputStream()
                             encoder = EncoderFactory.get().binaryEncoder(out, encoder)
@@ -157,15 +162,15 @@ class BinaryRecordContentTest {
         // zig-zag encoding schema used.
         // See http://avro.apache.org/docs/1.8.1/spec.html#binary_encoding
         private val EXPECTED = byteArrayOf(
-            2,  // key version x2
-            4,  // value version x2
-            0,  // null project ID
-            0,  // null user ID
-            2, 'b'.code.toByte(),  // string length x2, sourceId
-            2,  // number of records x2
-            40,  // number of bytes in the first value x2
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // value
-            0 // end of array
+            2, // key version x2
+            4, // value version x2
+            0, // null project ID
+            0, // null user ID
+            2, 'b'.code.toByte(), // string length x2, sourceId
+            2, // number of records x2
+            40, // number of bytes in the first value x2
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // value
+            0, // end of array
         )
     }
 }

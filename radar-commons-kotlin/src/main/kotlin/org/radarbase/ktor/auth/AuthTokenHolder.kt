@@ -4,7 +4,7 @@ import kotlinx.coroutines.CompletableDeferred
 import java.util.concurrent.atomic.AtomicReference
 
 internal class AuthTokenHolder<T>(
-    private val loadTokens: suspend () -> T?
+    private val loadTokens: suspend () -> T?,
 ) {
     private val refreshTokensDeferred = AtomicReference<CompletableDeferred<T?>?>(null)
     private val loadTokensDeferred = AtomicReference<CompletableDeferred<T?>?>(null)

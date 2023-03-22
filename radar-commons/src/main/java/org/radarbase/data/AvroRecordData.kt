@@ -16,7 +16,7 @@ import org.radarbase.topic.AvroTopic
  * @throws IllegalArgumentException if the values are empty.
  * @throws NullPointerException if any of the parameters are null.
  */
-class AvroRecordData<K: Any, V: Any>(
+class AvroRecordData<K : Any, V : Any>(
     override val topic: AvroTopic<K, V>,
     override val key: K,
     private val records: List<V>,

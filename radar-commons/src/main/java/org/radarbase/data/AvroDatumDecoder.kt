@@ -47,9 +47,10 @@ class AvroDatumDecoder(
 
     private inner class AvroRecordReader<T>(
         private val schema: Schema,
-        private val reader: DatumReader<T>
+        private val reader: DatumReader<T>,
     ) : AvroReader<T> {
         private var decoder: Decoder? = null
+
         @Throws(IOException::class)
         override fun decode(`object`: ByteArray): T {
             return decode(`object`, 0)
@@ -59,13 +60,15 @@ class AvroDatumDecoder(
         override fun decode(`object`: ByteArray, offset: Int): T {
             decoder = if (binary) {
                 decoderFactory.binaryDecoder(
-                    `object`, offset, `object`.size - offset,
-                    decoder as? BinaryDecoder
+                    `object`,
+                    offset,
+                    `object`.size - offset,
+                    decoder as? BinaryDecoder,
                 )
             } else {
                 decoderFactory.jsonDecoder(
                     schema,
-                    ByteArrayInputStream(`object`, offset, `object`.size - offset)
+                    ByteArrayInputStream(`object`, offset, `object`.size - offset),
                 )
             }
             return reader.read(null, decoder)
