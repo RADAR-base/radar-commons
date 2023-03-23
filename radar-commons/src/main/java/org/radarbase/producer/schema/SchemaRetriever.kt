@@ -76,7 +76,7 @@ open class SchemaRetriever(config: Config) {
 
     /** Get schema metadata. Cached schema metadata will be used if present.  */
     @Throws(IOException::class)
-    suspend fun getByVersion(
+    open suspend fun getByVersion(
         topic: String,
         ofValue: Boolean,
         version: Int,
@@ -93,10 +93,9 @@ open class SchemaRetriever(config: Config) {
         return metadata
     }
 
-
     /** Get schema metadata. Cached schema metadata will be used if present.  */
     @Throws(IOException::class)
-    suspend fun getById(
+    open suspend fun getById(
         topic: String,
         ofValue: Boolean,
         id: Int,
@@ -110,7 +109,7 @@ open class SchemaRetriever(config: Config) {
 
     /** Get the metadata of a specific schema in a topic.  */
     @Throws(IOException::class)
-    suspend fun metadata(
+    open suspend fun metadata(
         topic: String,
         ofValue: Boolean,
         schema: Schema,
@@ -180,7 +179,7 @@ open class SchemaRetriever(config: Config) {
     /**
      * Remove expired entries from cache.
      */
-    suspend fun pruneCache() = coroutineScope {
+    open suspend fun pruneCache() = coroutineScope {
         launch {
             schemaCache.values.prune()
         }
@@ -200,7 +199,7 @@ open class SchemaRetriever(config: Config) {
     /**
      * Remove all entries from cache.
      */
-    fun clearCache() {
+    open fun clearCache() {
         subjectVersionCache.clear()
         schemaCache.clear()
     }
