@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
     `kotlin-dsl`
     `java-gradle-plugin`
@@ -40,6 +42,15 @@ gradlePlugin {
             id = "org.radarbase.radar-kotlin"
             implementationClass = "org.radarbase.gradle.plugin.RadarKotlinPlugin"
         }
+    }
+}
+
+tasks.withType<JavaCompile> {
+    options.release.set(11)
+}
+tasks.withType<KotlinCompile> {
+    kotlinOptions {
+        jvmTarget = "11"
     }
 }
 

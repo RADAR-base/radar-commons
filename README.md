@@ -57,7 +57,7 @@ sender.sender(topic).use { topicSender ->
   }
 }
 ```
-Note that this code above does not include any flows for registering a source with the managmentportal.
+Note that this code above does not include any flows for registering a source with the ManagementPortal.
 
 For server utilities, include `radar-commons-server`:
 ```gradle
@@ -89,6 +89,8 @@ To test your backend with a MockProducer, copy `testing/mock.yml.template` to `t
 ./gradlew :testing:run
 ```
 to send data to your backend.
+
+To use the RADAR Gradle plugins, see the README of the `radar-commons-gradle` directory.
 
 ## Contributing
 

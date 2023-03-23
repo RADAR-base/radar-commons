@@ -10,20 +10,20 @@ import org.gradle.kotlin.dsl.apply
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.create
 
-fun Project.radarDependencyManagement(configure: RadarDependencyManagementExtension.() -> Unit) {
-    configure(configure)
+fun Project.radarDependencyManagement(block: RadarDependencyManagementExtension.() -> Unit) {
+    configure(block)
 }
 
 interface RadarDependencyManagementExtension {
     val regex: Property<String>
-    val minorUpdatesOnly: Property<Boolean>
+    val rejectMajorVersionUpdates: Property<Boolean>
 }
 
 class RadarDependencyManagementPlugin : Plugin<Project> {
     override fun apply(project: Project): Unit = with(project) {
         val extension = extensions.create<RadarDependencyManagementExtension>("radarDependencies").apply {
             regex.convention("(^[0-9,.v-]+(-r)?|RELEASE|FINAL|GA|-CE)$")
-            minorUpdatesOnly.convention(false)
+            rejectMajorVersionUpdates.convention(false)
         }
 
         apply<VersionsPlugin>()
@@ -38,9 +38,9 @@ class RadarDependencyManagementPlugin : Plugin<Project> {
                 }
             }
             val isStable = extension.regex.get().toRegex(RegexOption.IGNORE_CASE)
-            val checkMinorOnly = extension.minorUpdatesOnly.get()
+            val rejectMajorVersionUpdates = extension.rejectMajorVersionUpdates.get()
             rejectVersionIf {
-                (!checkMinorOnly || candidate.version.split('.', limit = 2)[0] != currentVersion.split('.', limit = 2)[0])
+                (!rejectMajorVersionUpdates || candidate.version.split('.', limit = 2)[0] != currentVersion.split('.', limit = 2)[0])
                         && !isStable.containsMatchIn(candidate.version)
             }
         }

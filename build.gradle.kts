@@ -1,3 +1,6 @@
+import org.radarbase.gradle.plugin.radarKotlin
+import org.radarbase.gradle.plugin.radarPublishing
+
 /*
  * Copyright 2017 The Hyve and King's College London
  *
@@ -13,15 +16,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import org.radarbase.gradle.plugin.radarKotlin
-import org.radarbase.gradle.plugin.radarPublishing
-import org.radarbase.gradle.plugin.radarRootProject
-
 plugins {
     kotlin("plugin.serialization") version Versions.Plugins.kotlinSerialization apply false
     id("com.github.davidmc24.gradle.plugin.avro") version Versions.Plugins.avro apply false
     id("org.radarbase.radar-root-project")
     id("org.radarbase.radar-dependency-management")
+    id("org.radarbase.radar-kotlin") apply false
+    id("org.radarbase.radar-publishing") apply false
 }
 
 val githubRepoName = "RADAR-base/radar-commons"
