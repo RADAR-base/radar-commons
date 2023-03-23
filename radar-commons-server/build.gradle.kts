@@ -38,7 +38,6 @@ dependencies {
     // Direct producer uses KafkaAvroSerializer if initialized
     testImplementation("io.confluent:kafka-avro-serializer:${Versions.confluent}")
     testImplementation("org.radarbase:radar-schemas-commons:${Versions.radarSchemas}")
-    testRuntimeOnly("org.slf4j:slf4j-simple:${Versions.slf4j}")
 }
 
 val generateAvroJava by tasks

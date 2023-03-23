@@ -29,14 +29,10 @@ dependencies {
 
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
 
-    // The production code uses the SLF4J logging API at compile time
-    implementation("org.slf4j:slf4j-api:${Versions.slf4j}")
-
     testImplementation(platform("com.fasterxml.jackson:jackson-bom:${Versions.jackson}"))
     testImplementation("com.fasterxml.jackson.core:jackson-databind")
     testImplementation("org.radarbase:radar-schemas-commons:${Versions.radarSchemas}")
     testImplementation("org.mockito:mockito-core:${Versions.mockito}")
     testImplementation("org.mockito.kotlin:mockito-kotlin:${Versions.mockitoKotlin}")
     testImplementation("com.squareup.okhttp3:mockwebserver:${Versions.okhttp}")
-    testRuntimeOnly("org.slf4j:slf4j-simple:${Versions.slf4j}")
 }

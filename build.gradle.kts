@@ -39,6 +39,7 @@ subprojects {
 
     dependencies {
         configurations["testImplementation"]("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.coroutines}")
+        configurations["testRuntimeOnly"]("org.slf4j:slf4j-simple:${Versions.slf4j}")
     }
 
     radarPublishing {
@@ -63,50 +64,10 @@ subprojects {
         javaVersion.set(Versions.java)
         kotlinVersion.set(Versions.Plugins.kotlin)
         junitVersion.set(Versions.junit)
+        slf4jVersion.set(Versions.slf4j)
     }
 
     //---------------------------------------------------------------------------//
     // Style checking                                                            //
     //---------------------------------------------------------------------------//
-
-    tasks.withType<Test> {
-        useJUnitPlatform()
-
-        val numberOfLines = 100
-        val stdout = ArrayDeque<String>(numberOfLines)
-        beforeTest(closureOf<TestDescriptor> {
-            stdout.clear()
-        })
-
-        onOutput(KotlinClosure2<TestDescriptor, TestOutputEvent, Unit>({ _, toe ->
-            toe.message.split("(?m)$").forEach { line ->
-                if (stdout.size == numberOfLines) {
-                    stdout.removeFirst()
-                }
-                stdout.addLast(line)
-            }
-        }))
-
-        afterTest(KotlinClosure2<TestDescriptor, TestResult, Unit>({ td, tr ->
-            if (tr.resultType == TestResult.ResultType.FAILURE) {
-                println()
-                print("${td.className}.${td.name} FAILED")
-                if (stdout.isEmpty()) {
-                    println(" without any output")
-                } else {
-                    println(" with last 100 lines of output:")
-                    println("=".repeat(100))
-                    stdout.forEach { print(it) }
-                    println("=".repeat(100))
-                }
-            }
-        }))
-
-        testLogging {
-            showExceptions = true
-            showCauses = true
-            showStackTraces = true
-            setExceptionFormat("full")
-        }
-    }
 }

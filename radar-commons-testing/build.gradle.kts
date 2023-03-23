@@ -56,6 +56,5 @@ dependencies {
     applicationRuntimeOnly("org.slf4j:slf4j-simple:${Versions.slf4j}")
 
     testImplementation("org.hamcrest:hamcrest:${Versions.hamcrest}")
-    testImplementation("org.slf4j:slf4j-simple:${Versions.slf4j}")
     testImplementation("org.mockito:mockito-core:${Versions.mockito}")
 }

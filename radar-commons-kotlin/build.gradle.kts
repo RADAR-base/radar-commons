@@ -5,8 +5,6 @@ plugins {
 description = "Library for Kotlin utility classes and functions"
 
 dependencies {
-    implementation("org.slf4j:slf4j-api:${Versions.slf4j}")
-
     api(platform("org.jetbrains.kotlinx:kotlinx-coroutines-bom:${Versions.coroutines}"))
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core")
 
