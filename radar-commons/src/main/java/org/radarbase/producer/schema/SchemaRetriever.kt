@@ -28,6 +28,7 @@ import org.radarbase.kotlin.coroutines.CacheConfig
 import org.radarbase.kotlin.coroutines.CachedValue
 import org.radarbase.util.RadarProducerDsl
 import java.io.IOException
+import java.lang.ref.SoftReference
 import java.util.*
 import java.util.Objects.hash
 import java.util.concurrent.ConcurrentHashMap
@@ -42,6 +43,7 @@ typealias VersionCache = ConcurrentMap<Int, CachedValue<ParsedSchemaMetadata>>
  * Retriever of an Avro Schema.
  */
 open class SchemaRetriever(config: Config) {
+    private val idCache: ConcurrentMap<Int, SoftReference<Schema>> = ConcurrentHashMap()
     private val schemaCache: ConcurrentMap<Schema, CachedValue<ParsedSchemaMetadata>> = ConcurrentHashMap()
     private val subjectVersionCache: ConcurrentMap<String, VersionCache> = ConcurrentHashMap()
 
@@ -72,19 +74,6 @@ open class SchemaRetriever(config: Config) {
         metadata.id
     }
 
-    private fun cachedMetadata(
-        subject: String,
-        schema: Schema,
-    ): CachedValue<ParsedSchemaMetadata> = schemaCache.computeIfAbsent(schema) {
-        CachedValue(schemaTimeout) {
-            val metadata = restClient.requestMetadata(subject, schema)
-            if (metadata.version != null) {
-                cachedVersion(subject, metadata.version).set(metadata)
-            }
-            metadata
-        }
-    }
-
     /** Get schema metadata. Cached schema metadata will be used if present.  */
     @Throws(IOException::class)
     suspend fun getByVersion(
@@ -102,6 +91,46 @@ open class SchemaRetriever(config: Config) {
             versionMap.cachedVersion(subject, metadata.version).set(metadata)
         }
         return metadata
+    }
+
+
+    /** Get schema metadata. Cached schema metadata will be used if present.  */
+    @Throws(IOException::class)
+    suspend fun getById(
+        topic: String,
+        ofValue: Boolean,
+        id: Int,
+    ): ParsedSchemaMetadata {
+        val subject = subject(topic, ofValue)
+        val schema = idCache[id]?.get()
+            ?: restClient.retrieveSchemaById(id)
+
+        return cachedMetadata(subject, schema).get()
+    }
+
+    /** Get the metadata of a specific schema in a topic.  */
+    @Throws(IOException::class)
+    suspend fun metadata(
+        topic: String,
+        ofValue: Boolean,
+        schema: Schema,
+    ): ParsedSchemaMetadata {
+        val subject = subject(topic, ofValue)
+        return cachedMetadata(subject, schema).get()
+    }
+
+    private fun cachedMetadata(
+        subject: String,
+        schema: Schema,
+    ): CachedValue<ParsedSchemaMetadata> = schemaCache.computeIfAbsent(schema) {
+        CachedValue(schemaTimeout) {
+            val metadata = restClient.requestMetadata(subject, schema)
+            if (metadata.version != null) {
+                cachedVersion(subject, metadata.version).set(metadata)
+            }
+            idCache[metadata.id] = SoftReference(metadata.schema)
+            metadata
+        }
     }
 
     private suspend fun cachedVersion(
@@ -123,21 +152,11 @@ open class SchemaRetriever(config: Config) {
             CachedValue(schemaTimeout) {
                 val metadata = restClient.retrieveSchemaMetadata(subject, version)
                 cachedMetadata(subject, metadata.schema).set(metadata)
+                idCache[metadata.id] = SoftReference(metadata.schema)
                 metadata
             }
         }
         return versionId
-    }
-
-    /** Get the metadata of a specific schema in a topic.  */
-    @Throws(IOException::class)
-    suspend fun metadata(
-        topic: String,
-        ofValue: Boolean,
-        schema: Schema,
-    ): ParsedSchemaMetadata {
-        val subject = subject(topic, ofValue)
-        return cachedMetadata(subject, schema).get()
     }
 
     private suspend fun <T> MutableCollection<CachedValue<T>>.prune() {

@@ -5,6 +5,7 @@ import org.gradle.api.Project
 import org.gradle.api.plugins.ApplicationPlugin
 import org.gradle.api.plugins.JavaApplication
 import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
@@ -96,6 +97,24 @@ class RadarKotlinPlugin : Plugin<Project> {
                 exceptionFormat = TestExceptionFormat.FULL
             }
             useJUnitPlatform()
+        }
+
+
+        tasks.register("downloadDependencies") {
+            doFirst {
+                configurations["compileClasspath"].files
+                configurations["runtimeClasspath"].files
+                println("Downloaded all dependencies")
+            }
+            outputs.upToDateWhen { false }
+        }
+
+        tasks.register<Copy>("copyDependencies") {
+            from(configurations.named("runtimeClasspath").map { it.files })
+            into("$buildDir/third-party/")
+            doLast {
+                println("Copied third-party runtime dependencies")
+            }
         }
 
         afterEvaluate {
