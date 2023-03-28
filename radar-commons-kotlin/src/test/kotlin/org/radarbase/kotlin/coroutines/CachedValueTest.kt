@@ -9,7 +9,6 @@ import org.hamcrest.Matchers.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -23,9 +22,9 @@ internal class CachedValueTest {
     fun setUp() {
         calls.set(0)
         config = CacheConfig(
-            refreshDuration = 20.milliseconds,
-            retryDuration = 10.milliseconds,
-            exceptionCacheDuration = 10.milliseconds,
+            refreshDuration = 40.milliseconds,
+            retryDuration = 20.milliseconds,
+            exceptionCacheDuration = 20.milliseconds,
         )
     }
 
@@ -35,7 +34,7 @@ internal class CachedValueTest {
         runBlocking(GlobalScope.coroutineContext) {
             assertThat("Initial value should refresh", cache.get(), `is`(1))
             assertThat("No refresh within threshold", cache.get(), `is`(1))
-            delay(10)
+            delay(20.milliseconds)
             assertThat("Refresh after threshold", cache.get(), `is`(2))
             assertThat("No refresh after threshold", cache.get(), `is`(2))
         }
@@ -47,7 +46,7 @@ internal class CachedValueTest {
         runBlocking {
             assertThat("Initial value should refresh", cache.get { it < 0 }, equalTo(CachedValue.CacheMiss(1)))
             assertThat("No refresh within threshold", cache.get { it < 0 }, equalTo(CachedValue.CacheHit(1)))
-            delay(10)
+            delay(20.milliseconds)
             assertThat("Refresh after threshold", cache.get { it < 0 }, equalTo(CachedValue.CacheMiss(2)))
             assertThat("No refresh after threshold", cache.get { it < 0 }, equalTo(CachedValue.CacheHit(2)))
         }
@@ -59,7 +58,7 @@ internal class CachedValueTest {
         runBlocking {
             assertThat("Initial value should refresh", cache.get { it >= 0 }, equalTo(CachedValue.CacheMiss(1)))
             assertThat("No refresh within threshold", cache.get { it >= 0 }, equalTo(CachedValue.CacheHit(1)))
-            delay(10)
+            delay(20.milliseconds)
             assertThat("No refresh after valid value", cache.get { it >= 0 }, equalTo(CachedValue.CacheHit(1)))
         }
     }
@@ -83,20 +82,20 @@ internal class CachedValueTest {
         runBlocking {
             assertThat("Initial value should refresh", cache.query({ it + 1 }, { it > 2 }), equalTo(CachedValue.CacheMiss(2)))
             assertThat("No refresh within threshold", cache.query({ it + 1 }, { it > 2 }), equalTo(CachedValue.CacheHit(2)))
-            delay(10)
+            delay(20.milliseconds)
             assertThat(
                 "Retry because predicate does not match",
                 cache.query({ it + 1 }, { it > 2 }),
                 equalTo(CachedValue.CacheMiss(3)),
             )
             assertThat("No refresh within threshold", cache.query({ it + 1 }, { it > 2 }), equalTo(CachedValue.CacheHit(3)))
-            delay(10)
+            delay(20.milliseconds)
             assertThat(
                 "No retry because predicate matches",
                 cache.query({ it + 1 }, { it > 2 }),
                 equalTo(CachedValue.CacheHit(3)),
             )
-            delay(10)
+            delay(20.milliseconds)
             assertThat(
                 "Refresh after refresh threshold since last retry",
                 cache.query({ it + 1 }, { it > 2 }),
@@ -109,7 +108,7 @@ internal class CachedValueTest {
     fun getMultithreaded() {
         val cache = CachedValue(config) {
             calls.incrementAndGet()
-            delay(50.milliseconds)
+            delay(100.milliseconds)
             calls.get()
         }
 
@@ -134,7 +133,7 @@ internal class CachedValueTest {
             ),
         ) {
             calls.incrementAndGet()
-            delay(50.milliseconds)
+            delay(100.milliseconds)
             calls.get()
         }
 
@@ -155,7 +154,7 @@ internal class CachedValueTest {
 
     @Test
     fun throwTest() {
-        val cache = CachedValue(config.copy(refreshDuration = 20.milliseconds)) {
+        val cache = CachedValue(config.copy(refreshDuration = 40.milliseconds)) {
             val newValue = calls.incrementAndGet()
             if (newValue % 2 == 0) throw IllegalStateException() else newValue
         }
@@ -163,15 +162,11 @@ internal class CachedValueTest {
         runBlocking {
             assertThat(cache.get(), `is`(1))
             assertThat(cache.get(), `is`(1))
-            delay(21.milliseconds)
+            delay(42.milliseconds)
             assertThrows<IllegalStateException> { cache.get() }
             assertThrows<Exception> { cache.get() }
-            delay(11.milliseconds)
+            delay(22.milliseconds)
             assertThat(cache.get(), `is`(3))
         }
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(CachedValueTest::class.java)
     }
 }
