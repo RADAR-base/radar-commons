@@ -43,7 +43,7 @@ class RadarKotlinPlugin : Plugin<Project> {
         apply<KtlintPlugin>()
 
         repositories {
-            mavenCentral() {
+            mavenCentral {
                 mavenContent {
                     releasesOnly()
                 }
