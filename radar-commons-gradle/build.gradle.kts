@@ -61,7 +61,9 @@ publishing {
             setUrl("https://maven.pkg.github.com/radar-base/radar-commons")
             credentials {
                 username = System.getenv("GITHUB_ACTOR")
+                    ?: extra.properties["gpr.user"] as? String
                 password = System.getenv("GITHUB_TOKEN")
+                    ?: extra.properties["gpr.key"] as? String
             }
         }
     }
