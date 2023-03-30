@@ -51,7 +51,8 @@ open class SchemaRetriever(config: Config) {
     private val ioContext = config.ioContext
     private val httpClient = requireNotNull(config.httpClient) { "Missing HTTP client" }
 
-    private val restClient: SchemaRestClient = SchemaRestClient(httpClient, baseUrl, ioContext)
+    val restClient: SchemaRestClient = SchemaRestClient(httpClient, baseUrl, ioContext)
+
     private val schemaTimeout = config.schemaTimeout
 
     /**

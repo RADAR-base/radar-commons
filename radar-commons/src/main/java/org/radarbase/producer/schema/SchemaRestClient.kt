@@ -8,6 +8,7 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import io.ktor.util.reflect.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -37,6 +38,34 @@ class SchemaRestClient(
         }
     }
 
+    suspend inline fun <reified T> request(
+        noinline requestBuilder: HttpRequestBuilder.() -> Unit,
+    ): T = request(typeInfo<T>(), requestBuilder)
+
+    suspend fun <T> request(
+        typeInfo: TypeInfo,
+        requestBuilder: HttpRequestBuilder.() -> Unit,
+    ): T = withContext(ioContext) {
+        val response = httpClient.request {
+            requestBuilder()
+        }
+        if (!response.status.isSuccess()) {
+            throw RestException(response.status, response.bodyAsText())
+        }
+        response.body(typeInfo)
+    }
+
+    suspend fun requestEmpty(
+        requestBuilder: HttpRequestBuilder.() -> Unit,
+    ) = withContext(ioContext) {
+        val response = httpClient.request {
+            requestBuilder()
+        }
+        if (!response.status.isSuccess()) {
+            throw RestException(response.status, response.bodyAsText())
+        }
+    }
+
     /** Retrieve schema metadata from server.  */
     @Throws(IOException::class)
     suspend fun retrieveSchemaMetadata(
@@ -50,32 +79,20 @@ class SchemaRestClient(
     }
 
     @Throws(IOException::class)
-    suspend fun schemaGet(path: String): SchemaMetadata = withContext(ioContext) {
-        val response = httpClient.get {
-            url(path)
-        }
-        if (response.status.isSuccess()) {
-            response.body()
-        } else {
-            throw RestException(response.status, response.bodyAsText())
-        }
+    suspend fun schemaGet(path: String): SchemaMetadata = request {
+        method = HttpMethod.Get
+        url(path)
     }
 
     @Throws(IOException::class)
     suspend fun schemaPost(
         path: String,
         schema: Schema,
-    ): SchemaMetadata = withContext(ioContext) {
-        val response = httpClient.post {
-            url(path)
-            contentType(ContentType.Application.Json)
-            setBody(SchemaMetadata(schema = schema.toString()))
-        }
-        if (response.status.isSuccess()) {
-            response.body()
-        } else {
-            throw RestException(response.status, response.bodyAsText())
-        }
+    ): SchemaMetadata = request {
+        method = HttpMethod.Post
+        url(path)
+        contentType(ContentType.Application.Json)
+        setBody(SchemaMetadata(schema = schema.toString()))
     }
 
     /** Add a schema to a subject.  */
@@ -94,9 +111,9 @@ class SchemaRestClient(
     suspend fun requestMetadata(
         subject: String,
         schema: Schema,
-    ): ParsedSchemaMetadata = withContext(ioContext) {
+    ): ParsedSchemaMetadata {
         val result = schemaPost("subjects/$subject", schema)
-        ParsedSchemaMetadata(
+        return ParsedSchemaMetadata(
             id = checkNotNull(result.id) { "Missing schema ID in request result" },
             version = result.version,
             schema = schema,
