@@ -33,8 +33,8 @@ data class SchemaMetadata
     val version: Int? = null,
     val schema: String? = null,
 ) {
-    fun toParsedSchemaMetadata() = ParsedSchemaMetadata(
-        id = checkNotNull(id) { "Need id to parse schema metadata" },
+    fun toParsedSchemaMetadata(defaultId: Int? = null) = ParsedSchemaMetadata(
+        id = checkNotNull(id ?: defaultId) { "Need id to parse schema metadata" },
         version = version,
         schema = Schema.Parser().parse(
             checkNotNull(schema) { "Need schema to parse it" },

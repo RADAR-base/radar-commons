@@ -123,6 +123,6 @@ class SchemaRestClient(
     /** Retrieve schema metadata from server.  */
     suspend fun retrieveSchemaById(id: Int): Schema =
         schemaGet("/schemas/ids/$id")
-            .toParsedSchemaMetadata()
+            .toParsedSchemaMetadata(id)
             .schema
 }
