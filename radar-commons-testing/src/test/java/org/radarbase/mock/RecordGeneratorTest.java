@@ -16,17 +16,17 @@
 
 package org.radarbase.mock;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import java.util.Iterator;
 import org.apache.avro.specific.SpecificRecord;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.radarbase.data.Record;
-import org.radarcns.kafka.ObservationKey;
 import org.radarbase.mock.config.MockDataConfig;
 import org.radarbase.mock.data.RecordGenerator;
+import org.radarcns.kafka.ObservationKey;
 import org.radarcns.passive.empatica.EmpaticaE4Acceleration;
 
 /**
@@ -35,7 +35,7 @@ import org.radarcns.passive.empatica.EmpaticaE4Acceleration;
 public class RecordGeneratorTest {
 
     @Test
-    public void generate() throws Exception {
+    public void generate() {
         MockDataConfig config = new MockDataConfig();
         config.setTopic("test");
         config.setFrequency(10);
@@ -49,23 +49,23 @@ public class RecordGeneratorTest {
         Iterator<Record<ObservationKey, SpecificRecord>> iter = generator
                 .iterateValues(new ObservationKey("test", "a", "b"), 0);
         Record<ObservationKey, SpecificRecord> record = iter.next();
-        assertEquals(new ObservationKey("test", "a", "b"), record.key);
-        float x = ((EmpaticaE4Acceleration)record.value).getX();
+        assertEquals(new ObservationKey("test", "a", "b"), record.getKey());
+        float x = ((EmpaticaE4Acceleration)record.getValue()).getX();
         assertTrue(x >= 0.1f && x < 9.9f);
-        float y = ((EmpaticaE4Acceleration)record.value).getX();
+        float y = ((EmpaticaE4Acceleration)record.getValue()).getX();
         assertTrue(y >= 0.1f && y < 9.9f);
-        float z = ((EmpaticaE4Acceleration)record.value).getX();
+        float z = ((EmpaticaE4Acceleration)record.getValue()).getX();
         assertTrue(z >= 0.1f && z < 9.9f);
-        double time = ((EmpaticaE4Acceleration)record.value).getTime();
+        double time = ((EmpaticaE4Acceleration)record.getValue()).getTime();
         assertTrue(time > System.currentTimeMillis() / 1000d - 1d
                 && time <= System.currentTimeMillis() / 1000d);
 
         Record<ObservationKey, SpecificRecord> nextRecord = iter.next();
-        assertEquals(time + 0.1d, (Double)nextRecord.value.get(0), 1e-6);
+        assertEquals(time + 0.1d, (Double)nextRecord.getValue().get(0), 1e-6);
     }
 
     @Test
-    public void getHeaders() throws Exception {
+    public void getHeaders() {
         MockDataConfig config = new MockDataConfig();
         config.setTopic("test");
         config.setValueSchema(EmpaticaE4Acceleration.class.getName());

@@ -70,12 +70,12 @@ public abstract class ExpectedValue<V extends RecordCollector> {
         if (timeReceivedPos == -1) {
             throw new IllegalStateException("Cannot parse record without a schema.");
         }
-        long timeMillis = (long) ((Double) record.value.get(timeReceivedPos) * 1000d);
+        long timeMillis = (long) ((Double) record.getValue().get(timeReceivedPos) * 1000d);
         if (timeMillis >= lastTimestamp + DURATION || lastCollector == null) {
             lastTimestamp = timeMillis - (timeMillis % DURATION);
             lastCollector = createCollector();
             getSeries().put(lastTimestamp, lastCollector);
         }
-        lastCollector.add(record.value);
+        lastCollector.add(record.getValue());
     }
 }

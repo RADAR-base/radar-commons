@@ -23,6 +23,15 @@ jobs:
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
 
+      - name: Check version
+        run: |
+          projectVersion=$(./gradlew properties | grep '^version:.*$')
+          pluginVersion=$(./gradlew :radar-commons-gradle:properties | grep '^version:.*$')
+          if [ "$projectVersion" != "$pluginVersion" ]; then
+            echo "Project version $projectVersion does not match plugin version $pluginVersion"
+            exit 1
+          fi
+
       # Compile code
       - name: Compile code
         run: ./gradlew assemble
@@ -44,3 +53,8 @@ jobs:
           OSSRH_USER: ${{ secrets.OSSRH_USER }}
           OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
         run: ./gradlew -Psigning.gnupg.keyName=CBEF2CF0 -Psigning.gnupg.executable=gpg -Psigning.gnupg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }} publish closeAndReleaseSonatypeStagingRepository
+
+      - name: Publish gradle plugin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew :radar-commons-gradle:publish

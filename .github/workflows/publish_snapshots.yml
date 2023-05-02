@@ -17,10 +17,6 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
 
-      - name: Has SNAPSHOT version
-        id: is-snapshot
-        run: grep "version = '.*-SNAPSHOT'" build.gradle
-
       - uses: actions/setup-java@v3
         with:
           distribution: temurin
@@ -28,6 +24,9 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
+
+      - name: Has SNAPSHOT version
+        run: ./gradlew properties | grep '^version:.*-SNAPSHOT$'
 
       - name: Install gpg secret key
         run: |
@@ -39,3 +38,11 @@ jobs:
           OSSRH_USER: ${{ secrets.OSSRH_USER }}
           OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
         run: ./gradlew -Psigning.gnupg.keyName=CBEF2CF0 -Psigning.gnupg.executable=gpg -Psigning.gnupg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }} publish
+
+      - name: Plugin has SNAPSHOT version
+        run: ./gradlew :radar-commons-gradle:properties | grep '^version:.*-SNAPSHOT$'
+
+      - name: Publish gradle plugin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew :radar-commons-gradle:publish

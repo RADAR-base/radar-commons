@@ -16,16 +16,14 @@
 
 package org.radarbase.config;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
-import okhttp3.HttpUrl;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Created by joris on 01/05/2017.
@@ -60,27 +58,5 @@ public class ServerConfigTest {
                         + "host: 52.210.59.174\n"
                         + "path: /schema"))
                         .getUrlString());
-    }
-
-    @Test
-    public void getHttpUrl() throws MalformedURLException {
-        ServerConfig config = new ServerConfig("http://something.else/that");
-        HttpUrl url = config.getHttpUrl();
-        assertEquals("http://something.else/that/", url.toString());
-        assertEquals("something.else", url.host());
-        assertEquals("http", url.scheme());
-        assertEquals(80, url.port());
-        assertEquals("/that/", url.encodedPath());
-    }
-
-    @Test
-    public void getHttpUrlWitoutRoot() throws MalformedURLException {
-        ServerConfig config = new ServerConfig("http://something.else");
-        HttpUrl url = config.getHttpUrl();
-        assertEquals("http://something.else/", url.toString());
-        assertEquals("something.else", url.host());
-        assertEquals("http", url.scheme());
-        assertEquals(80, url.port());
-        assertEquals("/", url.encodedPath());
     }
 }

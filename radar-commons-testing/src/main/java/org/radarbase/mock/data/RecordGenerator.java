@@ -191,15 +191,15 @@ public class RecordGenerator<K extends SpecificRecord> {
         public String[] next() {
             Record<K, SpecificRecord> record = baseIterator.next();
 
-            int keyFieldsSize = record.key.getSchema().getFields().size();
-            int valueFieldsSize = record.value.getSchema().getFields().size();
+            int keyFieldsSize = record.getKey().getSchema().getFields().size();
+            int valueFieldsSize = record.getValue().getSchema().getFields().size();
 
             String[] result = new String[keyFieldsSize + valueFieldsSize];
             for (int i = 0; i < keyFieldsSize; i++) {
-                result[i] = record.key.get(i).toString();
+                result[i] = record.getKey().get(i).toString();
             }
             for (int i = 0; i < valueFieldsSize; i++) {
-                result[i + keyFieldsSize] = record.value.get(i).toString();
+                result[i + keyFieldsSize] = record.getValue().get(i).toString();
             }
             return result;
         }

@@ -40,7 +40,7 @@ public class AvroTopicConfig {
      */
     public <K extends SpecificRecord, V extends SpecificRecord> AvroTopic<K, V> parseAvroTopic() {
         try {
-            return AvroTopic.parse(topic, keySchema, valueSchema);
+            return AvroTopic.Companion.parse(topic, keySchema, valueSchema);
         } catch (IllegalArgumentException ex) {
             throw new IllegalStateException("Topic " + topic
                     + " schema cannot be instantiated", ex);
