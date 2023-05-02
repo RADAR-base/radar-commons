@@ -1,5 +1,5 @@
 object Versions {
-    const val project = "1.0.0"
+    const val project = "1.0.1-SNAPSHOT"
 
     object Plugins {
         const val kotlin = "1.8.21"

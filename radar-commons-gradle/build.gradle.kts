@@ -7,7 +7,7 @@ plugins {
     `maven-publish`
 }
 
-version = "1.0.0"
+version = "1.0.1-SNAPSHOT"
 group = "org.radarbase"
 description = "RADAR common Gradle plugins"
 
