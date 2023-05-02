@@ -207,22 +207,26 @@ open class CachedValue<T>(
         cache.set(null)
     }
 
-    @OptIn(ExperimentalTime::class)
-    sealed class CacheContents<T>(
-        time: TimeMark? = null,
-    ) {
+    sealed class CacheContents<T>
+    @ExperimentalTime
+    constructor(time: TimeMark?) {
+
+        @OptIn(ExperimentalTime::class)
+        constructor() : this(null)
+
+        @ExperimentalTime
         protected val time: TimeMark = time ?: TimeSource.Monotonic.markNow()
 
+        @OptIn(ExperimentalTime::class)
         open fun isExpired(age: Duration): Boolean = (time + age).hasPassedNow()
 
         abstract fun getOrThrow(): T
 
-        @Suppress("UNCHECKED_CAST")
         abstract suspend fun <R> map(transform: suspend (T) -> R): CacheContents<R>
     }
 
-    @OptIn(ExperimentalTime::class)
-    class CacheError<T> internal constructor(
+    class CacheError<T>
+    internal constructor(
         val exception: Throwable,
     ) : CacheContents<T>() {
         override fun isExpired(age: Duration): Boolean = exception is CancellationException || super.isExpired(age)
@@ -233,12 +237,19 @@ open class CachedValue<T>(
     }
 
     @OptIn(ExperimentalTime::class)
-    class CacheValue<T> internal constructor(
+    class CacheValue<T>
+    @ExperimentalTime
+    internal constructor(
         val value: T,
-        time: TimeMark? = null,
+        time: TimeMark?,
     ) : CacheContents<T>(time) {
+
+        @OptIn(ExperimentalTime::class)
+        constructor(value: T) : this(value, null)
+
         override fun getOrThrow(): T = value
 
+        @OptIn(ExperimentalTime::class)
         override suspend fun <R> map(transform: suspend (T) -> R): CacheContents<R> = try {
             CacheValue(transform(value), time = time)
         } catch (ex: Throwable) {

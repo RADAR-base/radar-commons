@@ -227,6 +227,13 @@ class RestKafkaSender(config: Config) : KafkaSender {
                 ?: HttpClient(CIO, config)
         }
 
+        fun schemaRetriever(schemaBaseUrl: String, builder: SchemaRetriever.Config.() -> Unit = {}) {
+            schemaRetriever = SchemaRetriever.schemaRetriever(schemaBaseUrl) {
+                httpClient = this@Config.httpClient
+                builder()
+            }
+        }
+
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other == null || javaClass != other.javaClass) return false

@@ -12,51 +12,46 @@ repositories {
 }
 
 dependencies {
-    implementation("org.radarbase:radar-commons:0.15.0")
+    implementation("org.radarbase:radar-commons:1.0.0")
 }
 ```
 
 Example use, after adding [`radar-schemas`](https://github.com/radar-base/radar-schemas) to classpath:
+
 ```kotlin
 // Set URLs for RADAR-base installation
-val baseUrl = "..."
-val kafkaUrl = "$baseUrl/kafka/"
-val schemaUrl = "$baseUrl/schema/"
-val oauthHeaders = ...
-val key = ObservationKey("myProject", "myUser", "mySource")
+val baseUrl = "https://..."
+val oauthToken = ...
 
-// Configure RADAR-base clients
-val client = RestClient.global().apply {
-    server(ServerConfig(kafkaUrl))
-    gzipCompression(true)
-}.build()
-
-val schemaRetriever = SchemaRetriever(ServerConfig(schemaUrl), 30)
-
-val restSender = RestSender.Builder().apply {
-    httpClient(client)
-    schemaRetriever(schemaRetriever)
-    useBinaryContent(true)
-    headers(oauthHeaders)
-}.build()
-
-val sender = BatchedKafkaSender(restSender, 60_000L, 1000L)
+val kafkaSender = restKafkaSender {
+    baseUrl = "$baseUrl/kafka/"
+    headers.append("Authorization", "Bearer $oauthToken")
+    httpClient {
+        timeout(10.seconds)
+    }
+    schemaRetriever ("$baseUrl/schema/")
+}
 
 // Configure topic to send data over
-val topic = AvroTopic("linux_raspberry_temperature",
-  ObservationKey.getClassSchema(), RaspberryTemperature.getClassSchema(),
-  ObservationKey::class.java, RaspberryTemperature::class.java)
+val topic = AvroTopic(
+    "linux_raspberry_temperature",
+    ObservationKey.getClassSchema(),
+    RaspberryTemperature.getClassSchema(),
+    ObservationKey::class.java,
+    RaspberryTemperature::class.java
+)
 
-// Send data to topic. Be sure to close
-// the sender after use. Preferably, a sender is reused
-// for many observations so that requests are efficiently
-// batched.
-sender.sender(topic).use { topicSender ->
-  readValuesFromSystem() { value ->
-    topicSender.send(key, value)
-  }
+val topicSender = kafkaSender.sender(topic)
+
+val key = ObservationKey("myProject", "myUser", "mySource")
+
+// Send data to topic.
+runBlocking {
+    val values: List<RaspberryTemperature> = readValuesFromSystem()
+    topicSender.send(key, values)
 }
 ```
+
 Note that this code above does not include any flows for registering a source with the ManagementPortal.
 
 For server utilities, include `radar-commons-server`:
@@ -67,7 +62,7 @@ repositories {
 }
 
 dependencies {
-    implementation("org.radarbase:radar-commons-server:0.15.0")
+    implementation("org.radarbase:radar-commons-server:1.0.0")
 }
 ```
 
@@ -80,7 +75,7 @@ repositories {
 }
 
 dependencies {
-    testImplementation("org.radarbase:radar-commons-testing:0.15.0")
+    testImplementation("org.radarbase:radar-commons-testing:1.0.0")
 }
 ```
 
@@ -107,9 +102,9 @@ configurations.all {
 }
 
 dependencies {
-    implementation("org.radarbase:radar-commons:0.15.1-SNAPSHOT")
+    implementation("org.radarbase:radar-commons:1.0.1-SNAPSHOT")
 }
 ```
 
-Code should be formatted using the [Google Java Code Style Guide](https://google.github.io/styleguide/javaguide.html).
+Code should be formatted using the Kotlin official style guide, in addition to ktlint rules.
 If you want to contribute a feature or fix browse our [issues](https://github.com/RADAR-base/radar-commons/issues), and please make a pull request.

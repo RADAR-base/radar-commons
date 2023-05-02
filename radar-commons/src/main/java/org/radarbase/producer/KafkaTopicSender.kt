@@ -21,7 +21,18 @@ interface KafkaTopicSender<K : Any, V : Any> {
      * @throws IOException if the client could not send a message
      */
     @Throws(IOException::class, SchemaValidationException::class)
-    suspend fun send(key: K, value: V) = send(AvroRecordData(topic, key, listOf(value)))
+    suspend fun send(key: K, value: V) = send(key, listOf(value))
+
+    /**
+     * Send a message to Kafka eventually.
+     *
+     * @param key key of a kafka record to send
+     * @param values values for kafka records to send
+     * @throws AuthenticationException if the client failed to authenticate itself
+     * @throws IOException if the client could not send a message
+     */
+    @Throws(IOException::class, SchemaValidationException::class)
+    suspend fun send(key: K, values: List<V>) = send(AvroRecordData(topic, key, values))
 
     /**
      * Send a message to Kafka eventually. Contained offsets must be strictly monotonically

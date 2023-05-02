@@ -7,7 +7,7 @@ plugins {
     `maven-publish`
 }
 
-version = "0.16.0-SNAPSHOT"
+version = "1.0.0"
 group = "org.radarbase"
 description = "RADAR common Gradle plugins"
 
@@ -21,7 +21,7 @@ dependencies {
     implementation("org.jetbrains.dokka:dokka-gradle-plugin:1.8.10")
     implementation("com.github.ben-manes:gradle-versions-plugin:0.46.0")
     implementation("io.github.gradle-nexus:publish-plugin:1.3.0")
-    implementation("org.jlleitschuh.gradle:ktlint-gradle:11.3.1")
+    implementation("org.jlleitschuh.gradle:ktlint-gradle:11.3.2")
 }
 
 gradlePlugin {
