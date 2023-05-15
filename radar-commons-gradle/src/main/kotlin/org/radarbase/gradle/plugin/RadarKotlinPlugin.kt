@@ -23,6 +23,7 @@ fun Project.radarKotlin(configure: RadarKotlinExtension.() -> Unit) {
 interface RadarKotlinExtension {
     val javaVersion: Property<Int>
     val kotlinVersion: Property<String>
+    val kotlinApiVersion: Property<String>
     val junitVersion: Property<String>
     val log4j2Version: Property<String>
     val slf4jVersion: Property<String>
@@ -34,6 +35,7 @@ class RadarKotlinPlugin : Plugin<Project> {
         val extension = extensions.create<RadarKotlinExtension>("radarKotlin").apply {
             javaVersion.convention(Versions.java)
             kotlinVersion.convention(Versions.kotlin)
+            kotlinApiVersion.convention("")
             junitVersion.convention(Versions.junit)
             ktlintVersion.convention(Versions.ktlint)
             slf4jVersion.convention(Versions.ktlint)
@@ -67,17 +69,21 @@ class RadarKotlinPlugin : Plugin<Project> {
 
         tasks.withType<KotlinCompile> {
             compilerOptions {
-                jvmTarget.set(extension.javaVersion.map { JvmTarget.fromTarget(it.toString()) })
-                val kotlinVersion = extension.kotlinVersion.map { version ->
-                    KotlinVersion.fromVersion(
-                        version
-                            .splitToSequence('.')
-                            .take(2)
-                            .joinToString(separator = "."),
-                    )
-                }
-                apiVersion.set(kotlinVersion)
-                languageVersion.set(kotlinVersion)
+                jvmTarget.set(
+                    extension.javaVersion.map { JvmTarget.fromTarget(it.toString()) }
+                )
+                apiVersion.set(
+                    extension.kotlinApiVersion.zip(extension.kotlinVersion) { apiVersion, kotlinVersion ->
+                        if (apiVersion.isNotEmpty()) {
+                            KotlinVersion.fromVersion(apiVersion)
+                        } else {
+                            kotlinVersion.toKotlinVersion()
+                        }
+                    }
+                )
+                languageVersion.set(
+                    extension.kotlinVersion.map { it.toKotlinVersion() }
+                )
             }
         }
 
@@ -163,5 +169,13 @@ class RadarKotlinPlugin : Plugin<Project> {
         configurations.named("implementation") {
             resolutionStrategy.cacheChangingModulesFor(0, "SECONDS")
         }
+    }
+
+    companion object {
+        fun String.toKotlinVersion() = KotlinVersion.fromVersion(
+            splitToSequence('.')
+                .take(2)
+                .joinToString(separator = "."),
+        )
     }
 }
