@@ -67,9 +67,9 @@ class DirectBinaryEncoder(
     }
 
     /*
-   * buffering is slower for ints that encode to just 1 or two bytes, and and
-   * faster for large ones. (Sun JRE 1.6u22, x64 -server)
-   */
+     * buffering is slower for ints that encode to just 1 or two bytes, and and
+     * faster for large ones. (Sun JRE 1.6u22, x64 -server)
+     */
     @Throws(IOException::class)
     override suspend fun writeInt(n: Int) {
         val `val` = n shl 1 xor (n shr 31)
@@ -86,9 +86,9 @@ class DirectBinaryEncoder(
     }
 
     /*
-   * buffering is slower for writeLong when the number is small enough to fit in
-   * an int. (Sun JRE 1.6u22, x64 -server)
-   */
+     * buffering is slower for writeLong when the number is small enough to fit in
+     * an int. (Sun JRE 1.6u22, x64 -server)
+     */
     @Throws(IOException::class)
     override suspend fun writeLong(n: Long) {
         val `val` = n shl 1 xor (n shr 63) // move sign to low-order bit

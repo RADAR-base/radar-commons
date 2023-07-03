@@ -18,12 +18,7 @@ package org.radarbase.data
 /**
  * A single data record.
  *
- * @param <K> key type
- * @param <V> value type
-</V></K> */
-class Record<K, V>
-/**
- * Single record, with current time as time added.
- * @param key key
- * @param value value
- */(val key: K, val value: V)
+ * @param K key type
+ * @param V value type
+*/
+class Record<K, V>(val key: K, val value: V)
