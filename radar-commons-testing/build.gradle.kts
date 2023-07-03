@@ -52,6 +52,10 @@ dependencies {
     }
     implementation("io.confluent:kafka-avro-serializer:${Versions.confluent}")
 
+    api("org.apache.avro:avro:${Versions.avro}") {
+        implementation("org.apache.commons:commons-compress:${Versions.commonsCompress}")
+    }
+
     implementation(platform("io.ktor:ktor-bom:${Versions.ktor}"))
     implementation("io.ktor:ktor-serialization-kotlinx-json")
 

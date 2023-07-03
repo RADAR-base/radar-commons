@@ -22,7 +22,7 @@ interface RadarDependencyManagementExtension {
 class RadarDependencyManagementPlugin : Plugin<Project> {
     override fun apply(project: Project): Unit = with(project) {
         val extension = extensions.create<RadarDependencyManagementExtension>("radarDependencies").apply {
-            regex.convention("(^[0-9,.v-]+(-r)?|RELEASE|FINAL|GA|-CE)$")
+            regex.convention("(^[0-9,.v-]+(-r)?|RELEASE|FINAL|GA|-CE|-JRE|-ANDROID)$")
             rejectMajorVersionUpdates.convention(false)
         }
 
