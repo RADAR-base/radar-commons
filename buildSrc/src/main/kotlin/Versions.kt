@@ -11,6 +11,8 @@ object Versions {
     const val slf4j = "2.0.7"
     const val confluent = "7.4.0"
     const val kafka = "7.4.0-ce"
+    const val snappy = "1.1.10.1"
+    const val guava = "32.1.1-jre"
     const val avro = "1.11.1"
     const val jackson = "2.15.2"
     const val okhttp = "4.11.0"

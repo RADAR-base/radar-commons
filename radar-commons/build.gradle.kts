@@ -15,7 +15,9 @@ repositories {
 
 // In this section you declare the dependencies for your production and test code
 dependencies {
-    api("org.apache.avro:avro:${Versions.avro}")
+    api("org.apache.avro:avro:${Versions.avro}") {
+        runtimeOnly("com.fasterxml.jackson.core:jackson-databind:${Versions.jackson}")
+    }
     api(kotlin("reflect"))
 
     implementation(project(":radar-commons-kotlin"))

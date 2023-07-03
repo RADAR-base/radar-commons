@@ -47,8 +47,17 @@ dependencies {
     implementation(platform("com.fasterxml.jackson:jackson-bom:${Versions.jackson}"))
     implementation("com.fasterxml.jackson.core:jackson-databind")
 
-    implementation("org.apache.kafka:kafka-clients:${Versions.kafka}")
-    implementation("io.confluent:kafka-avro-serializer:${Versions.confluent}")
+    implementation("org.apache.kafka:kafka-clients:${Versions.kafka}") {
+        runtimeOnly("org.xerial.snappy:snappy-java") {
+            version {
+                strictly(Versions.snappy)
+            }
+        }
+    }
+
+    implementation("io.confluent:kafka-avro-serializer:${Versions.confluent}") {
+        runtimeOnly("com.google.guava:guava:${Versions.guava}")
+    }
 
     implementation(platform("io.ktor:ktor-bom:${Versions.ktor}"))
     implementation("io.ktor:ktor-serialization-kotlinx-json")
