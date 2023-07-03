@@ -17,11 +17,12 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.10")
-    implementation("org.jetbrains.dokka:dokka-gradle-plugin:1.8.10")
-    implementation("com.github.ben-manes:gradle-versions-plugin:0.46.0")
+    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.22")
+    implementation("org.jetbrains.dokka:dokka-gradle-plugin:1.8.20")
+    implementation("com.github.ben-manes:gradle-versions-plugin:0.47.0")
     implementation("io.github.gradle-nexus:publish-plugin:1.3.0")
-    implementation("org.jlleitschuh.gradle:ktlint-gradle:11.3.2")
+    implementation("org.jlleitschuh.gradle:ktlint-gradle:11.4.2")
+    implementation("com.github.jk1.dependency-license-report:com.github.jk1.dependency-license-report.gradle.plugin:2.5")
 }
 
 gradlePlugin {

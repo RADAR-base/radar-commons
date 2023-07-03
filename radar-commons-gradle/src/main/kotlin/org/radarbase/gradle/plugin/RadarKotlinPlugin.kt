@@ -1,11 +1,14 @@
 package org.radarbase.gradle.plugin
 
+import com.github.jk1.license.LicenseReportPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.ApplicationPlugin
 import org.gradle.api.plugins.JavaApplication
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Copy
+import org.gradle.api.tasks.bundling.Compression
+import org.gradle.api.tasks.bundling.Tar
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
@@ -121,6 +124,19 @@ class RadarKotlinPlugin : Plugin<Project> {
             doLast {
                 println("Copied third-party runtime dependencies")
             }
+        }
+
+        apply<LicenseReportPlugin>()
+
+        tasks.register<Tar>("collectLicenses") {
+            from(
+                fileTree("$buildDir/reports/dependency-license"),
+                rootDir.resolve("LICENSE"),
+            )
+            compression = Compression.GZIP
+            destinationDirectory.set(file("$buildDir/reports"))
+            archiveBaseName.set("${project.name}-dependency-license")
+            dependsOn(tasks["generateLicenseReport"])
         }
 
         afterEvaluate {
