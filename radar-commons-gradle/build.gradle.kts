@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     `kotlin-dsl`
     `java-gradle-plugin`
-    kotlin("jvm") version "1.8.10"
+    kotlin("jvm") version "1.9.0"
     `maven-publish`
 }
 
