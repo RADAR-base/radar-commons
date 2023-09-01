@@ -6,11 +6,16 @@ plugins {
     `java-gradle-plugin`
     kotlin("jvm") version "1.9.0"
     `maven-publish`
+    id("io.github.gradle-nexus.publish-plugin") version "1.3.0"
+    id("org.jetbrains.dokka") version "1.9.0"
+    signing
 }
 
-version = "1.0.2-SNAPSHOT"
+version = "1.0.1-SNAPSHOT"
 group = "org.radarbase"
-description = "RADAR common Gradle plugins"
+description = "RADAR-base common Gradle plugin setup"
+
+val githubUrl = "https://github.com/RADAR-base/radar-commons"
 
 repositories {
     mavenCentral()
@@ -58,17 +63,107 @@ tasks.withType<KotlinCompile> {
     }
 }
 
-publishing {
-    repositories {
-        maven {
-            name = "GitHubPackages"
-            setUrl("https://maven.pkg.github.com/radar-base/radar-commons")
-            credentials {
-                username = System.getenv("GITHUB_ACTOR")
-                    ?: extra.properties["gpr.user"] as? String
-                password = System.getenv("GITHUB_TOKEN")
-                    ?: extra.properties["gpr.key"] as? String
+tasks.withType<Jar> {
+    manifest {
+        attributes(
+            "Implementation-Title" to project.name,
+            "Implementation-Version" to project.version
+        )
+    }
+}
+
+val sourcesJar by tasks.registering(Jar::class) {
+    from(sourceSets["main"].allSource)
+    archiveClassifier.set("sources")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    val classes by tasks
+    dependsOn(classes)
+}
+
+val dokkaJar by tasks.registering(Jar::class) {
+    from(layout.buildDirectory.dir("dokka/javadoc"))
+    archiveClassifier.set("javadoc")
+    val dokkaJavadoc by tasks
+    dependsOn(dokkaJavadoc)
+}
+
+tasks.withType<GenerateMavenPom> {
+    afterEvaluate {
+        pom.apply {
+            description.set(project.description)
+            licenses {
+                license {
+                    name.set("The Apache Software License, Version 2.0")
+                    url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                    distribution.set("repo")
+                }
+            }
+            developers {
+                developer {
+                    id.set("blootsvoets")
+                    name.set("Joris Borgdorff")
+                    email.set("joris@thehyve.nl")
+                    organization.set("The Hyve")
+                }
+            }
+            issueManagement {
+                system.set("GitHub")
+                url.set("$githubUrl/issues")
+            }
+            organization {
+                name.set("RADAR-base")
+                url.set("https://radar-base.org")
+            }
+            scm {
+                connection.set("scm:git:$githubUrl")
+                url.set(githubUrl)
             }
         }
     }
+}
+
+publishing {
+    publications {
+        withType<MavenPublication> {
+            artifact(sourcesJar)
+            artifact(dokkaJar)
+        }
+    }
+}
+
+fun Project.propertyOrEnv(propertyName: String, envName: String): String? {
+    return if (hasProperty(propertyName)) {
+        property(propertyName)?.toString()
+    } else {
+        System.getenv(envName)
+    }
+}
+
+nexusPublishing {
+    repositories {
+        sonatype {
+            username.set(propertyOrEnv("ossrh.user", "OSSRH_USER"))
+            password.set(propertyOrEnv("ossrh.password", "OSSRH_PASSWORD"))
+        }
+    }
+}
+
+signing {
+    useGpgCmd()
+    isRequired = true
+    afterEvaluate {
+        publishing.publications.forEach { sign(it) }
+    }
+    sign(tasks["sourcesJar"])
+    sign(tasks["dokkaJar"])
+}
+
+tasks.withType<Sign> {
+    onlyIf { gradle.taskGraph.hasTask(project.tasks["publish"]) }
+    dependsOn(sourcesJar)
+    dependsOn(dokkaJar)
+}
+
+tasks.withType<PublishToMavenRepository> {
+    dependsOn(tasks.withType<Sign>())
 }
