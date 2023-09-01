@@ -136,9 +136,10 @@ suspend fun <T> Iterable<T>.forkAny(
     predicate: suspend CoroutineScope.(T) -> Boolean,
 ): Boolean = forkFirstOfOrNull(coroutineContext, predicate) { it } ?: false
 
+/** Efficient way to combine sets. */
 operator fun <T> Set<T>.plus(elements: Set<T>): Set<T> = when {
-    isEmpty() -> elements
     elements.isEmpty() -> this
+    isEmpty() -> elements
     else -> buildSet(size + elements.size) {
         addAll(this)
         addAll(elements)
