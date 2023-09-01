@@ -23,8 +23,7 @@ jobs:
           java-version: 11
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
-
+        uses: gradle/gradle-build-action@v2.8.0
       - name: Has SNAPSHOT version
         run: ./gradlew properties | grep '^version:.*-SNAPSHOT$'
 
