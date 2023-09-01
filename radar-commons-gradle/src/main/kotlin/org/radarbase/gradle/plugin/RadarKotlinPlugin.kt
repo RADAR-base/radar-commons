@@ -120,7 +120,7 @@ class RadarKotlinPlugin : Plugin<Project> {
 
         tasks.register<Copy>("copyDependencies") {
             from(configurations.named("runtimeClasspath").map { it.files })
-            into("$buildDir/third-party/")
+            into(layout.buildDirectory.dir("third-party"))
             doLast {
                 println("Copied third-party runtime dependencies")
             }
@@ -130,11 +130,11 @@ class RadarKotlinPlugin : Plugin<Project> {
 
         tasks.register<Tar>("collectLicenses") {
             from(
-                fileTree("$buildDir/reports/dependency-license"),
+                fileTree(layout.buildDirectory.dir("reports/dependency-license")),
                 rootDir.resolve("LICENSE"),
             )
             compression = Compression.GZIP
-            destinationDirectory.set(file("$buildDir/reports"))
+            destinationDirectory.set(layout.buildDirectory.dir("reports"))
             archiveBaseName.set("${project.name}-dependency-license")
             dependsOn(tasks["generateLicenseReport"])
         }

@@ -46,7 +46,7 @@ class RadarPublishingPlugin : Plugin<Project> {
         apply<DokkaPlugin>()
 
         val dokkaJar by tasks.registering(Jar::class) {
-            from("$buildDir/dokka/javadoc")
+            from(layout.buildDirectory.dir("javadoc"))
             archiveClassifier.set("javadoc")
             val dokkaJavadoc by tasks
             dependsOn(dokkaJavadoc)

@@ -1,13 +1,14 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     `kotlin-dsl`
     `java-gradle-plugin`
-    kotlin("jvm") version "1.8.10"
+    kotlin("jvm") version "1.9.0"
     `maven-publish`
 }
 
-version = "1.0.1-SNAPSHOT"
+version = "1.0.2-SNAPSHOT"
 group = "org.radarbase"
 description = "RADAR common Gradle plugins"
 
@@ -17,11 +18,11 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.22")
-    implementation("org.jetbrains.dokka:dokka-gradle-plugin:1.8.20")
+    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0")
+    implementation("org.jetbrains.dokka:dokka-gradle-plugin:1.9.0")
     implementation("com.github.ben-manes:gradle-versions-plugin:0.47.0")
     implementation("io.github.gradle-nexus:publish-plugin:1.3.0")
-    implementation("org.jlleitschuh.gradle:ktlint-gradle:11.4.2")
+    implementation("org.jlleitschuh.gradle:ktlint-gradle:11.5.1")
     implementation("com.github.jk1.dependency-license-report:com.github.jk1.dependency-license-report.gradle.plugin:2.5")
 }
 
@@ -50,8 +51,10 @@ tasks.withType<JavaCompile> {
     options.release.set(11)
 }
 tasks.withType<KotlinCompile> {
-    kotlinOptions {
-        jvmTarget = "11"
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_11)
+        languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9)
+        apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9)
     }
 }
 

@@ -107,6 +107,7 @@ class ServerConfig {
             checkNotNull(protocol) { "Cannot create URL without protocol" }
             checkNotNull(host) { "Cannot create URL without host" }
             return try {
+                @Suppress("DEPRECATION")
                 URL(protocol, host, port, path)
             } catch (ex: MalformedURLException) {
                 throw IllegalStateException("Already parsed a URL but it turned out invalid", ex)
