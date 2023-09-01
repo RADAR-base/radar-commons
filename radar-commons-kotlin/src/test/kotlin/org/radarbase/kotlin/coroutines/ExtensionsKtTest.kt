@@ -84,4 +84,19 @@ class ExtensionsKtTest {
             assertFalse(listOf(1, 2, 3, 4).forkAny { it < 1 })
         }
     }
+
+    @Test
+    fun testDoubleCancel() {
+        val job = SupervisorJob()
+        runBlocking {
+            job.invokeOnCompletion {
+                println("End")
+            }
+            job.cancelAndJoin()
+            job.invokeOnCompletion {
+                println("End")
+            }
+            job.cancelAndJoin()
+        }
+    }
 }

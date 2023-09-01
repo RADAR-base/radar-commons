@@ -68,6 +68,16 @@ suspend inline fun <T, R> Iterable<T>.forkJoin(
 }
 
 /**
+ * Launch each value in the iterable in a separate coroutine and await termination.
+ */
+suspend inline fun <T> Iterable<T>.launchJoin(
+    coroutineContext: CoroutineContext = EmptyCoroutineContext,
+    crossinline transform: suspend CoroutineScope.(T) -> Unit,
+) = coroutineScope {
+    forEach { t -> launch(coroutineContext) { transform(t) } }
+}
+
+/**
  * Consume the first value produced by the producer on its provided channel. Once a value is sent
  * by the producer, its coroutine is cancelled.
  * @throws kotlinx.coroutines.channels.ClosedReceiveChannelException if the producer does not
