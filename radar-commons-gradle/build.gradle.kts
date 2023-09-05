@@ -6,7 +6,7 @@ plugins {
     `java-gradle-plugin`
     kotlin("jvm") version "1.9.0"
     `maven-publish`
-    id("io.github.gradle-nexus.publish-plugin") version "1.3.0"
+    id("io.github.gradle-nexus.publish-plugin") version "2.0.0-rc-1"
     id("org.jetbrains.dokka") version "1.9.0"
     signing
 }
@@ -26,7 +26,7 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0")
     implementation("org.jetbrains.dokka:dokka-gradle-plugin:1.9.0")
     implementation("com.github.ben-manes:gradle-versions-plugin:0.47.0")
-    implementation("io.github.gradle-nexus:publish-plugin:1.3.0")
+    implementation("io.github.gradle-nexus:publish-plugin:2.0.0-rc-1")
     implementation("org.jlleitschuh.gradle:ktlint-gradle:11.5.1")
     implementation("com.github.jk1.dependency-license-report:com.github.jk1.dependency-license-report.gradle.plugin:2.5")
 }
@@ -140,7 +140,7 @@ fun Project.propertyOrEnv(propertyName: String, envName: String): String? {
 }
 
 nexusPublishing {
-    repositories {
+    this.repositories {
         sonatype {
             username.set(propertyOrEnv("ossrh.user", "OSSRH_USER"))
             password.set(propertyOrEnv("ossrh.password", "OSSRH_PASSWORD"))

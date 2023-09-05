@@ -13,14 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import org.jetbrains.dokka.gradle.DokkaTask
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     id("com.github.davidmc24.gradle.plugin.avro")
 }
 
 description = "RADAR Common server library utilities."
+
+val generateAvroJava by tasks
+
+sourceSets {
+    main {
+        java {
+            srcDirs(generateAvroJava.outputs)
+        }
+    }
+}
 
 dependencies {
     api(project(":radar-commons"))
@@ -38,18 +46,4 @@ dependencies {
     // Direct producer uses KafkaAvroSerializer if initialized
     testImplementation("io.confluent:kafka-avro-serializer:${Versions.confluent}")
     testImplementation("org.radarbase:radar-schemas-commons:${Versions.radarSchemas}")
-}
-
-val generateAvroJava by tasks
-
-tasks.withType<JavaCompile> {
-    dependsOn(generateAvroJava)
-}
-
-tasks.withType<KotlinCompile> {
-    dependsOn(generateAvroJava)
-}
-
-tasks.withType<DokkaTask> {
-    dependsOn(generateAvroJava)
 }
