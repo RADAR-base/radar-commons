@@ -8,7 +8,7 @@ object Versions {
     }
 
     const val java = 11
-    const val slf4j = "2.0.7"
+    const val slf4j = "2.0.9"
     const val confluent = "7.5.0"
     const val kafka = "7.5.0-ce"
     const val avro = "1.11.2"
