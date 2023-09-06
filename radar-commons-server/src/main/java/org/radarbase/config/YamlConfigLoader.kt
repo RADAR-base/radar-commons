@@ -39,7 +39,7 @@ class YamlConfigLoader @JvmOverloads constructor(mapperConfigurator: (ObjectMapp
                 .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
                 .withIsGetterVisibility(JsonAutoDetect.Visibility.NONE)
                 .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withCreatorVisibility(JsonAutoDetect.Visibility.NONE)
+                .withCreatorVisibility(JsonAutoDetect.Visibility.NONE),
         )
 
         addMixIn(ServerConfig::class.java, ServerConfigMixin::class.java)
@@ -57,7 +57,7 @@ class YamlConfigLoader @JvmOverloads constructor(mapperConfigurator: (ObjectMapp
      * @param <T> type of the config.
      * @return loaded file.
      * @throws IOException if the file cannot be opened or parsed.
-    </T> */
+     </T> */
     @Throws(IOException::class)
     fun <T> load(file: Path, configClass: Class<T>): T = file.bufferedReader()
         .use { reader ->

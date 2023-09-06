@@ -35,7 +35,7 @@ class AggregateListCollector : RecordCollector, SpecificAvroConvertible {
     constructor(fieldNames: Array<String>, useReservoir: Boolean) : this(
         fieldNames,
         null,
-        useReservoir
+        useReservoir,
     )
 
     /**
@@ -60,8 +60,10 @@ class AggregateListCollector : RecordCollector, SpecificAvroConvertible {
     fun add(vararg value: Double): AggregateListCollector {
         val collectors = collectors ?: return this
         require(collectors.size == value.size) {
-            ("The length of current input differs from the length of the value used to "
-                    + "instantiate this collector")
+            (
+                "The length of current input differs from the length of the value used to " +
+                    "instantiate this collector"
+                )
         }
         for (i in collectors.indices) {
             collectors[i].add(value[i])

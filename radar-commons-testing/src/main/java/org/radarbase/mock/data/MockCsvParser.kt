@@ -76,18 +76,19 @@ class MockCsvParser constructor(
     }
 
     suspend fun initialize() {
+        val topicName = requireNotNull(config.topic) { "Missing topic name" }
         val (keySchema, valueSchema) = try {
             val specificTopic = config.parseAvroTopic<SpecificRecord, SpecificRecord>()
             Pair(specificTopic.keySchema, specificTopic.valueSchema)
         } catch (ex: IllegalStateException) {
             Pair(
-                parseSpecificRecord<SpecificRecord>(config.keySchema).schema,
-                retriever.getByVersion(config.topic, true, 0).schema,
+                parseSpecificRecord<SpecificRecord>(requireNotNull(config.keySchema) { "Missing key schema" }).schema,
+                retriever.getByVersion(topicName, true, 0).schema,
             )
         }
 
         topic = AvroTopic(
-            config.topic,
+            topicName,
             keySchema,
             valueSchema,
             GenericRecord::class.java,

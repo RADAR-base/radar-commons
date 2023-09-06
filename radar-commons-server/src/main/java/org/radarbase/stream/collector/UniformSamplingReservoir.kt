@@ -18,12 +18,14 @@ import kotlin.random.Random
 class UniformSamplingReservoir @JvmOverloads constructor(
     samples: DoubleArray = doubleArrayOf(),
     count: Long = 0,
-    maxSize: Int = MAX_SIZE_DEFAULT
+    maxSize: Int = MAX_SIZE_DEFAULT,
 ) : SpecificAvroConvertible {
     private var samples: DoubleArray = DoubleArray(maxSize)
+
     /** Get the maximum size of this reservoir.  */
     var maxSize: Int = maxSize
         private set
+
     /** Get the number of samples that are being represented by the reservoir.  */
     var count: Long = count
         private set
@@ -75,10 +77,10 @@ class UniformSamplingReservoir @JvmOverloads constructor(
             }
             maxSize
 
-        // There are not much more samples than the size permits. Make a list from all indexes
-        // and at random pick and remove index from that. Put all the samples at given
-        // indexes in the reservoir. Do not do retry sampling as above, as the final entry may
-        // have a probability of 1/maxSize of actually being picked.
+            // There are not much more samples than the size permits. Make a list from all indexes
+            // and at random pick and remove index from that. Put all the samples at given
+            // indexes in the reservoir. Do not do retry sampling as above, as the final entry may
+            // have a probability of 1/maxSize of actually being picked.
         } else if (initSamples.size > maxSize) {
             val allInitIndexes = initSamples.indices.toMutableList()
             repeat(maxSize) { sampleIndex ->
@@ -124,7 +126,7 @@ class UniformSamplingReservoir @JvmOverloads constructor(
                     samples,
                     destinationOffset = removeIndex,
                     startIndex = removeIndex + 1,
-                    endIndex = addIndex
+                    endIndex = addIndex,
                 )
             }
         } else if (removeIndex > addIndex) {
@@ -135,7 +137,7 @@ class UniformSamplingReservoir @JvmOverloads constructor(
                 samples,
                 destinationOffset = addIndex + 1,
                 startIndex = addIndex,
-                endIndex = removeIndex
+                endIndex = removeIndex,
             )
         }
         samples[addIndex] = value
@@ -147,7 +149,7 @@ class UniformSamplingReservoir @JvmOverloads constructor(
          * the maximum size of the reservoir, this will be an estimate.
          * @return list with size three, of the 25, 50 and 75 percentiles.
          */
-        get() = (1 .. 3)
+        get() = (1..3)
             .map { i ->
                 when (currentLength) {
                     0 -> Double.NaN

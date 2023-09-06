@@ -32,7 +32,7 @@ import java.util.*
 class NumericAggregateCollector @JvmOverloads constructor(
     var name: String? = null,
     schema: Schema? = null,
-    useReservoir: Boolean = false
+    useReservoir: Boolean = false,
 ) : RecordCollector, SpecificAvroConvertible {
     private var pos = 0
     private var fieldType: Schema.Type? = null
@@ -61,7 +61,7 @@ class NumericAggregateCollector @JvmOverloads constructor(
         } else {
             val field = schema.getField(name)
                 ?: throw IllegalArgumentException(
-                    "Field " + name + " does not exist in schema " + schema.fullName
+                    "Field " + name + " does not exist in schema " + schema.fullName,
                 )
             pos = field.pos()
             fieldType = getType(field)
@@ -101,15 +101,17 @@ class NumericAggregateCollector @JvmOverloads constructor(
     }
 
     override fun toString(): String {
-        return ("DoubleValueCollector{"
-                + "name=" + name
-                + ", min=" + min
-                + ", max=" + max
-                + ", sum=" + getSum()
-                + ", mean=" + mean
-                + ", quartile=" + quartile
-                + ", count=" + count
-                + ", reservoir=" + reservoir + '}')
+        return (
+            "DoubleValueCollector{" +
+                "name=" + name +
+                ", min=" + min +
+                ", max=" + max +
+                ", sum=" + getSum() +
+                ", mean=" + mean +
+                ", quartile=" + quartile +
+                ", count=" + count +
+                ", reservoir=" + reservoir + '}'
+            )
     }
 
     fun getSum(): Double {
@@ -172,7 +174,7 @@ class NumericAggregateCollector @JvmOverloads constructor(
             state.max = max
             state.sum = BigDecimalState(
                 ByteBuffer.wrap(sum.unscaledValue().toByteArray()),
-                sum.scale()
+                sum.scale(),
             )
         } else {
             state.min = null
@@ -207,7 +209,7 @@ class NumericAggregateCollector @JvmOverloads constructor(
             max = record.max
             sum = BigDecimal(
                 BigInteger(record.sum.intVal.array()),
-                record.sum.scale
+                record.sum.scale,
             )
         } else {
             min = Double.MAX_VALUE
@@ -242,9 +244,10 @@ class NumericAggregateCollector @JvmOverloads constructor(
             }
             require(
                 apparentType == Schema.Type.DOUBLE ||
-                apparentType == Schema.Type.FLOAT ||
-                apparentType == Schema.Type.INT ||
-                apparentType == Schema.Type.LONG) {
+                    apparentType == Schema.Type.FLOAT ||
+                    apparentType == Schema.Type.INT ||
+                    apparentType == Schema.Type.LONG,
+            ) {
                 "Field " + field.name() + " is not a number type."
             }
             return apparentType

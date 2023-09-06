@@ -43,7 +43,6 @@ open class AvroTopicConfig {
      * Avro SpecificRecord classes
      */
     open fun <K : SpecificRecord, V : SpecificRecord> parseAvroTopic(): AvroTopic<K, V> {
-
         return try {
             parse(
                 checkNotNull(topic) { "Topic is not specified" },
