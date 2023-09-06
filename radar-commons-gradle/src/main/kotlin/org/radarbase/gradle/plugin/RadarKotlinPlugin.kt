@@ -97,6 +97,7 @@ class RadarKotlinPlugin : Plugin<Project> {
         dependencies {
             configurations["testImplementation"](extension.junitVersion.map { "org.junit.jupiter:junit-jupiter-api:$it" })
             configurations["testRuntimeOnly"](extension.junitVersion.map { "org.junit.jupiter:junit-jupiter-engine:$it" })
+            configurations["testRuntimeOnly"]("org.junit.platform:junit-platform-launcher")
         }
 
         tasks.withType<Test> {

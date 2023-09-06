@@ -37,12 +37,12 @@ public class RecordGeneratorTest {
     @Test
     public void generate() {
         MockDataConfig config = new MockDataConfig();
-        config.setTopic("test");
+        config.topic = "test";
         config.setFrequency(10);
         config.setMinimum(0.1);
         config.setMaximum(9.9);
         config.setValueFields(Arrays.asList("x", "y", "z"));
-        config.setValueSchema(EmpaticaE4Acceleration.class.getName());
+        config.valueSchema = EmpaticaE4Acceleration.class.getName();
 
         RecordGenerator<ObservationKey> generator = new RecordGenerator<>(config,
                 ObservationKey.class);
@@ -67,8 +67,8 @@ public class RecordGeneratorTest {
     @Test
     public void getHeaders() {
         MockDataConfig config = new MockDataConfig();
-        config.setTopic("test");
-        config.setValueSchema(EmpaticaE4Acceleration.class.getName());
+        config.topic = "test";
+        config.valueSchema = EmpaticaE4Acceleration.class.getName();
 
         RecordGenerator<ObservationKey> generator = new RecordGenerator<>(config,
                 ObservationKey.class);

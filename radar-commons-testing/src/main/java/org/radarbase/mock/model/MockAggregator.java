@@ -66,7 +66,7 @@ public class MockAggregator {
 
         for (MockDataConfig config : mockDataConfigs) {
             if (config.getValueFields() == null || config.getValueFields().isEmpty()) {
-                logger.warn("No value fields specified for {}. Skipping.", config.getTopic());
+                logger.warn("No value fields specified for {}. Skipping.", config.topic);
                 continue;
             }
 

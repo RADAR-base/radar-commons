@@ -51,8 +51,8 @@ public class MockDataConfig extends AvroTopicConfig {
      */
     @Override
     public <K extends SpecificRecord, V extends SpecificRecord> AvroTopic<K, V> parseAvroTopic() {
-        if (getKeySchema() == null) {
-            setKeySchema(ObservationKey.class.getName());
+        if (keySchema == null) {
+            keySchema = ObservationKey.class.getName();
         }
         return super.parseAvroTopic();
     }
@@ -148,8 +148,8 @@ public class MockDataConfig extends AvroTopicConfig {
     @Override
     public String toString() {
         return "MockDataConfig{"
-                + "topic='" + getTopic() + '\''
-                + ", valueSchema='" + getValueSchema() + '\''
+                + "topic='" + topic + '\''
+                + ", valueSchema='" + valueSchema + '\''
                 + ", dataFile='" + dataFile + '\''
                 + ", frequency=" + frequency
                 + ", sensor='" + sensor + '\''
