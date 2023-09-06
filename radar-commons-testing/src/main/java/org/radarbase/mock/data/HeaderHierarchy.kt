@@ -1,7 +1,5 @@
 package org.radarbase.mock.data
 
-import java.util.*
-
 /**
  * Header hierarchy child node. Usually accessed via [.add]
  *
@@ -21,7 +19,7 @@ class HeaderHierarchy(
             return field
         }
 
-    private val _children: MutableMap<String, HeaderHierarchy> = HashMap()
+    private val _children: MutableMap<String, HeaderHierarchy> = mutableMapOf()
     val children: Map<String, HeaderHierarchy>
         get() = _children.toMap()
 
@@ -33,7 +31,6 @@ class HeaderHierarchy(
      * @param item list of item elements, each one level deeper than the previous.
      */
     fun add(index: Int, item: List<String>) {
-        Objects.requireNonNull(item)
         if (item.isEmpty()) {
             return
         }
@@ -46,9 +43,11 @@ class HeaderHierarchy(
     private fun StringBuilder.appendHeader() {
         parent?.run {
             appendHeader()
+            if (name != null) {
+                append('.')
+            }
         }
         if (name != null) {
-            append('.')
             append(name)
         }
     }

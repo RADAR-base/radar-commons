@@ -16,12 +16,17 @@
 
 package org.radarbase.mock;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import java.util.Iterator;
 import org.apache.avro.specific.SpecificRecord;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.radarbase.data.Record;
 import org.radarbase.mock.config.MockDataConfig;
@@ -38,10 +43,10 @@ public class RecordGeneratorTest {
     public void generate() {
         MockDataConfig config = new MockDataConfig();
         config.topic = "test";
-        config.setFrequency(10);
-        config.setMinimum(0.1);
-        config.setMaximum(9.9);
-        config.setValueFields(Arrays.asList("x", "y", "z"));
+        config.frequency = 10;
+        config.minimum = 0.1;
+        config.maximum = 9.9;
+        config.valueFields = Arrays.asList("x", "y", "z");
         config.valueSchema = EmpaticaE4Acceleration.class.getName();
 
         RecordGenerator<ObservationKey> generator = new RecordGenerator<>(config,
@@ -57,8 +62,9 @@ public class RecordGeneratorTest {
         float z = ((EmpaticaE4Acceleration)record.getValue()).getX();
         assertTrue(z >= 0.1f && z < 9.9f);
         double time = ((EmpaticaE4Acceleration)record.getValue()).getTime();
-        assertTrue(time > System.currentTimeMillis() / 1000d - 1d
-                && time <= System.currentTimeMillis() / 1000d);
+        long now = System.currentTimeMillis();
+        assertThat(time, greaterThan(now / 1000d - 1d));
+        assertThat(time, lessThanOrEqualTo(now / 1000d));
 
         Record<ObservationKey, SpecificRecord> nextRecord = iter.next();
         assertEquals(time + 0.1d, (Double)nextRecord.getValue().get(0), 1e-6);

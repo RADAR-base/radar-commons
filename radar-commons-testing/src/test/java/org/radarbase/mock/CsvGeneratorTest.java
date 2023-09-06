@@ -48,7 +48,7 @@ public class CsvGeneratorTest {
         MockDataConfig config = makeConfig(folder);
         generator.generate(config, 100_000L, folder.getRoot());
 
-        Path p = Paths.get(config.getDataFile());
+        Path p = Paths.get(config.dataFile);
         try (Reader reader = Files.newBufferedReader(p);
                 CSVReader parser = new CSVReader(reader)) {
             String[] headers = {"key.projectId", "key.userId", "key.sourceId", "value.time", "value.timeReceived", "value.light"};
@@ -89,9 +89,9 @@ public class CsvGeneratorTest {
             }
         };
 
-        generator.generate(recordGenerator, 1000L, Paths.get(config.getDataFile()));
+        generator.generate(recordGenerator, 1000L, Paths.get(config.dataFile));
 
-        Path p = Paths.get(config.getDataFile());
+        Path p = Paths.get(config.dataFile);
 
         try (Reader reader = Files.newBufferedReader(p);
                 CSVReader parser = new CSVReader(reader)) {

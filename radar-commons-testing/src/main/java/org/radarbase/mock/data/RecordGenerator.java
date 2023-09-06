@@ -79,7 +79,7 @@ public class RecordGenerator<K extends SpecificRecord> {
         timeField = forceGetField(valueSchema, "time");
         timeReceivedField = valueSchema.getField("timeReceived");
 
-        List<String> valueFieldNames = config.getValueFields();
+        List<String> valueFieldNames = config.valueFields;
         if (valueFieldNames == null) {
             valueFieldNames = Collections.emptyList();
         }
@@ -160,7 +160,7 @@ public class RecordGenerator<K extends SpecificRecord> {
      * @return random {@code Double} using {@code ThreadLocalRandom}.
      **/
     private double getRandomDouble() {
-        return ThreadLocalRandom.current().nextDouble(config.getMinimum(), config.getMaximum());
+        return ThreadLocalRandom.current().nextDouble(config.minimum, config.maximum);
     }
 
     /**
@@ -224,8 +224,8 @@ public class RecordGenerator<K extends SpecificRecord> {
 
         public RecordIterator(long duration, K key) {
             this.key = key;
-            timestamps = new Metronome(duration * config.getFrequency() / 1000L,
-                    config.getFrequency());
+            timestamps = new Metronome(duration * config.frequency / 1000L,
+                    config.frequency);
         }
 
         @Override
