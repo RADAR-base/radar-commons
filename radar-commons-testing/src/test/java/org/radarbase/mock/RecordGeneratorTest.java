@@ -25,8 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Arrays;
 import java.util.Iterator;
 import org.apache.avro.specific.SpecificRecord;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.radarbase.data.Record;
 import org.radarbase.mock.config.MockDataConfig;
