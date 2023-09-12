@@ -115,7 +115,7 @@ class RestKafkaSenderTest {
         assertEquals(1, records.size().toLong())
         checkChildren(records)
         val receivedHeaders = request.headers
-        assertEquals(listOf("ab,bc"), receivedHeaders.values("Cookie"))
+        assertEquals(listOf("ab; bc"), receivedHeaders.values("Cookie"))
     }
 
     @Test

@@ -65,8 +65,8 @@ public class MockAggregator {
         Map<MockDataConfig, ExpectedValue> expectedValue = new HashMap<>();
 
         for (MockDataConfig config : mockDataConfigs) {
-            if (config.getValueFields() == null || config.getValueFields().isEmpty()) {
-                logger.warn("No value fields specified for {}. Skipping.", config.getTopic());
+            if (config.valueFields == null || config.valueFields.isEmpty()) {
+                logger.warn("No value fields specified for {}. Skipping.", config.topic);
                 continue;
             }
 
@@ -74,10 +74,10 @@ public class MockAggregator {
             try (MockCsvParser parser = new MockCsvParser(config, root, now,
                     retriever)) {
                 Schema valueSchema = config.parseAvroTopic().getValueSchema();
-                List<String> valueFields = config.getValueFields();
+                List<String> valueFields = config.valueFields;
 
                 ExpectedValue<?> value;
-                if (config.getValueFields().size() == 1) {
+                if (config.valueFields.size() == 1) {
                     value = new ExpectedDoubleValue(valueSchema, valueFields);
                 } else {
                     value = new ExpectedArrayValue(valueSchema, valueFields);

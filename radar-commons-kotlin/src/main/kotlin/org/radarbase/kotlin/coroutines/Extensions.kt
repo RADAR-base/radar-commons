@@ -68,6 +68,16 @@ suspend inline fun <T, R> Iterable<T>.forkJoin(
 }
 
 /**
+ * Launch each value in the iterable in a separate coroutine and await termination.
+ */
+suspend inline fun <T> Iterable<T>.launchJoin(
+    coroutineContext: CoroutineContext = EmptyCoroutineContext,
+    crossinline transform: suspend CoroutineScope.(T) -> Unit,
+) = coroutineScope {
+    forEach { t -> launch(coroutineContext) { transform(t) } }
+}
+
+/**
  * Consume the first value produced by the producer on its provided channel. Once a value is sent
  * by the producer, its coroutine is cancelled.
  * @throws kotlinx.coroutines.channels.ClosedReceiveChannelException if the producer does not
@@ -126,9 +136,10 @@ suspend fun <T> Iterable<T>.forkAny(
     predicate: suspend CoroutineScope.(T) -> Boolean,
 ): Boolean = forkFirstOfOrNull(coroutineContext, predicate) { it } ?: false
 
+/** Efficient way to combine sets. */
 operator fun <T> Set<T>.plus(elements: Set<T>): Set<T> = when {
-    isEmpty() -> elements
     elements.isEmpty() -> this
+    isEmpty() -> elements
     else -> buildSet(size + elements.size) {
         addAll(this)
         addAll(elements)

@@ -11,28 +11,9 @@ pluginManagement {
     repositories {
         gradlePluginPortal()
         mavenCentral()
-        maven(url = "https://maven.pkg.github.com/radar-base/radar-commons") {
-            credentials {
-                username = System.getenv("GITHUB_ACTOR")
-                    ?: extra.properties["gpr.user"] as? String
-                    ?: extra.properties["public.gpr.user"] as? String
-                password = System.getenv("GITHUB_TOKEN")
-                    ?: extra.properties["gpr.token"] as? String
-                    ?: (extra.properties["public.gpr.token"] as? String)?.let {
-                        Base64.getDecoder().decode(it).decodeToString()
-                    }
-            }
-        }
     }
 }
 ```
-
-We recommend to store a Base64 encoded PAT in your projects' `gradle.properties` with only `read:packages` access, created in your [GitHub Developer settings](https://github.com/settings/tokens/new?scopes=read:packages&description=GPR%20for%20Gradle). The Base64 encoded token should be stored as `public.gpr.token` and the associated username as `public.gpr.user`. To use your personal PAT, store the PAT in `~/.gradle/gradle.properties` with keys `gpr.user` and `gpr.token`. Use the following PAT if needed
-```properties
-public.gpr.user=radar-public
-public.gpr.token=Z2hwX0h0d0FHSmJzeEpjenBlUVIycVhWb0RpNGdZdHZnZzJTMFVJZA==
-```
-Note that the above credentials may be changed or revoked at any time.
 
 Then use the plugins with the following root project configurations:
 

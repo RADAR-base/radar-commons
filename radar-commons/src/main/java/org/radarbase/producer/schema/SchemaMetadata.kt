@@ -20,15 +20,12 @@ import org.apache.avro.Schema
 
 /**
  * Parsed schema metadata from a Schema Registry.
- */
-@Serializable
-data class SchemaMetadata
-/**
- * Schema metadata.
  * @param id schema ID, may be null.
  * @param version schema version, may be null.
  * @param schema parsed schema.
- */(
+ */
+@Serializable
+data class SchemaMetadata(
     val id: Int? = null,
     val version: Int? = null,
     val schema: String? = null,

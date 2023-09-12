@@ -28,7 +28,7 @@ public class MetronomeTest {
     private void check(Metronome it, long expectedMin) {
         assertThat(it.hasNext(), is(true));
         long t = it.next();
-        assertThat(t, greaterThanOrEqualTo(expectedMin));
+        assertThat("Difference " + (expectedMin - t), t, greaterThanOrEqualTo(expectedMin));
         assertThat(t, lessThan(expectedMin + 50L));
     }
 

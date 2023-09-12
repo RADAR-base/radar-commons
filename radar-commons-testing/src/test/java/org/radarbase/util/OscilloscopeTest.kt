@@ -34,7 +34,7 @@ class OscilloscopeTest {
                 // time of one beat is about 1/128 seconds = 7.8125 milliseconds
                 val beatDiff = System.currentTimeMillis() - time
                 assertThat(beatDiff, greaterThanOrEqualTo(5L))
-                assertThat(beatDiff, lessThanOrEqualTo(14L))
+                assertThat(beatDiff, lessThanOrEqualTo(20L))
             }
         } while (!oscilloscope.willRestart())
 

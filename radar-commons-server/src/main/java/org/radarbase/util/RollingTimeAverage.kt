@@ -15,30 +15,31 @@
  */
 package org.radarbase.util
 
-import java.time.Duration
-import java.time.Instant
-import java.util.*
-import kotlin.math.roundToInt
+import kotlin.math.roundToLong
+import kotlin.time.ComparableTimeMark
+import kotlin.time.Duration
+import kotlin.time.TimeSource
 
 /**
  * Get the average of a set of values collected in a sliding time window of fixed duration. At least
- * one value is needed to get an average.
+ * one value is needed to get an average. This class is not thread-safe and must be synchronized
+ * externally if accessed from multiple threads.
  * @param window duration of the time window.
  */
 class RollingTimeAverage(
     private val window: Duration,
 ) {
-    private var firstTime: TimeCount? = null
-    private val deque: Deque<TimeCount> = LinkedList()
+    private var firstTimeCount: TimeCount? = null
+    private val deque = ArrayDeque<TimeCount>()
 
     /** Whether values have already been added.  */
     val hasAverage: Boolean
-        get() = firstTime != null
+        get() = firstTimeCount != null
 
     /** Add a new value.  */
     fun add(x: Double) {
-        if (firstTime == null) {
-            firstTime = TimeCount(x)
+        if (firstTimeCount == null) {
+            firstTimeCount = TimeCount(x)
         } else {
             deque.addLast(TimeCount(x))
         }
@@ -55,38 +56,43 @@ class RollingTimeAverage(
      * It takes one value before the window started as a baseline, and adds all values in the
      * window. It then divides by the total time window from the first value (outside/before the
      * window) to the last value (at the end of the window).
-     * @return average value per second
+     * @return average value per second or 0 if no value is present
      */
     val average: Double
         get() {
-            var localFirstTime = checkNotNull(firstTime) { "Cannot get average without values" }
-            val now = Instant.now()
+            var firstTimeCount = firstTimeCount ?: return 0.0
+            val now = TimeSource.Monotonic.markNow()
             val windowStart = now - window
-            while (!deque.isEmpty() && deque.first.time < windowStart) {
-                localFirstTime = deque.removeFirst()
+            var firstInDeque = deque.firstOrNull()
+            while (firstInDeque != null && firstInDeque.time < windowStart) {
+                firstTimeCount = deque.removeFirst()
+                firstInDeque = deque.firstOrNull()
             }
-            val total = localFirstTime.value + deque.sumOf { it.value }
-            firstTime = localFirstTime
-            return if (deque.isEmpty() || localFirstTime.time >= windowStart) {
-                1000.0 * total / Duration.between(localFirstTime.time, now).toMillis()
+            if (firstTimeCount !== this.firstTimeCount) {
+                this.firstTimeCount = firstTimeCount
+            }
+            val total = firstTimeCount.value + deque.sumOf { it.value }
+            val firstTime = firstTimeCount.time
+            return if (firstInDeque == null || firstTime >= windowStart) {
+                1000.0 * total / (now - firstTime).inWholeMilliseconds
             } else {
-                val time = Duration.between(windowStart, deque.last.time)
-                val removedRate = Duration.between(localFirstTime.time, windowStart).toMillis() /
-                    Duration.between(localFirstTime.time, deque.first.time).toMillis().toDouble()
-                val removedValue = localFirstTime.value + deque.first.value * removedRate
-                1000.0 * (total - removedValue) / time.toMillis()
+                val duration = deque.last().time - windowStart
+                val removedRate = (windowStart - firstTime).inWholeMilliseconds /
+                    (firstInDeque.time - firstTime).inWholeMilliseconds.toDouble()
+                val removedValue = firstTimeCount.value + firstInDeque.value * removedRate
+                1000.0 * (total - removedValue) / duration.inWholeMilliseconds
             }
         }
 
     /**
-     * Rounded [.getAverage].
+     * Rounded [RollingTimeAverage.average].
      */
-    val count: Int
-        get() = average.roundToInt()
+    val count: Long
+        get() = average.roundToLong()
 
     private class TimeCount(
         val value: Double,
     ) {
-        val time: Instant = Instant.now()
+        val time: ComparableTimeMark = TimeSource.Monotonic.markNow()
     }
 }

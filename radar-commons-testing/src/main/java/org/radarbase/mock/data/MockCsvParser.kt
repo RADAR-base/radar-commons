@@ -46,9 +46,9 @@ import kotlin.io.path.bufferedReader
  * @param retriever schema retriever to fetch schema with if none is supplied.
  * @throws IllegalArgumentException if the second row has the wrong number of columns
  */
-class MockCsvParser constructor(
+class MockCsvParser(
     private val config: MockDataConfig,
-    root: Path?,
+    root: Path,
     private val startTime: Instant,
     private val retriever: SchemaRetriever,
 ) : Closeable {
@@ -57,7 +57,7 @@ class MockCsvParser constructor(
     private val bufferedReader: BufferedReader
     private val rowDuration: Duration = Duration.ofMillis((1.0 / config.frequency).toLong())
     private val headers: HeaderHierarchy
-    private var currentLine: Array<String>?
+    private var currentLine: Array<String>
     private var row: Int = 0
     private var rowTime: Long = this.startTime.toEpochMilli()
 
@@ -65,29 +65,30 @@ class MockCsvParser constructor(
         bufferedReader = config.getDataFile(root).bufferedReader()
         csvReader = CSVReader(bufferedReader)
         headers = HeaderHierarchy()
-        val header = csvReader.readNext()
-        for (i in header.indices) {
-            headers.add(
-                i,
-                header[i].split("\\.".toRegex()).dropLastWhile { it.isEmpty() },
-            )
-        }
-        currentLine = csvReader.readNext()
+        requireNotNull(csvReader.readNext()) { "Empty CSV file $root" }
+            .forEachIndexed { idx, header ->
+                headers.add(
+                    idx,
+                    header.split('.').dropLastWhile { it.isEmpty() },
+                )
+            }
+        currentLine = csvReader.readNext() ?: EMPTY
     }
 
     suspend fun initialize() {
+        val topicName = requireNotNull(config.topic) { "Missing topic name" }
         val (keySchema, valueSchema) = try {
             val specificTopic = config.parseAvroTopic<SpecificRecord, SpecificRecord>()
             Pair(specificTopic.keySchema, specificTopic.valueSchema)
         } catch (ex: IllegalStateException) {
             Pair(
-                parseSpecificRecord<SpecificRecord>(config.keySchema).schema,
-                retriever.getByVersion(config.topic, true, 0).schema,
+                parseSpecificRecord<SpecificRecord>(requireNotNull(config.keySchema) { "Missing key schema" }).schema,
+                retriever.getByVersion(topicName, true, 0).schema,
             )
         }
 
         topic = AvroTopic(
-            config.topic,
+            topicName,
             keySchema,
             valueSchema,
             GenericRecord::class.java,
@@ -121,7 +122,7 @@ class MockCsvParser constructor(
 
     @Throws(CsvValidationException::class, IOException::class)
     private fun incrementRow() {
-        currentLine = csvReader.readNext()
+        currentLine = csvReader.readNext() ?: EMPTY
         row++
         rowTime = startTime
             .plus(rowDuration.multipliedBy(row.toLong()))
@@ -131,12 +132,10 @@ class MockCsvParser constructor(
     /**
      * Whether there is a next record in the file.
      */
-    operator fun hasNext(): Boolean {
-        return currentLine != null
-    }
+    operator fun hasNext(): Boolean = currentLine !== EMPTY
 
     private fun parseRecord(
-        rawValues: Array<String>?,
+        rawValues: Array<String>,
         schema: Schema,
         headers: HeaderHierarchy,
     ): GenericRecord {
@@ -152,14 +151,22 @@ class MockCsvParser constructor(
     }
 
     /** Parse value from Schema.  */
-    fun parseValue(rawValues: Array<String>?, schema: Schema, headers: HeaderHierarchy): Any? {
+    private fun parseValue(rawValues: Array<String>, schema: Schema, headers: HeaderHierarchy): Any? {
         return when (schema.type) {
-            Schema.Type.NULL, Schema.Type.INT, Schema.Type.LONG, Schema.Type.FLOAT, Schema.Type.DOUBLE, Schema.Type.BOOLEAN, Schema.Type.STRING, Schema.Type.ENUM, Schema.Type.BYTES -> parseScalar(
+            Schema.Type.NULL,
+            Schema.Type.INT,
+            Schema.Type.LONG,
+            Schema.Type.FLOAT,
+            Schema.Type.DOUBLE,
+            Schema.Type.BOOLEAN,
+            Schema.Type.STRING,
+            Schema.Type.ENUM,
+            Schema.Type.BYTES,
+            -> parseScalar(
                 rawValues,
                 schema,
                 headers,
             )
-
             Schema.Type.UNION -> parseUnion(rawValues, schema, headers)
             Schema.Type.RECORD -> parseRecord(rawValues, schema, headers)
             Schema.Type.ARRAY -> parseArray(rawValues, schema, headers)
@@ -172,20 +179,20 @@ class MockCsvParser constructor(
     }
 
     private fun parseScalar(
-        rawValues: Array<String>?,
+        rawValues: Array<String>,
         schema: Schema,
         headers: HeaderHierarchy,
     ): Any? {
         val fieldHeader = headers.index
-        require(fieldHeader < rawValues!!.size) { "Row is missing value for " + headers.name }
+        require(fieldHeader < rawValues.size) { "Row is missing value for " + headers.name }
         val fieldString = rawValues[fieldHeader]
-            .replace("\${timeSeconds}", java.lang.Double.toString(rowTime / 1000.0))
-            .replace("\${timeMillis}", java.lang.Long.toString(rowTime))
+            .replace("\${timeSeconds}", (rowTime / 1000.0).toString())
+            .replace("\${timeMillis}", rowTime.toString())
         return parseScalar(fieldString, schema, headers)
     }
 
     private fun parseMap(
-        rawValues: Array<String>?,
+        rawValues: Array<String>,
         schema: Schema,
         headers: HeaderHierarchy,
     ): Map<String, Any?> = buildMap {
@@ -195,7 +202,7 @@ class MockCsvParser constructor(
     }
 
     private fun parseUnion(
-        rawValues: Array<String>?,
+        rawValues: Array<String>,
         schema: Schema,
         headers: HeaderHierarchy,
     ): Any = requireNotNull(
@@ -210,7 +217,7 @@ class MockCsvParser constructor(
     ) { "Cannot handle union types ${schema.types} in $headers" }
 
     private fun parseArray(
-        rawValues: Array<String>?,
+        rawValues: Array<String>,
         schema: Schema,
         headers: HeaderHierarchy,
     ): List<Any?> {
@@ -242,6 +249,8 @@ class MockCsvParser constructor(
     }
 
     companion object {
+        private val EMPTY = arrayOf<String>()
+
         private fun parseScalar(
             fieldString: String?,
             schema: Schema,

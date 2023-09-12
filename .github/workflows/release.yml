@@ -18,11 +18,10 @@ jobs:
       - uses: actions/setup-java@v3
         with:
           distribution: temurin
-          java-version: 11
+          java-version: 17
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
-
+        uses: gradle/gradle-build-action@v2.8.0
       - name: Check version
         run: |
           projectVersion=$(./gradlew properties | grep '^version:.*$')
@@ -34,13 +33,13 @@ jobs:
 
       # Compile code
       - name: Compile code
-        run: ./gradlew assemble
+        run: ./gradlew assemble collectLicenses
 
       # Upload it to GitHub
       - name: Upload to GitHub
-        uses: AButler/upload-release-assets@v2.0
+        uses: AButler/upload-release-assets@v2.0.2
         with:
-          files: 'radar-commons*/build/libs/*'
+          files: 'radar-commons*/build/libs/*;radar-commons*/build/reports/*.tar.gz'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install gpg secret key
@@ -56,5 +55,6 @@ jobs:
 
       - name: Publish gradle plugin
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew :radar-commons-gradle:publish
+          OSSRH_USER: ${{ secrets.OSSRH_USER }}
+          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+        run: ./gradlew -Psigning.gnupg.keyName=CBEF2CF0 -Psigning.gnupg.executable=gpg -Psigning.gnupg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }} :radar-commons-gradle:publish

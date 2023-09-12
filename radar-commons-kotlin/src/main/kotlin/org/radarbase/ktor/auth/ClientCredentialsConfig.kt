@@ -1,5 +1,7 @@
 package org.radarbase.ktor.auth
 
+import org.radarbase.kotlin.util.removeSensitive
+
 data class ClientCredentialsConfig(
     val tokenUrl: String,
     val clientId: String? = null,
@@ -21,4 +23,7 @@ data class ClientCredentialsConfig(
         }
         return result
     }
+
+    override fun toString(): String =
+        "ClientCredentialsConfig(tokenUrl='$tokenUrl', clientId=$clientId, clientSecret=${clientSecret.removeSensitive()})"
 }

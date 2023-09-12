@@ -30,6 +30,7 @@ val githubUrl = "https://github.com/$githubRepoName"
 
 radarRootProject {
     projectVersion.set(Versions.project)
+    gradleVersion.set(Versions.Plugins.gradle)
 }
 
 subprojects {
@@ -66,8 +67,4 @@ subprojects {
         junitVersion.set(Versions.junit)
         slf4jVersion.set(Versions.slf4j)
     }
-
-    //---------------------------------------------------------------------------//
-    // Style checking                                                            //
-    //---------------------------------------------------------------------------//
 }

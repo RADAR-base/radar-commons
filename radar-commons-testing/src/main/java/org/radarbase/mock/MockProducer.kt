@@ -71,7 +71,8 @@ class MockProducer @JvmOverloads constructor(
 
     init {
         val numDevices = mockConfig.numberOfDevices
-        retriever = schemaRetriever(mockConfig.schemaRegistry.urlString) {
+        val schemaRetrieverUrl = requireNotNull(mockConfig.schemaRegistry?.urlString) { "Missing schema retriever URL in config" }
+        retriever = schemaRetriever(schemaRetrieverUrl) {
             httpClient {
                 timeout(10.seconds)
             }
@@ -84,7 +85,7 @@ class MockProducer @JvmOverloads constructor(
             senders = createSenders(
                 mockConfig,
                 numDevices + mockFiles.size,
-                mockConfig.authConfig,
+                requireNotNull(mockConfig.authConfig) { "Missing authentication information in config" },
             )
 
             devices = ArrayList(numDevices)
@@ -116,7 +117,7 @@ class MockProducer @JvmOverloads constructor(
     ): List<KafkaSender> = createRestSenders(
         numDevices,
         retriever,
-        mockConfig.restProxy,
+        requireNotNull(mockConfig.restProxy) { "Missing REST Proxy in config" },
         mockConfig.hasCompression(),
         authConfig,
     )
@@ -147,7 +148,7 @@ class MockProducer @JvmOverloads constructor(
                             install(Auth) {
                                 clientCredentials(
                                     ClientCredentialsConfig(
-                                        authConfig.tokenUrl,
+                                        requireNotNull(authConfig.tokenUrl) { "Missing authentication token URL in config" },
                                         authConfig.clientId,
                                         authConfig.clientSecret,
                                     ).copyWithEnv(),
@@ -259,10 +260,7 @@ class MockProducer @JvmOverloads constructor(
         dataRoot: Path?,
     ): List<MockCsvParser> {
         val now = Instant.now()
-        var parent = dataRoot
-        if (parent == null) {
-            parent = Paths.get(".").toAbsolutePath()
-        }
+        val parent = dataRoot ?: Paths.get(".").toAbsolutePath()
         return configs.mapNotNull { config ->
             if (config.dataFile != null) {
                 logger.info("Reading mock data from {}", config.dataFile)

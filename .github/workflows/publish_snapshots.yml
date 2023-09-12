@@ -20,11 +20,10 @@ jobs:
       - uses: actions/setup-java@v3
         with:
           distribution: temurin
-          java-version: 11
+          java-version: 17
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
-
+        uses: gradle/gradle-build-action@v2.8.0
       - name: Has SNAPSHOT version
         run: ./gradlew properties | grep '^version:.*-SNAPSHOT$'
 
@@ -44,5 +43,6 @@ jobs:
 
       - name: Publish gradle plugin
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew :radar-commons-gradle:publish
+          OSSRH_USER: ${{ secrets.OSSRH_USER }}
+          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+        run: ./gradlew -Psigning.gnupg.keyName=CBEF2CF0 -Psigning.gnupg.executable=gpg -Psigning.gnupg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }} :radar-commons-gradle:publish

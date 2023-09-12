@@ -19,8 +19,9 @@ import kotlinx.coroutines.delay
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.nanoseconds
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeMark
+import kotlin.time.TimeSource
 
 /**
  * Oscilloscope gives out a regular beat, at a given frequency per second. The intended way to use
@@ -30,14 +31,11 @@ import kotlin.time.Duration.Companion.seconds
 class Oscilloscope(
     private val frequency: Int,
 ) {
-    private val timeStep: Duration = 1.seconds / frequency
-    private val baseTime: Long = System.nanoTime()
+    private val baseTime: TimeMark = TimeSource.Monotonic.markNow()
     private var iteration: AtomicInteger = AtomicInteger(0)
 
     /** Whether the next beat will restart at one.  */
-    fun willRestart(): Boolean {
-        return iteration.get() % frequency == 0
-    }
+    fun willRestart(): Boolean = iteration.get() % frequency == 0
 
     /**
      * One oscilloscope beat, sleeping if necessary to not exceed the frequency per second. The beat
@@ -47,9 +45,8 @@ class Oscilloscope(
      */
     @Throws(InterruptedException::class)
     suspend fun beat(): Int {
-        val currentTime = System.nanoTime()
         val currentIteration = iteration.getAndIncrement()
-        val timeToSleep = (baseTime - currentTime).nanoseconds + timeStep * currentIteration
+        val timeToSleep = currentIteration.seconds / frequency - baseTime.elapsedNow()
         if (timeToSleep > Duration.ZERO) {
             logger.info("delaying {} millis", timeToSleep.inWholeMilliseconds)
             delay(timeToSleep)

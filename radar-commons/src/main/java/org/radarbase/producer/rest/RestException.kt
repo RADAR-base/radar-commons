@@ -20,13 +20,10 @@ import java.io.IOException
 
 /**
  * Exception when a HTTP REST request fails.
- */
-class RestException
-/**
- * Request with status code and response body.
  * @param status HTTP status code
  * @param body response body.
- */(
+ */
+class RestException(
     val status: HttpStatusCode,
     body: String? = null,
     cause: Throwable? = null,
