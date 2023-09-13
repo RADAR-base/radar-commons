@@ -90,6 +90,8 @@ val dokkaJar by tasks.registering(Jar::class) {
 tasks.withType<GenerateMavenPom> {
     afterEvaluate {
         pom.apply {
+            name.set(project.name)
+            url.set(githubUrl)
             description.set(project.description)
             licenses {
                 license {
@@ -159,7 +161,7 @@ signing {
 }
 
 tasks.withType<Sign> {
-    onlyIf { gradle.taskGraph.hasTask(project.tasks["publish"]) }
+    onlyIf { gradle.taskGraph.hasTask(project.tasks["publishToSonatype"]) }
     dependsOn(sourcesJar)
     dependsOn(dokkaJar)
 }
