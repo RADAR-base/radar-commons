@@ -57,4 +57,4 @@ jobs:
         env:
           OSSRH_USER: ${{ secrets.OSSRH_USER }}
           OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
-        run: ./gradlew -Psigning.gnupg.keyName=CBEF2CF0 -Psigning.gnupg.executable=gpg -Psigning.gnupg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }} :radar-commons-gradle:publish
+        run: ./gradlew -Psigning.gnupg.keyName=CBEF2CF0 -Psigning.gnupg.executable=gpg -Psigning.gnupg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }} :radar-commons-gradle:publish :radar-commons-gradle:closeAndReleaseSonatypeStagingRepository
