@@ -23,4 +23,5 @@ object Versions {
     const val opencsv = "5.8"
     const val ktor = "2.3.4"
     const val coroutines = "1.7.3"
+    const val commonsCompress = "1.24.0"
 }

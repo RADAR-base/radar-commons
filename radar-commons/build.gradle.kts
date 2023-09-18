@@ -15,7 +15,9 @@ repositories {
 
 // In this section you declare the dependencies for your production and test code
 dependencies {
-    api("org.apache.avro:avro:${Versions.avro}")
+    api("org.apache.avro:avro:${Versions.avro}") {
+        implementation("org.apache.commons:commons-compress:${Versions.commonsCompress}")
+    }
     api(kotlin("reflect"))
 
     implementation(project(":radar-commons-kotlin"))
