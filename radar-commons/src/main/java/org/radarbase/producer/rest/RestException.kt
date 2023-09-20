@@ -34,7 +34,14 @@ class RestException(
         if (body == null) {
             append(')')
         } else {
-            append(body.substring(0, body.length.coerceAtMost(512)))
+            append("): ")
+            append(
+                if (body.length <= 512) {
+                    body
+                } else {
+                    body.substring(0, 512)
+                }
+            )
         }
     },
     cause,
