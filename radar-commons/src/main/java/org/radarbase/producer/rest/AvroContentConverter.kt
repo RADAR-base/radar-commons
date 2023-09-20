@@ -51,7 +51,7 @@ class AvroContentConverter(
                     valueSchemaMetadata = valueSchema.await(),
                 )
             }
-            maker.createContent()
+            maker.createContent(contentType)
         }
     }
 

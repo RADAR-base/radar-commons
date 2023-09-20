@@ -89,11 +89,11 @@ class RestKafkaSender(config: Config) : KafkaSender {
     private fun HttpClientConfig<*>.configure() {
         timeout(connectionTimeout)
         install(ContentNegotiation) {
-            this.register(
+            register(
                 KAFKA_REST_BINARY_ENCODING,
                 AvroContentConverter(schemaRetriever, binary = true),
             )
-            this.register(
+            register(
                 KAFKA_REST_JSON_ENCODING,
                 AvroContentConverter(schemaRetriever, binary = false),
             )
@@ -118,14 +118,11 @@ class RestKafkaSender(config: Config) : KafkaSender {
     inner class RestKafkaTopicSender<K : Any, V : Any>(
         override val topic: AvroTopic<K, V>,
     ) : KafkaTopicSender<K, V> {
-        @OptIn(ExperimentalStdlibApi::class)
         override suspend fun send(records: RecordData<K, V>) = scope.async {
             try {
                 val response: HttpResponse = restClient.post {
                     url("topics/${topic.name}")
-                    val kType = typeOf<RecordData<Any, Any>>()
-                    val reifiedType = kType.javaType
-                    setBody(records, TypeInfo(RecordData::class, reifiedType, kType))
+                    setBody(records, recordDataTypeInfo)
                 }
                 if (response.status.isSuccess()) {
                     _connectionState.didConnect()
@@ -253,10 +250,19 @@ class RestKafkaSender(config: Config) : KafkaSender {
 
     companion object {
         private val logger = LoggerFactory.getLogger(RestKafkaSender::class.java)
+        private val recordDataTypeInfo: TypeInfo
+
         val DEFAULT_TIMEOUT: Duration = 20.seconds
         val KAFKA_REST_BINARY_ENCODING = ContentType("application", "vnd.radarbase.avro.v1+binary")
         val KAFKA_REST_JSON_ENCODING = ContentType("application", "vnd.kafka.avro.v2+json")
         const val GZIP_CONTENT_ENCODING = "gzip"
+
+        init {
+            val kType = typeOf<RecordData<Any, Any>>()
+            @OptIn(ExperimentalStdlibApi::class)
+            val reifiedType = kType.javaType
+            recordDataTypeInfo = TypeInfo(RecordData::class, reifiedType, kType)
+        }
 
         fun restKafkaSender(builder: Config.() -> Unit): RestKafkaSender =
             RestKafkaSender(Config().apply(builder))

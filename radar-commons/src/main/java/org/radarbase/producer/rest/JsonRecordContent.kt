@@ -1,12 +1,14 @@
 package org.radarbase.producer.rest
 
-import io.ktor.http.content.*
-import io.ktor.utils.io.*
+import io.ktor.http.ContentType
+import io.ktor.http.content.OutgoingContent
+import io.ktor.utils.io.ByteWriteChannel
+import io.ktor.utils.io.writeByte
+import io.ktor.utils.io.writeFully
 import org.radarbase.data.RecordData
 import org.radarbase.data.RemoteSchemaEncoder
 import org.radarbase.producer.io.FunctionalWriteChannelContent
 import org.radarbase.producer.schema.ParsedSchemaMetadata
-import org.slf4j.LoggerFactory
 
 class JsonRecordContent<K : Any, V : Any>(
     private val records: RecordData<K, V>,
@@ -26,8 +28,8 @@ class JsonRecordContent<K : Any, V : Any>(
         readerSchema = valueSchemaMetadata.schema,
     )
 
-    override fun createContent(): OutgoingContent =
-        FunctionalWriteChannelContent { it.writeRecords() }
+    override fun createContent(contentType: ContentType): OutgoingContent =
+        FunctionalWriteChannelContent(contentType) { it.writeRecords() }
 
     private suspend fun ByteWriteChannel.writeRecords() {
         writeByte('{'.code)
@@ -60,7 +62,5 @@ class JsonRecordContent<K : Any, V : Any>(
         val KEY = "{\"key\":".toByteArray()
         val VALUE = ",\"value\":".toByteArray()
         val END = "]}".toByteArray()
-
-        private val logger = LoggerFactory.getLogger(JsonRecordContent::class.java)
     }
 }
