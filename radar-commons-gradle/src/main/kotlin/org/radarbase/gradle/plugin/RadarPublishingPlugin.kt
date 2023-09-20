@@ -9,10 +9,19 @@ import org.gradle.api.publish.maven.MavenPomDeveloperSpec
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
 import org.gradle.api.tasks.SourceSetContainer
-import org.gradle.api.tasks.bundling.Compression
 import org.gradle.api.tasks.bundling.Jar
-import org.gradle.api.tasks.bundling.Tar
-import org.gradle.kotlin.dsl.*
+import org.gradle.kotlin.dsl.apply
+import org.gradle.kotlin.dsl.attributes
+import org.gradle.kotlin.dsl.configure
+import org.gradle.kotlin.dsl.create
+import org.gradle.kotlin.dsl.creating
+import org.gradle.kotlin.dsl.get
+import org.gradle.kotlin.dsl.getByName
+import org.gradle.kotlin.dsl.getValue
+import org.gradle.kotlin.dsl.provideDelegate
+import org.gradle.kotlin.dsl.registering
+import org.gradle.kotlin.dsl.the
+import org.gradle.kotlin.dsl.withType
 import org.gradle.plugins.signing.Sign
 import org.gradle.plugins.signing.SigningExtension
 import org.gradle.plugins.signing.SigningPlugin
@@ -50,11 +59,6 @@ class RadarPublishingPlugin : Plugin<Project> {
             archiveClassifier.set("javadoc")
             val dokkaJavadoc by tasks
             dependsOn(dokkaJavadoc)
-        }
-
-        tasks.withType<Tar> {
-            compression = Compression.GZIP
-            archiveExtension.set("tar.gz")
         }
 
         tasks.withType<Jar> {

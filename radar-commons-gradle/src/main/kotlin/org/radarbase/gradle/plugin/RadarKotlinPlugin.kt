@@ -12,7 +12,18 @@ import org.gradle.api.tasks.bundling.Tar
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
-import org.gradle.kotlin.dsl.*
+import org.gradle.kotlin.dsl.apply
+import org.gradle.kotlin.dsl.configure
+import org.gradle.kotlin.dsl.create
+import org.gradle.kotlin.dsl.dependencies
+import org.gradle.kotlin.dsl.get
+import org.gradle.kotlin.dsl.getValue
+import org.gradle.kotlin.dsl.hasPlugin
+import org.gradle.kotlin.dsl.maven
+import org.gradle.kotlin.dsl.provideDelegate
+import org.gradle.kotlin.dsl.register
+import org.gradle.kotlin.dsl.repositories
+import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -109,6 +120,10 @@ class RadarKotlinPlugin : Plugin<Project> {
             useJUnitPlatform()
         }
 
+        tasks.withType<Tar> {
+            compression = Compression.GZIP
+            archiveExtension.set("tar.gz")
+        }
 
         tasks.register("downloadDependencies") {
             doFirst {
