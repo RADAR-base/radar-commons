@@ -13,7 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.apache.avro.Schema
-import org.radarbase.producer.rest.RestException
+import org.radarbase.producer.rest.RestException.Companion.toRestException
 import java.io.IOException
 import kotlin.coroutines.CoroutineContext
 
@@ -50,7 +50,7 @@ class SchemaRestClient(
             requestBuilder()
         }
         if (!response.status.isSuccess()) {
-            throw RestException(response.status, response.bodyAsText())
+            throw response.toRestException()
         }
         response.body(typeInfo)
     }
@@ -62,7 +62,7 @@ class SchemaRestClient(
             requestBuilder()
         }
         if (!response.status.isSuccess()) {
-            throw RestException(response.status, response.bodyAsText())
+            throw response.toRestException()
         }
     }
 

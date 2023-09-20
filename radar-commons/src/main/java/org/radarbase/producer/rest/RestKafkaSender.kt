@@ -23,10 +23,12 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import io.ktor.serialization.kotlinx.serialization
 import io.ktor.util.reflect.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.serialization.json.Json
 import org.apache.avro.SchemaValidationException
 import org.radarbase.data.RecordData
 import org.radarbase.producer.AuthenticationException
@@ -36,6 +38,7 @@ import org.radarbase.producer.io.GzipContentEncoding
 import org.radarbase.producer.io.UnsupportedMediaTypeException
 import org.radarbase.producer.io.timeout
 import org.radarbase.producer.io.unsafeSsl
+import org.radarbase.producer.rest.RestException.Companion.toRestException
 import org.radarbase.producer.schema.SchemaRetriever
 import org.radarbase.topic.AvroTopic
 import org.radarbase.util.RadarProducerDsl
@@ -69,7 +72,7 @@ class RestKafkaSender(config: Config) : KafkaSender {
     override val connectionState: Flow<ConnectionState.State>
         get() = _connectionState.state
 
-    private val baseUrl: String = requireNotNull(config.baseUrl)
+    private val baseUrl: String = requireNotNull(config.baseUrl).trimEnd('/')
     private val headers: Headers = config.headers.build()
     private val connectionTimeout: Duration = config.connectionTimeout
     private val contentEncoding = config.contentEncoding
@@ -97,6 +100,12 @@ class RestKafkaSender(config: Config) : KafkaSender {
                 KAFKA_REST_JSON_ENCODING,
                 AvroContentConverter(schemaRetriever, binary = false),
             )
+            serialization(
+                KAFKA_REST_ACCEPT,
+                Json {
+                    ignoreUnknownKeys = true
+                },
+            )
         }
         when (contentEncoding) {
             GZIP_CONTENT_ENCODING -> install(GzipContentEncoding)
@@ -106,7 +115,7 @@ class RestKafkaSender(config: Config) : KafkaSender {
             unsafeSsl()
         }
         defaultRequest {
-            url(baseUrl)
+            url("$baseUrl/")
             contentType(contentType)
             accept(ContentType.Application.Json)
             headers {
@@ -118,7 +127,7 @@ class RestKafkaSender(config: Config) : KafkaSender {
     inner class RestKafkaTopicSender<K : Any, V : Any>(
         override val topic: AvroTopic<K, V>,
     ) : KafkaTopicSender<K, V> {
-        override suspend fun send(records: RecordData<K, V>) = scope.async {
+        override suspend fun send(records: RecordData<K, V>) = withContext(scope.coroutineContext) {
             try {
                 val response: HttpResponse = restClient.post {
                     url("topics/${topic.name}")
@@ -132,18 +141,18 @@ class RestKafkaSender(config: Config) : KafkaSender {
                     throw AuthenticationException("Request unauthorized")
                 } else if (response.status == HttpStatusCode.UnsupportedMediaType) {
                     throw UnsupportedMediaTypeException(
-                        response.request.contentType(),
+                        response.request.contentType() ?: response.request.content.contentType,
                         response.request.headers[HttpHeaders.ContentEncoding],
                     )
                 } else {
                     _connectionState.didDisconnect()
-                    throw RestException(response.status, response.bodyAsText())
+                    throw response.toRestException()
                 }
             } catch (ex: IOException) {
                 _connectionState.didDisconnect()
                 throw ex
             }
-        }.await()
+        }
     }
 
     @Throws(SchemaValidationException::class)
@@ -255,6 +264,7 @@ class RestKafkaSender(config: Config) : KafkaSender {
         val DEFAULT_TIMEOUT: Duration = 20.seconds
         val KAFKA_REST_BINARY_ENCODING = ContentType("application", "vnd.radarbase.avro.v1+binary")
         val KAFKA_REST_JSON_ENCODING = ContentType("application", "vnd.kafka.avro.v2+json")
+        val KAFKA_REST_ACCEPT = ContentType("application", "vnd.kafka.v2+json")
         const val GZIP_CONTENT_ENCODING = "gzip"
 
         init {

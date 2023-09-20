@@ -15,7 +15,11 @@
  */
 package org.radarbase.producer.rest
 
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
+import io.ktor.client.statement.request
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.Url
 import java.io.IOException
 
 /**
@@ -25,11 +29,18 @@ import java.io.IOException
  */
 class RestException(
     val status: HttpStatusCode,
+    url: Url? = null,
     body: String? = null,
     cause: Throwable? = null,
 ) : IOException(
     buildString(150) {
-        append("REST call failed (HTTP code ")
+        append("REST call ")
+        if (url != null) {
+            append("to <")
+            append(url)
+            append("> ")
+        }
+        append("failed (HTTP code ")
         append(status)
         if (body == null) {
             append(')')
@@ -45,4 +56,8 @@ class RestException(
         }
     },
     cause,
-)
+) {
+    companion object {
+        suspend fun HttpResponse.toRestException() = RestException(status, request.url, bodyAsText())
+    }
+}

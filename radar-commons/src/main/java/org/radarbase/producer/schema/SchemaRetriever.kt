@@ -64,10 +64,10 @@ open class SchemaRetriever(config: Config) {
         val subject = subject(topic, ofValue)
         val metadata = restClient.addSchema(subject, schema)
 
-        launch {
-            cachedMetadata(subject, metadata.schema).set(metadata)
-        }
         if (metadata.version != null) {
+            launch {
+                cachedMetadata(subject, metadata.schema).set(metadata)
+            }
             launch {
                 cachedVersion(subject, metadata.version).set(metadata)
             }
