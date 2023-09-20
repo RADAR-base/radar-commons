@@ -259,6 +259,7 @@ class RestKafkaSender(config: Config) : KafkaSender {
 
         init {
             val kType = typeOf<RecordData<Any, Any>>()
+
             @OptIn(ExperimentalStdlibApi::class)
             val reifiedType = kType.javaType
             recordDataTypeInfo = TypeInfo(RecordData::class, reifiedType, kType)

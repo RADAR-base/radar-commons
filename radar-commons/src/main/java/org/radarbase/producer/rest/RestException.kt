@@ -15,7 +15,7 @@
  */
 package org.radarbase.producer.rest
 
-import io.ktor.http.*
+import io.ktor.http.HttpStatusCode
 import java.io.IOException
 
 /**
@@ -40,7 +40,7 @@ class RestException(
                     body
                 } else {
                     body.substring(0, 512)
-                }
+                },
             )
         }
     },

@@ -20,7 +20,6 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.JsonNodeType
 import io.ktor.util.*
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -47,7 +46,6 @@ import java.nio.charset.StandardCharsets
 import java.util.*
 import java.util.zip.GZIPInputStream
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class RestKafkaSenderTest {
     private lateinit var retriever: SchemaRetriever
     private lateinit var sender: RestKafkaSender

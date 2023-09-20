@@ -16,7 +16,6 @@
 package org.radarbase.producer.schema
 
 import io.ktor.client.plugins.*
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -33,7 +32,6 @@ import org.radarbase.producer.schema.SchemaRetriever.Companion.subject
 import java.io.IOException
 import kotlin.time.Duration.Companion.seconds
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class SchemaRetrieverTest {
     private lateinit var mockServer: MockWebServer
     private lateinit var retriever: SchemaRetriever

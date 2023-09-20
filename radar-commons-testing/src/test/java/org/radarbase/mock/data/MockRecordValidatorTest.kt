@@ -16,7 +16,6 @@
 package org.radarbase.mock.data
 
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import org.junit.jupiter.api.BeforeEach
@@ -36,7 +35,6 @@ import java.nio.file.Path
 import java.util.*
 import kotlin.io.path.bufferedWriter
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MockRecordValidatorTest {
     @TempDir
     lateinit var folder: Path
