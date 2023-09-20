@@ -255,7 +255,7 @@ class RestKafkaSender(config: Config) : KafkaSender {
         private val logger = LoggerFactory.getLogger(RestKafkaSender::class.java)
         val DEFAULT_TIMEOUT: Duration = 20.seconds
         val KAFKA_REST_BINARY_ENCODING = ContentType("application", "vnd.radarbase.avro.v1+binary")
-        val KAFKA_REST_JSON_ENCODING = ContentType("application", "vnd.kafka+json")
+        val KAFKA_REST_JSON_ENCODING = ContentType("application", "vnd.kafka.avro.v2+json")
         const val GZIP_CONTENT_ENCODING = "gzip"
 
         fun restKafkaSender(builder: Config.() -> Unit): RestKafkaSender =
