@@ -15,7 +15,7 @@
  */
 package org.radarbase.producer.schema
 
-import io.ktor.client.plugins.*
+import io.ktor.client.plugins.defaultRequest
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer

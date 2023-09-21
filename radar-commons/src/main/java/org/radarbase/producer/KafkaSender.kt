@@ -15,10 +15,6 @@
  */
 package org.radarbase.producer
 
-import io.ktor.client.*
-import io.ktor.client.engine.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.*
 import kotlinx.coroutines.flow.Flow
 import org.apache.avro.SchemaValidationException
 import org.radarbase.producer.rest.ConnectionState

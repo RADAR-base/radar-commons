@@ -23,7 +23,7 @@ import java.math.BigDecimal
 import java.math.BigDecimal.valueOf
 import java.math.BigInteger
 import java.nio.ByteBuffer
-import java.util.*
+import java.util.Objects
 
 /**
  * Java class to aggregate data using Kafka Streams. Double is the base type.

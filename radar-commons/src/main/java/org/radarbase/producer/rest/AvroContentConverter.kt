@@ -1,11 +1,11 @@
 package org.radarbase.producer.rest
 
-import io.ktor.http.*
-import io.ktor.http.content.*
-import io.ktor.serialization.*
-import io.ktor.util.reflect.*
-import io.ktor.utils.io.*
-import io.ktor.utils.io.charsets.*
+import io.ktor.http.ContentType
+import io.ktor.http.content.OutgoingContent
+import io.ktor.serialization.ContentConverter
+import io.ktor.util.reflect.TypeInfo
+import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.charsets.Charset
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import org.radarbase.data.RecordData

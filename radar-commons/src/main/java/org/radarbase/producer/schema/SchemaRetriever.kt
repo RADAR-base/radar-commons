@@ -15,11 +15,9 @@
  */
 package org.radarbase.producer.schema
 
-import io.ktor.client.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.*
-import io.ktor.client.request.*
-import io.ktor.http.*
+import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
+import io.ktor.client.engine.cio.CIO
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -29,7 +27,6 @@ import org.radarbase.kotlin.coroutines.CachedValue
 import org.radarbase.util.RadarProducerDsl
 import java.io.IOException
 import java.lang.ref.SoftReference
-import java.util.*
 import java.util.Objects.hash
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap

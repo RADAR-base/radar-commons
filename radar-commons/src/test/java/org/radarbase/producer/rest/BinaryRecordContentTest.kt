@@ -1,8 +1,9 @@
 package org.radarbase.producer.rest
 
-import io.ktor.http.content.*
-import io.ktor.util.*
-import io.ktor.utils.io.*
+import io.ktor.http.content.OutgoingContent
+import io.ktor.util.toByteArray
+import io.ktor.utils.io.ByteChannel
+import io.ktor.utils.io.close
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.apache.avro.SchemaValidationException

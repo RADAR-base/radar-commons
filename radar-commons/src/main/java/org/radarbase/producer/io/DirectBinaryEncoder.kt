@@ -17,34 +17,18 @@
  */
 package org.radarbase.producer.io
 
-import io.ktor.utils.io.*
+import io.ktor.utils.io.ByteWriteChannel
+import io.ktor.utils.io.close
+import io.ktor.utils.io.writeByte
 import org.apache.avro.io.BinaryData
 import java.io.IOException
-import java.util.*
 
 /**
  * An [Encoder] for Avro's binary encoding that does not buffer output.
- *
- *
- * This encoder does not buffer writes, and as a result is slower than
- * [BufferedBinaryEncoder]. However, it is lighter-weight and useful when
- * the buffering in BufferedBinaryEncoder is not desired and/or the Encoder is
- * very short lived.
- *
- *
- * To construct, use
- * [EncoderFactory.directBinaryEncoder]
- *
- *
  * DirectBinaryEncoder is not thread-safe
  *
  * @see BinaryEncoder
- *
- * @see EncoderFactory
- *
  * @see Encoder
- *
- * @see Decoder
  */
 class DirectBinaryEncoder(
     var out: ByteWriteChannel,
@@ -95,10 +79,10 @@ class DirectBinaryEncoder(
         if (`val` and 0x7FFFFFFFL.inv() == 0L) {
             var i = `val`.toInt()
             while (i and 0x7F.inv() != 0) {
-                out.writeByte((0x80 or i and 0xFF).toByte().toInt())
+                out.writeByte((0x80 or i and 0xFF).toByte())
                 i = i ushr 7
             }
-            out.writeByte(i.toByte().toInt())
+            out.writeByte(i.toByte())
             return
         }
         val len = BinaryData.encodeLong(n, buf, 0)

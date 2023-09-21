@@ -35,7 +35,8 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
-import java.util.*
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.io.path.bufferedReader
 
 /**
@@ -277,9 +278,9 @@ class MockCsvParser(
             }
         }
 
+        @OptIn(ExperimentalEncodingApi::class)
         private fun parseBytes(fieldString: String?): ByteBuffer {
-            val result = Base64.getDecoder()
-                .decode(fieldString!!.toByteArray(StandardCharsets.UTF_8))
+            val result = Base64.decode(fieldString!!.toByteArray(StandardCharsets.UTF_8))
             return ByteBuffer.wrap(result)
         }
 
