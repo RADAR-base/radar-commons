@@ -18,6 +18,7 @@ import org.radarbase.gradle.plugin.radarPublishing
  */
 plugins {
     kotlin("plugin.serialization") version Versions.Plugins.kotlinSerialization apply false
+    kotlin("plugin.allopen") version Versions.Plugins.kotlinAllOpen apply false
     id("com.github.davidmc24.gradle.plugin.avro") version Versions.Plugins.avro apply false
     id("org.radarbase.radar-root-project")
     id("org.radarbase.radar-dependency-management")

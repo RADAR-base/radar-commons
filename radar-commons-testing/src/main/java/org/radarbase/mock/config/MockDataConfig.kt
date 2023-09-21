@@ -24,15 +24,12 @@ import java.nio.file.Path
 import java.nio.file.Paths
 
 class MockDataConfig : AvroTopicConfig() {
-    @JvmField
     @JsonProperty("file")
     var dataFile: String? = null
 
-    @JvmField
     var frequency = 1
     var sensor: String? = null
 
-    @JvmField
     @JsonProperty("value_fields")
     var valueFields: List<String>? = null
     var absoluteDataFile: String? = null

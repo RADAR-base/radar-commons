@@ -4,6 +4,7 @@ object Versions {
     object Plugins {
         const val kotlin = "1.9.10"
         const val kotlinSerialization = kotlin
+        const val kotlinAllOpen = kotlin
         const val avro = "1.8.0"
         const val gradle = "8.3"
     }

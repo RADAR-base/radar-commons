@@ -16,6 +16,7 @@
 
 plugins {
     id("com.github.davidmc24.gradle.plugin.avro")
+    kotlin("plugin.allopen")
 }
 
 description = "RADAR Common server library utilities."
@@ -46,4 +47,8 @@ dependencies {
     // Direct producer uses KafkaAvroSerializer if initialized
     testImplementation("io.confluent:kafka-avro-serializer:${Versions.confluent}")
     testImplementation("org.radarbase:radar-schemas-commons:${Versions.radarSchemas}")
+}
+
+allOpen {
+    annotation("org.radarbase.config.OpenConfig")
 }

@@ -1,5 +1,6 @@
 plugins {
     kotlin("plugin.serialization")
+    kotlin("plugin.allopen")
 }
 
 description = "RADAR Common utilities library."
@@ -37,4 +38,8 @@ dependencies {
     testImplementation("org.mockito:mockito-core:${Versions.mockito}")
     testImplementation("org.mockito.kotlin:mockito-kotlin:${Versions.mockitoKotlin}")
     testImplementation("com.squareup.okhttp3:mockwebserver:${Versions.okhttp}")
+}
+
+allOpen {
+    annotation("org.radarbase.config.OpenConfig")
 }
