@@ -41,7 +41,9 @@ dependencies {
 
     api("org.apache.avro:avro:${Versions.avro}")
 
-    implementation("org.apache.kafka:kafka-clients:${Versions.kafka}")
+    implementation("org.apache.kafka:kafka-clients:${Versions.kafka}") {
+        implementation("org.xerial.snappy:snappy-java:${Versions.snappy}")
+    }
 
     testImplementation("org.mockito:mockito-core:${Versions.mockito}")
     // Direct producer uses KafkaAvroSerializer if initialized

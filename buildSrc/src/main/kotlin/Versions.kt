@@ -1,3 +1,4 @@
+@Suppress("ConstPropertyName", "MemberVisibilityCanBePrivate")
 object Versions {
     const val project = "1.1.1"
 
@@ -25,4 +26,5 @@ object Versions {
     const val ktor = "2.3.4"
     const val coroutines = "1.7.3"
     const val commonsCompress = "1.24.0"
+    const val snappy = "1.1.10.5"
 }
