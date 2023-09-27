@@ -17,7 +17,10 @@ package org.radarbase.util
 
 import kotlinx.coroutines.runBlocking
 import org.hamcrest.MatcherAssert.assertThat
-import org.hamcrest.Matchers.*
+import org.hamcrest.Matchers.greaterThanOrEqualTo
+import org.hamcrest.Matchers.`is`
+import org.hamcrest.Matchers.lessThan
+import org.hamcrest.Matchers.lessThanOrEqualTo
 import org.junit.jupiter.api.Test
 
 class OscilloscopeTest {

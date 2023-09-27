@@ -7,7 +7,6 @@ import kotlinx.coroutines.sync.Semaphore
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.coroutineContext
 import kotlin.time.Duration
-import kotlin.time.ExperimentalTime
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 
@@ -207,17 +206,11 @@ open class CachedValue<T>(
         cache.set(null)
     }
 
-    sealed class CacheContents<T>
-    @ExperimentalTime
-    constructor(time: TimeMark?) {
-
-        @OptIn(ExperimentalTime::class)
+    sealed class CacheContents<T>(time: TimeMark?) {
         constructor() : this(null)
 
-        @ExperimentalTime
         protected val time: TimeMark = time ?: TimeSource.Monotonic.markNow()
 
-        @OptIn(ExperimentalTime::class)
         open fun isExpired(age: Duration): Boolean = (time + age).hasPassedNow()
 
         abstract fun getOrThrow(): T
@@ -229,27 +222,25 @@ open class CachedValue<T>(
     internal constructor(
         val exception: Throwable,
     ) : CacheContents<T>() {
-        override fun isExpired(age: Duration): Boolean = exception is CancellationException || super.isExpired(age)
+        override fun isExpired(age: Duration): Boolean = exception is CancellationException ||
+            super.isExpired(age)
+
         override fun getOrThrow(): T = throw exception
 
         @Suppress("UNCHECKED_CAST")
         override suspend fun <R> map(transform: suspend (T) -> R): CacheContents<R> = this as CacheError<R>
     }
 
-    @OptIn(ExperimentalTime::class)
     class CacheValue<T>
-    @ExperimentalTime
     internal constructor(
         val value: T,
         time: TimeMark?,
     ) : CacheContents<T>(time) {
 
-        @OptIn(ExperimentalTime::class)
         constructor(value: T) : this(value, null)
 
         override fun getOrThrow(): T = value
 
-        @OptIn(ExperimentalTime::class)
         override suspend fun <R> map(transform: suspend (T) -> R): CacheContents<R> = try {
             CacheValue(transform(value), time = time)
         } catch (ex: Throwable) {

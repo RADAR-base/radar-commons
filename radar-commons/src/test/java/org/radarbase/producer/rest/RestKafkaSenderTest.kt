@@ -19,8 +19,7 @@ import com.fasterxml.jackson.core.JsonFactory
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.JsonNodeType
-import io.ktor.util.*
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import io.ktor.util.moveToByteArray
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -28,10 +27,18 @@ import org.apache.avro.SchemaValidationException
 import org.apache.avro.io.DecoderFactory
 import org.apache.avro.specific.SpecificDatumReader
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.*
+import org.mockito.Mockito.mock
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.stub
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.radarbase.data.AvroRecordData
 import org.radarbase.producer.AuthenticationException
 import org.radarbase.producer.rest.RestKafkaSender.Companion.restKafkaSender
@@ -44,10 +51,8 @@ import org.radarcns.passive.phone.PhoneLight
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.nio.charset.StandardCharsets
-import java.util.*
 import java.util.zip.GZIPInputStream
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class RestKafkaSenderTest {
     private lateinit var retriever: SchemaRetriever
     private lateinit var sender: RestKafkaSender

@@ -15,8 +15,19 @@
  */
 package org.radarbase.producer.rest
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.flow.transformLatest
+import kotlinx.coroutines.plus
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.time.Duration
 
@@ -47,7 +58,10 @@ class ConnectionState(
 
     val scope = scope + Job()
 
-    private val mutableState = MutableStateFlow(State.UNKNOWN)
+    private val mutableState = MutableSharedFlow<State>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = DROP_OLDEST,
+    )
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val state: Flow<State> = mutableState
@@ -58,27 +72,28 @@ class ConnectionState(
                 emit(State.UNKNOWN)
             }
         }
+        .distinctUntilChanged()
         .shareIn(this.scope + Dispatchers.Unconfined, SharingStarted.Eagerly, replay = 1)
 
     init {
-        mutableState.value = State.UNKNOWN
+        mutableState.tryEmit(State.UNKNOWN)
     }
 
     /** For a sender to indicate that a connection attempt succeeded.  */
-    fun didConnect() {
-        mutableState.value = State.CONNECTED
+    suspend fun didConnect() {
+        mutableState.emit(State.CONNECTED)
     }
 
     /** For a sender to indicate that a connection attempt failed.  */
-    fun didDisconnect() {
-        mutableState.value = State.DISCONNECTED
+    suspend fun didDisconnect() {
+        mutableState.emit(State.DISCONNECTED)
     }
 
-    fun wasUnauthorized() {
-        mutableState.value = State.UNAUTHORIZED
+    suspend fun wasUnauthorized() {
+        mutableState.emit(State.UNAUTHORIZED)
     }
 
-    fun reset() {
-        mutableState.value = State.UNKNOWN
+    suspend fun reset() {
+        mutableState.emit(State.UNKNOWN)
     }
 }

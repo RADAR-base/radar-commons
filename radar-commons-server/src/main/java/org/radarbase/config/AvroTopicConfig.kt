@@ -23,15 +23,13 @@ import org.radarbase.topic.AvroTopic.Companion.parse
 /**
  * Specifies an Avro topic.
  */
-open class AvroTopicConfig {
-    @JvmField
+@OpenConfig
+class AvroTopicConfig {
     var topic: String? = null
 
-    @JvmField
     @JsonProperty("key_schema")
     var keySchema: String? = null
 
-    @JvmField
     @JsonProperty("value_schema")
     var valueSchema: String? = null
     var tags: List<String>? = null
@@ -42,7 +40,7 @@ open class AvroTopicConfig {
      * @throws IllegalStateException if the key_schema or value_schema properties are not valid
      * Avro SpecificRecord classes
      */
-    open fun <K : SpecificRecord, V : SpecificRecord> parseAvroTopic(): AvroTopic<K, V> {
+    fun <K : SpecificRecord, V : SpecificRecord> parseAvroTopic(): AvroTopic<K, V> {
         return try {
             parse(
                 checkNotNull(topic) { "Topic is not specified" },

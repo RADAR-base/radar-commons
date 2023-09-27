@@ -15,10 +15,8 @@
  */
 package org.radarbase.producer.schema
 
-import io.ktor.client.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.*
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockWebServer
 import org.apache.avro.Schema
@@ -29,10 +27,8 @@ import org.junit.jupiter.api.Test
 import org.radarbase.producer.io.timeout
 import org.radarbase.producer.rest.RestKafkaSenderTest.Companion.enqueueJson
 import java.io.IOException
-import java.util.*
 import kotlin.time.Duration.Companion.seconds
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class SchemaRestClientTest {
     private lateinit var mockServer: MockWebServer
     private lateinit var retriever: SchemaRestClient

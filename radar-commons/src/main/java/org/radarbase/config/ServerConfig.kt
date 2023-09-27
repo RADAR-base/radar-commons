@@ -19,11 +19,12 @@ import java.net.InetSocketAddress
 import java.net.MalformedURLException
 import java.net.Proxy
 import java.net.URL
-import java.util.*
+import java.util.Objects
 
 /**
  * POJO representing a ServerConfig configuration.
  */
+@OpenConfig
 class ServerConfig {
     /** Server host name or IP address.  */
     /** Set server host name or IP address.  */

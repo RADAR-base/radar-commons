@@ -1,19 +1,26 @@
 package org.radarbase.producer.schema
 
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.plugins.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
-import io.ktor.util.reflect.*
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.accept
+import io.ktor.client.request.request
+import io.ktor.client.request.setBody
+import io.ktor.client.request.url
+import io.ktor.http.ContentType
+import io.ktor.http.HttpMethod
+import io.ktor.http.contentType
+import io.ktor.http.isSuccess
+import io.ktor.serialization.kotlinx.json.json
+import io.ktor.util.reflect.TypeInfo
+import io.ktor.util.reflect.typeInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.apache.avro.Schema
-import org.radarbase.producer.rest.RestException
+import org.radarbase.producer.rest.RestException.Companion.toRestException
 import java.io.IOException
 import kotlin.coroutines.CoroutineContext
 
@@ -50,7 +57,7 @@ class SchemaRestClient(
             requestBuilder()
         }
         if (!response.status.isSuccess()) {
-            throw RestException(response.status, response.bodyAsText())
+            throw response.toRestException()
         }
         response.body(typeInfo)
     }
@@ -62,7 +69,7 @@ class SchemaRestClient(
             requestBuilder()
         }
         if (!response.status.isSuccess()) {
-            throw RestException(response.status, response.bodyAsText())
+            throw response.toRestException()
         }
     }
 

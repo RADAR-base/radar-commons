@@ -27,7 +27,7 @@ package org.radarbase.util
 class Metronome(
     private val samples: Long,
     private val frequency: Int,
-) {
+) : AbstractIterator<Long>() {
     private val baseTime: Long
     private var iteration: Long = 0
 
@@ -41,14 +41,12 @@ class Metronome(
         }
     }
 
-    /** Whether the metronome will generate another sample.  */
-    operator fun hasNext(): Boolean = samples == 0L || iteration < samples
-
-    /** Generate the next sample.  */
-    operator fun next(): Long {
-        check(hasNext()) { "Iterator finished" }
-
-        return baseTime + (iteration++).toTimeOffset()
+    override fun computeNext() {
+        if (samples != 0L && iteration >= samples) {
+            done()
+        } else {
+            setNext(baseTime + (iteration++).toTimeOffset())
+        }
     }
 
     private fun Long.toTimeOffset(): Long = this * 1000 / frequency

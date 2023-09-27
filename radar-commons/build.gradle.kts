@@ -1,5 +1,6 @@
 plugins {
     kotlin("plugin.serialization")
+    kotlin("plugin.allopen")
 }
 
 description = "RADAR Common utilities library."
@@ -15,7 +16,9 @@ repositories {
 
 // In this section you declare the dependencies for your production and test code
 dependencies {
-    api("org.apache.avro:avro:${Versions.avro}")
+    api("org.apache.avro:avro:${Versions.avro}") {
+        implementation("org.apache.commons:commons-compress:${Versions.commonsCompress}")
+    }
     api(kotlin("reflect"))
 
     implementation(project(":radar-commons-kotlin"))
@@ -35,4 +38,8 @@ dependencies {
     testImplementation("org.mockito:mockito-core:${Versions.mockito}")
     testImplementation("org.mockito.kotlin:mockito-kotlin:${Versions.mockitoKotlin}")
     testImplementation("com.squareup.okhttp3:mockwebserver:${Versions.okhttp}")
+}
+
+allOpen {
+    annotation("org.radarbase.config.OpenConfig")
 }

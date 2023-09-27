@@ -1,6 +1,6 @@
 package org.radarbase.producer.io
 
-import io.ktor.http.*
+import io.ktor.http.ContentType
 import java.io.IOException
 
 class UnsupportedMediaTypeException(

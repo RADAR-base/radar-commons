@@ -18,7 +18,6 @@ package org.radarbase.topic
 import org.apache.avro.Schema
 import org.apache.avro.specific.SpecificData
 import org.apache.avro.specific.SpecificRecord
-import java.util.*
 
 /**
  * Kafka topic with Avro schema.

@@ -22,6 +22,7 @@ import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.NoSuchElementException;
 import org.junit.jupiter.api.Test;
 
 public class MetronomeTest {
@@ -42,7 +43,7 @@ public class MetronomeTest {
         check(it, base - 500L);
         check(it, base);
         assertThat(it.hasNext(), is(false));
-        assertThrows(IllegalStateException.class, it::next);
+        assertThrows(NoSuchElementException.class, it::next);
     }
 
     @Test

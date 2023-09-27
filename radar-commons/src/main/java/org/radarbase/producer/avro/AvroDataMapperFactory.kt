@@ -3,12 +3,16 @@ package org.radarbase.producer.avro
 import org.apache.avro.JsonProperties
 import org.apache.avro.Schema
 import org.apache.avro.SchemaValidationException
-import org.apache.avro.generic.*
+import org.apache.avro.generic.GenericData
+import org.apache.avro.generic.GenericEnumSymbol
+import org.apache.avro.generic.GenericRecord
+import org.apache.avro.generic.GenericRecordBuilder
+import org.apache.avro.generic.IndexedRecord
 import org.radarbase.util.Base64Encoder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
-import java.util.*
+import java.util.EnumSet
 
 object AvroDataMapperFactory {
     /**

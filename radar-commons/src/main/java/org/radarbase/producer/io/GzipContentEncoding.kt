@@ -1,13 +1,21 @@
 package org.radarbase.producer.io
 
-import io.ktor.client.*
-import io.ktor.client.plugins.*
-import io.ktor.client.request.*
-import io.ktor.http.*
-import io.ktor.http.content.*
-import io.ktor.util.*
-import io.ktor.util.cio.*
-import io.ktor.utils.io.*
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.HttpClientPlugin
+import io.ktor.client.request.HttpRequestPipeline
+import io.ktor.http.ContentType
+import io.ktor.http.Headers
+import io.ktor.http.HeadersBuilder
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
+import io.ktor.http.content.OutgoingContent
+import io.ktor.http.contentLength
+import io.ktor.util.AttributeKey
+import io.ktor.util.KtorDsl
+import io.ktor.util.cio.use
+import io.ktor.util.deflated
+import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.ByteWriteChannel
 import kotlinx.coroutines.coroutineScope
 
 /**
@@ -30,9 +38,9 @@ class GzipContentEncoding private constructor() {
 
         return when (content) {
             is OutgoingContent.ProtocolUpgrade, is OutgoingContent.NoContent -> content
-            is OutgoingContent.ReadChannelContent -> GzipReadChannel(content.readFrom())
-            is OutgoingContent.ByteArrayContent -> GzipReadChannel(ByteReadChannel(content.bytes()))
-            is OutgoingContent.WriteChannelContent -> GzipWriteChannel(content)
+            is OutgoingContent.ReadChannelContent -> GzipReadChannel(content.readFrom(), content.contentType)
+            is OutgoingContent.ByteArrayContent -> GzipReadChannel(ByteReadChannel(content.bytes()), content.contentType)
+            is OutgoingContent.WriteChannelContent -> GzipWriteChannel(content, content.contentType)
         }
     }
 
@@ -74,6 +82,7 @@ class GzipContentEncoding private constructor() {
 
     private class GzipReadChannel(
         private val original: ByteReadChannel,
+        override val contentType: ContentType?,
     ) : OutgoingContent.ReadChannelContent() {
         override fun readFrom(): ByteReadChannel =
             original.deflated(gzip = true)
@@ -81,6 +90,7 @@ class GzipContentEncoding private constructor() {
 
     private class GzipWriteChannel(
         private val content: WriteChannelContent,
+        override val contentType: ContentType?,
     ) : OutgoingContent.WriteChannelContent() {
         override suspend fun writeTo(channel: ByteWriteChannel) {
             coroutineScope {

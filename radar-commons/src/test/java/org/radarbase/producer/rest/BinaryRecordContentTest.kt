@@ -1,9 +1,9 @@
 package org.radarbase.producer.rest
 
-import io.ktor.http.content.*
-import io.ktor.util.*
-import io.ktor.utils.io.*
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import io.ktor.http.content.OutgoingContent
+import io.ktor.util.toByteArray
+import io.ktor.utils.io.ByteChannel
+import io.ktor.utils.io.close
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.apache.avro.SchemaValidationException
@@ -26,7 +26,6 @@ import java.io.InputStreamReader
 import java.nio.ByteBuffer
 import java.util.zip.GZIPOutputStream
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class BinaryRecordContentTest {
     @Test
     @Throws(SchemaValidationException::class, IOException::class)
@@ -52,7 +51,7 @@ class BinaryRecordContentTest {
 
         val channel = ByteChannel()
         launch {
-            val content = request.createContent() as OutgoingContent.WriteChannelContent
+            val content = request.createContent(RestKafkaSender.KAFKA_REST_BINARY_ENCODING) as OutgoingContent.WriteChannelContent
             content.writeTo(channel)
             channel.close()
         }

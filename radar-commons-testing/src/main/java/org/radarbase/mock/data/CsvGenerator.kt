@@ -13,34 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.radarbase.mock.data
 
-package org.radarbase.mock.data;
-
-import com.opencsv.CSVWriter;
-import java.io.IOException;
-import java.io.Writer;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import org.radarbase.mock.config.MockDataConfig;
-import org.radarcns.kafka.ObservationKey;
+import com.opencsv.CSVWriter
+import org.radarbase.mock.config.MockDataConfig
+import org.radarcns.kafka.ObservationKey
+import java.io.IOException
+import java.nio.file.Path
+import kotlin.io.path.bufferedWriter
 
 /**
  * It generates a CVS file that can be used to stream data and
  * to compute the expected results.
+ * @param key record key, project test, user UserID_0 and source SourceID_0 by default.
  */
-public final class CsvGenerator {
-    private final ObservationKey key;
-
-    /** CsvGenerator sending data as project test, user UserID_0 and source SourceID_0. */
-    public CsvGenerator() {
-        this(new ObservationKey("test", "UserID_0", "SourceID_0"));
-    }
-
-    /** CsvGenerator sending data with given key. */
-    public CsvGenerator(ObservationKey key) {
-        this.key = key;
-    }
-
+class CsvGenerator(
+    private val key: ObservationKey = ObservationKey("test", "UserID_0", "SourceID_0"),
+) {
+    /** CsvGenerator sending data with given key.  */
     /**
      * Generates new CSV file to simulation a single user with a single device.
      *
@@ -49,11 +39,10 @@ public final class CsvGenerator {
      * @param root directory relative to which the output csv file is generated
      * @throws IOException if the CSV file cannot be written to
      */
-    public void generate(MockDataConfig config, long duration, Path root)
-            throws IOException {
-        Path file = config.getDataFile(root);
-
-        generate(new RecordGenerator<>(config, ObservationKey.class), duration, file);
+    @Throws(IOException::class)
+    fun generate(config: MockDataConfig, duration: Long, root: Path) {
+        val file = config.getDataFile(root)
+        generate(RecordGenerator(config, ObservationKey::class.java), duration, file)
     }
 
     /**
@@ -64,12 +53,13 @@ public final class CsvGenerator {
      * @param csvFile CSV file to write data to
      * @throws IOException if the CSV file cannot be written to
      */
-    public void generate(RecordGenerator<ObservationKey> generator, long duration, Path csvFile)
-            throws IOException {
-        try (Writer writer = Files.newBufferedWriter(csvFile);
-                CSVWriter csvWriter = new CSVWriter(writer)) {
-            csvWriter.writeNext(generator.getHeader().toArray(new String[0]));
-            csvWriter.writeAll(generator.iteratableRawValues(key, duration));
+    @Throws(IOException::class)
+    fun generate(generator: RecordGenerator<ObservationKey>, duration: Long, csvFile: Path) {
+        csvFile.bufferedWriter().use { writer ->
+            CSVWriter(writer).use { csvWriter ->
+                csvWriter.writeNext(generator.headerArray)
+                csvWriter.writeAll(generator.iteratableRawValues(key, duration))
+            }
         }
     }
 }

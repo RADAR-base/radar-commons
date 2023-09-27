@@ -2,7 +2,7 @@ package org.radarbase.util
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import java.util.*
+import java.util.Base64
 import java.util.concurrent.ThreadLocalRandom
 import kotlin.text.Charsets.UTF_8
 

@@ -1,6 +1,7 @@
 package org.radarbase.producer.rest
 
-import io.ktor.http.content.*
+import io.ktor.http.ContentType
+import io.ktor.http.content.OutgoingContent
 import org.radarbase.data.RecordData
 import org.radarbase.data.RemoteSchemaEncoder
 import org.radarbase.producer.avro.AvroDataMapperFactory
@@ -35,11 +36,12 @@ class BinaryRecordContent<V : Any>(
         "missing key schema version"
     }
 
-    override fun createContent(): OutgoingContent = FunctionalWriteChannelContent { channel ->
-        DirectBinaryEncoder(channel).use {
-            it.writeRecords()
+    override fun createContent(contentType: ContentType): OutgoingContent =
+        FunctionalWriteChannelContent(contentType) { channel ->
+            DirectBinaryEncoder(channel).use {
+                it.writeRecords()
+            }
         }
-    }
 
     private suspend fun BinaryEncoder.writeRecords() {
         startItem()

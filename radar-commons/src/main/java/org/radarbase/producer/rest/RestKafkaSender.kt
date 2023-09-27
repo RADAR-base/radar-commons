@@ -15,18 +15,36 @@
  */
 package org.radarbase.producer.rest
 
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
-import io.ktor.util.reflect.*
-import kotlinx.coroutines.*
+import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.request.accept
+import io.ktor.client.request.head
+import io.ktor.client.request.headers
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.request.url
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
+import io.ktor.client.statement.request
+import io.ktor.http.ContentType
+import io.ktor.http.Headers
+import io.ktor.http.HeadersBuilder
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
+import io.ktor.http.isSuccess
+import io.ktor.serialization.kotlinx.serialization
+import io.ktor.util.reflect.TypeInfo
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import org.apache.avro.SchemaValidationException
 import org.radarbase.data.RecordData
 import org.radarbase.producer.AuthenticationException
@@ -36,12 +54,12 @@ import org.radarbase.producer.io.GzipContentEncoding
 import org.radarbase.producer.io.UnsupportedMediaTypeException
 import org.radarbase.producer.io.timeout
 import org.radarbase.producer.io.unsafeSsl
+import org.radarbase.producer.rest.RestException.Companion.toRestException
 import org.radarbase.producer.schema.SchemaRetriever
 import org.radarbase.topic.AvroTopic
 import org.radarbase.util.RadarProducerDsl
 import org.slf4j.LoggerFactory
 import java.io.IOException
-import java.util.*
 import kotlin.reflect.javaType
 import kotlin.reflect.typeOf
 import kotlin.time.Duration
@@ -69,7 +87,7 @@ class RestKafkaSender(config: Config) : KafkaSender {
     override val connectionState: Flow<ConnectionState.State>
         get() = _connectionState.state
 
-    private val baseUrl: String = requireNotNull(config.baseUrl)
+    private val baseUrl: String = requireNotNull(config.baseUrl).trimEnd('/')
     private val headers: Headers = config.headers.build()
     private val connectionTimeout: Duration = config.connectionTimeout
     private val contentEncoding = config.contentEncoding
@@ -89,13 +107,19 @@ class RestKafkaSender(config: Config) : KafkaSender {
     private fun HttpClientConfig<*>.configure() {
         timeout(connectionTimeout)
         install(ContentNegotiation) {
-            this.register(
+            register(
                 KAFKA_REST_BINARY_ENCODING,
                 AvroContentConverter(schemaRetriever, binary = true),
             )
-            this.register(
+            register(
                 KAFKA_REST_JSON_ENCODING,
                 AvroContentConverter(schemaRetriever, binary = false),
+            )
+            serialization(
+                KAFKA_REST_ACCEPT,
+                Json {
+                    ignoreUnknownKeys = true
+                },
             )
         }
         when (contentEncoding) {
@@ -106,7 +130,7 @@ class RestKafkaSender(config: Config) : KafkaSender {
             unsafeSsl()
         }
         defaultRequest {
-            url(baseUrl)
+            url("$baseUrl/")
             contentType(contentType)
             accept(ContentType.Application.Json)
             headers {
@@ -118,14 +142,11 @@ class RestKafkaSender(config: Config) : KafkaSender {
     inner class RestKafkaTopicSender<K : Any, V : Any>(
         override val topic: AvroTopic<K, V>,
     ) : KafkaTopicSender<K, V> {
-        @OptIn(ExperimentalStdlibApi::class)
-        override suspend fun send(records: RecordData<K, V>) = scope.async {
+        override suspend fun send(records: RecordData<K, V>) = withContext(scope.coroutineContext) {
             try {
                 val response: HttpResponse = restClient.post {
                     url("topics/${topic.name}")
-                    val kType = typeOf<RecordData<Any, Any>>()
-                    val reifiedType = kType.javaType
-                    setBody(records, TypeInfo(RecordData::class, reifiedType, kType))
+                    setBody(records, recordDataTypeInfo)
                 }
                 if (response.status.isSuccess()) {
                     _connectionState.didConnect()
@@ -135,18 +156,18 @@ class RestKafkaSender(config: Config) : KafkaSender {
                     throw AuthenticationException("Request unauthorized")
                 } else if (response.status == HttpStatusCode.UnsupportedMediaType) {
                     throw UnsupportedMediaTypeException(
-                        response.request.contentType(),
+                        response.request.contentType() ?: response.request.content.contentType,
                         response.request.headers[HttpHeaders.ContentEncoding],
                     )
                 } else {
                     _connectionState.didDisconnect()
-                    throw RestException(response.status, response.bodyAsText())
+                    throw response.toRestException()
                 }
             } catch (ex: IOException) {
                 _connectionState.didDisconnect()
                 throw ex
             }
-        }.await()
+        }
     }
 
     @Throws(SchemaValidationException::class)
@@ -253,10 +274,21 @@ class RestKafkaSender(config: Config) : KafkaSender {
 
     companion object {
         private val logger = LoggerFactory.getLogger(RestKafkaSender::class.java)
+        private val recordDataTypeInfo: TypeInfo
+
         val DEFAULT_TIMEOUT: Duration = 20.seconds
         val KAFKA_REST_BINARY_ENCODING = ContentType("application", "vnd.radarbase.avro.v1+binary")
-        val KAFKA_REST_JSON_ENCODING = ContentType("application", "vnd.kafka+json")
+        val KAFKA_REST_JSON_ENCODING = ContentType("application", "vnd.kafka.avro.v2+json")
+        val KAFKA_REST_ACCEPT = ContentType("application", "vnd.kafka.v2+json")
         const val GZIP_CONTENT_ENCODING = "gzip"
+
+        init {
+            val kType = typeOf<RecordData<Any, Any>>()
+
+            @OptIn(ExperimentalStdlibApi::class)
+            val reifiedType = kType.javaType
+            recordDataTypeInfo = TypeInfo(RecordData::class, reifiedType, kType)
+        }
 
         fun restKafkaSender(builder: Config.() -> Unit): RestKafkaSender =
             RestKafkaSender(Config().apply(builder))

@@ -1,8 +1,8 @@
 package org.radarbase.producer.io
 
-import io.ktor.client.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.*
+import io.ktor.client.HttpClientConfig
+import io.ktor.client.engine.cio.CIOEngineConfig
+import io.ktor.client.plugins.HttpTimeout
 import java.security.cert.X509Certificate
 import javax.net.ssl.X509TrustManager
 import kotlin.time.Duration
