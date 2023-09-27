@@ -118,7 +118,8 @@ open class RecordGenerator<K : SpecificRecord>(
      * @param key key to generate data with
      * @return list containing simulated values
      */
-    open fun iteratableRawValues(key: K, duration: Long): Iterable<Array<String>> = iterateValues(key, duration).asSequence()
+    open fun iteratableRawValues(key: K, duration: Long): Iterable<Array<String>> = iterateValues(key, duration)
+        .asSequence()
         .map { record ->
             val keyFieldsSize = record.key.schema.fields.size
             val valueFieldsSize = record.value.schema.fields.size
@@ -168,11 +169,11 @@ open class RecordGenerator<K : SpecificRecord>(
         }
     }
 
+    /**
+     * Get a random double.
+     * @return random `Double` using `ThreadLocalRandom`.
+     */
     private val randomDouble: Double
-        /**
-         * Get a random double.
-         * @return random `Double` using `ThreadLocalRandom`.
-         */
         get() = Random.nextDouble(config.minimum, config.maximum)
 
     /**
