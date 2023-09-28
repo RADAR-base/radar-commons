@@ -11,7 +11,7 @@ plugins {
     signing
 }
 
-version = "1.1.1"
+version = "1.1.2-SNAPSHOT"
 group = "org.radarbase"
 description = "RADAR-base common Gradle plugin setup"
 
