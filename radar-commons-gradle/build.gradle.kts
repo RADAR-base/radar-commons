@@ -161,7 +161,7 @@ signing {
 }
 
 tasks.withType<Sign> {
-    onlyIf { gradle.taskGraph.hasTask(project.tasks["publishToSonatype"]) }
+    onlyIf { gradle.taskGraph.hasTask(project.tasks["publish"]) }
     dependsOn(sourcesJar)
     dependsOn(dokkaJar)
 }
