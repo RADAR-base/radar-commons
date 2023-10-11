@@ -16,8 +16,8 @@
 package org.radarbase.mock.data
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withContext
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -56,7 +56,7 @@ class MockRecordValidatorTest {
     fun validateEnum() = runTest {
         val config = makeConfig()
         config.valueSchema = ApplicationServerStatus::class.java.name
-        withContext(Dispatchers.IO) {
+        runInterruptible(Dispatchers.IO) {
             config.getDataFile(root).bufferedWriter().use { writer ->
                 writer.append("key.projectId,key.userId,key.sourceId,value.time,value.serverStatus,value.ipAddress\n")
                 writer.append("test,a,b,1,UNKNOWN,\n")
@@ -199,7 +199,7 @@ class MockRecordValidatorTest {
 
     private suspend fun writeConfig(write: Writer.() -> Unit): MockDataConfig {
         val config = makeConfig()
-        withContext(Dispatchers.IO) {
+        runInterruptible(Dispatchers.IO) {
             config.getDataFile(root).bufferedWriter().use(write)
         }
         return config

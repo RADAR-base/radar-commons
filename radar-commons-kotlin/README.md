@@ -10,7 +10,7 @@ First of all, it contains a cache implementation to use with coroutines, with su
 import java.io.IOException
 
 val dirCache = CachedMap<String, FileInfo> {
-    withContext(Dispatchers.IO) {
+    runInterruptible(Dispatchers.IO) {
         client.fetchDirectoryMap()
     }
 }

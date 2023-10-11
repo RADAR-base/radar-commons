@@ -41,6 +41,7 @@ import io.ktor.util.reflect.TypeInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -181,11 +182,11 @@ class RestKafkaSender(config: Config) : KafkaSender {
             return true
         }
         val lastState = try {
-            val response = withContext(Dispatchers.IO) {
+            val response = scope.async {
                 restClient.head {
                     url("")
                 }
-            }
+            }.await()
             if (response.status.isSuccess()) {
                 _connectionState.didConnect()
                 ConnectionState.State.CONNECTED
