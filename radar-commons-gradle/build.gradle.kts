@@ -24,7 +24,7 @@ repositories {
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.21")
-    implementation("org.jetbrains.dokka:dokka-gradle-plugin:1.9.0")
+    implementation("org.jetbrains.dokka:dokka-gradle-plugin:1.9.10")
     implementation("com.github.ben-manes:gradle-versions-plugin:0.48.0")
     implementation("io.github.gradle-nexus:publish-plugin:2.0.0-rc-1")
     implementation("org.jlleitschuh.gradle:ktlint-gradle:12.0.3")
