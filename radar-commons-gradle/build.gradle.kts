@@ -4,7 +4,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     `kotlin-dsl`
     `java-gradle-plugin`
-    kotlin("jvm") version "1.9.0"
+    kotlin("jvm") version "1.9.20"
     `maven-publish`
     id("io.github.gradle-nexus.publish-plugin") version "2.0.0-rc-1"
     id("org.jetbrains.dokka") version "1.9.0"
