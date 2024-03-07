@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     `kotlin-dsl`
     `java-gradle-plugin`
+    // Match to the versions in the bottom of this file
     kotlin("jvm") version "1.9.21"
     `maven-publish`
     id("io.github.gradle-nexus.publish-plugin") version "2.0.0-rc-1"

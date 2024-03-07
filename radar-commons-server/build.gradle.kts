@@ -36,9 +36,8 @@ dependencies {
 
     // For POJO classes and ConfigLoader
     implementation(platform("com.fasterxml.jackson:jackson-bom:${Versions.jackson}"))
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml")
-    implementation("com.fasterxml.jackson.core:jackson-databind")
-
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${Versions.jackson}")
+    implementation("com.fasterxml.jackson.core:jackson-databind:${Versions.jackson}")
 
     api("org.apache.avro:avro:${Versions.avro}") {
         implementation("org.apache.commons:commons-compress:${Versions.commonsCompress}")

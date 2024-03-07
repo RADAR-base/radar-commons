@@ -24,11 +24,11 @@ dependencies {
     implementation(project(":radar-commons-kotlin"))
 
     api(platform("io.ktor:ktor-bom:${Versions.ktor}"))
-    api("io.ktor:ktor-client-core")
-    api("io.ktor:ktor-client-cio")
-    api("io.ktor:ktor-client-auth")
-    implementation("io.ktor:ktor-client-content-negotiation")
-    implementation("io.ktor:ktor-serialization-kotlinx-json")
+    api("io.ktor:ktor-client-core:${Versions.ktor}")
+    api("io.ktor:ktor-client-cio:${Versions.ktor}")
+    api("io.ktor:ktor-client-auth:${Versions.ktor}")
+    implementation("io.ktor:ktor-client-content-negotiation:${Versions.ktor}")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:${Versions.ktor}")
 
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
 

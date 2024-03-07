@@ -44,7 +44,7 @@ dependencies {
 
     implementation("com.opencsv:opencsv:${Versions.opencsv}")
     implementation(platform("com.fasterxml.jackson:jackson-bom:${Versions.jackson}"))
-    implementation("com.fasterxml.jackson.core:jackson-databind")
+    implementation("com.fasterxml.jackson.core:jackson-databind:${Versions.jackson}")
 
     implementation("org.apache.kafka:kafka-clients:${Versions.kafka}") {
         implementation("org.xerial.snappy:snappy-java:${Versions.snappy}")
@@ -59,7 +59,7 @@ dependencies {
     }
 
     implementation(platform("io.ktor:ktor-bom:${Versions.ktor}"))
-    implementation("io.ktor:ktor-serialization-kotlinx-json")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:${Versions.ktor}")
 
     applicationRuntimeOnly("org.slf4j:slf4j-simple:${Versions.slf4j}")
 
