@@ -13,7 +13,6 @@ object Versions {
     const val java = 11
     const val slf4j = "2.0.9"
     const val confluent = "7.5.0"
-    const val guava = "32.1.1-jre"
     const val kafka = "7.5.0-ce"
     const val avro = "1.11.3"
     const val jackson = "2.15.2"
@@ -28,4 +27,5 @@ object Versions {
     const val coroutines = "1.7.3"
     const val commonsCompress = "1.24.0"
     const val snappy = "1.1.10.5"
+    const val guava = "32.1.1-jre"
 }

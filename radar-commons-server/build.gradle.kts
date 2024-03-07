@@ -39,7 +39,10 @@ dependencies {
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml")
     implementation("com.fasterxml.jackson.core:jackson-databind")
 
-    api("org.apache.avro:avro:${Versions.avro}")
+
+    api("org.apache.avro:avro:${Versions.avro}") {
+        implementation("org.apache.commons:commons-compress:${Versions.commonsCompress}")
+    }
 
     implementation("org.apache.kafka:kafka-clients:${Versions.kafka}") {
         implementation("org.xerial.snappy:snappy-java:${Versions.snappy}")
@@ -47,7 +50,10 @@ dependencies {
 
     testImplementation("org.mockito:mockito-core:${Versions.mockito}")
     // Direct producer uses KafkaAvroSerializer if initialized
-    testImplementation("io.confluent:kafka-avro-serializer:${Versions.confluent}")
+
+    implementation("io.confluent:kafka-avro-serializer:${Versions.confluent}") {
+        runtimeOnly("com.google.guava:guava:${Versions.guava}")
+    }
     testImplementation("org.radarbase:radar-schemas-commons:${Versions.radarSchemas}")
 }
 

@@ -40,7 +40,6 @@ dependencies {
     api(project(":radar-commons-server"))
     api(project(":radar-commons-kotlin"))
 
-    api("org.apache.avro:avro:${Versions.avro}")
     api("org.radarbase:radar-schemas-commons:${Versions.radarSchemas}")
 
     implementation("com.opencsv:opencsv:${Versions.opencsv}")
@@ -50,7 +49,10 @@ dependencies {
     implementation("org.apache.kafka:kafka-clients:${Versions.kafka}") {
         implementation("org.xerial.snappy:snappy-java:${Versions.snappy}")
     }
-    implementation("io.confluent:kafka-avro-serializer:${Versions.confluent}")
+
+    implementation("io.confluent:kafka-avro-serializer:${Versions.confluent}") {
+        runtimeOnly("com.google.guava:guava:${Versions.guava}")
+    }
 
     api("org.apache.avro:avro:${Versions.avro}") {
         implementation("org.apache.commons:commons-compress:${Versions.commonsCompress}")
