@@ -12,7 +12,7 @@ plugins {
     signing
 }
 
-version = "1.1.2-SNAPSHOT"
+version = "1.1.2"
 group = "org.radarbase"
 description = "RADAR-base common Gradle plugin setup"
 
@@ -104,9 +104,9 @@ tasks.withType<GenerateMavenPom> {
             }
             developers {
                 developer {
-                    id.set("blootsvoets")
-                    name.set("Joris Borgdorff")
-                    email.set("joris@thehyve.nl")
+                    id.set("bdegraaf1234")
+                    name.set("Bastiaan de Graaf")
+                    email.set("bastiaan@thehyve.nl")
                     organization.set("The Hyve")
                 }
             }
@@ -176,7 +176,7 @@ tasks.withType<PublishToMavenRepository> {
 // They should be copied from the Versions.kt file directly to maintain consistency.
 @Suppress("ConstPropertyName", "MemberVisibilityCanBePrivate")
 object Versions {
-    const val project = "1.1.2-SNAPSHOT"
+    const val project = "1.1.2"
 
     object Plugins {
         const val licenseReport = "2.5"
@@ -204,7 +204,7 @@ object Versions {
     const val opencsv = "5.8"
     const val ktor = "2.3.4"
     const val coroutines = "1.7.3"
-    const val commonsCompress = "1.24.0"
+    const val commonsCompress = "1.26.0"
     const val snappy = "1.1.10.5"
     const val guava = "32.1.1-jre"
     const val gradleVersionsPlugin = "0.50.0"
