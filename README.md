@@ -12,7 +12,7 @@ repositories {
 }
 
 dependencies {
-    implementation("org.radarbase:radar-commons:1.1.1")
+    implementation("org.radarbase:radar-commons:1.1.2")
 }
 ```
 
@@ -62,7 +62,7 @@ repositories {
 }
 
 dependencies {
-    implementation("org.radarbase:radar-commons-server:1.1.1")
+    implementation("org.radarbase:radar-commons-server:1.1.2")
 }
 ```
 
@@ -75,7 +75,7 @@ repositories {
 }
 
 dependencies {
-    testImplementation("org.radarbase:radar-commons-testing:1.1.1")
+    testImplementation("org.radarbase:radar-commons-testing:1.1.2")
 }
 ```
 
@@ -102,7 +102,7 @@ configurations.all {
 }
 
 dependencies {
-    implementation("org.radarbase:radar-commons:1.1.2-SNAPSHOT")
+    implementation("org.radarbase:radar-commons:1.1.3-SNAPSHOT")
 }
 ```
 
