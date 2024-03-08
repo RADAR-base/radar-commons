@@ -11,8 +11,8 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consume
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.withContext
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.CoroutineContext
@@ -49,15 +49,13 @@ suspend fun <T> Future<T>.suspendGet(
         }
     }
     try {
-        withContext(Dispatchers.IO) {
+        runInterruptible(Dispatchers.IO) {
             if (duration != null) {
                 get(duration.inWholeMilliseconds, TimeUnit.MILLISECONDS)
             } else {
                 get()
             }
         }
-    } catch (ex: InterruptedException) {
-        throw CancellationException("Future was interrupted", ex)
     } finally {
         channel.send(Unit)
     }
