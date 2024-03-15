@@ -1,17 +1,6 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-plugins {
-    `kotlin-dsl`
-    `java-gradle-plugin`
-    // Match to the versions in the bottom of this file
-    kotlin("jvm") version "1.9.21"
-    `maven-publish`
-    id("io.github.gradle-nexus.publish-plugin") version "2.0.0-rc-1"
-    id("org.jetbrains.dokka") version "1.9.10"
-    signing
-}
-
 version = "1.1.2"
 group = "org.radarbase"
 description = "RADAR-base common Gradle plugin setup"
@@ -21,6 +10,17 @@ val githubUrl = "https://github.com/RADAR-base/radar-commons"
 repositories {
     mavenCentral()
     gradlePluginPortal()
+}
+
+plugins {
+    `kotlin-dsl`
+    `java-gradle-plugin`
+    // Match to the versions in the Versions.kt file, these plugins are also imported as dependencies in this project.
+    kotlin("jvm") version "1.9.22" // Versions.Plugins.kotlin
+    `maven-publish`
+    id("io.github.gradle-nexus.publish-plugin") version "2.0.0-rc-1" // Versions.Plugins.publishPlugin
+    id("org.jetbrains.dokka") version "1.9.20" // Versions.Plugins.dokka
+    signing
 }
 
 dependencies {
@@ -170,44 +170,5 @@ tasks.withType<Sign> {
 
 tasks.withType<PublishToMavenRepository> {
     dependsOn(tasks.withType<Sign>())
-}
-
-// Because this project is where all the required plugins get built, we need to add the dependencies separately here.
-// They should be copied from the Versions.kt file directly to maintain consistency.
-@Suppress("ConstPropertyName", "MemberVisibilityCanBePrivate")
-object Versions {
-    const val project = "1.1.2"
-
-    object Plugins {
-        const val licenseReport = "2.5"
-        const val kotlin = "1.9.21"
-        const val dokka = "1.9.10"
-        const val kotlinSerialization = kotlin
-        const val kotlinAllOpen = kotlin
-        const val avro = "1.8.0"
-        const val gradle = "8.3"
-        const val publishPlugin = "2.0.0-rc-1"
-    }
-
-    const val java = 17
-    const val slf4j = "2.0.9"
-    const val confluent = "7.5.0"
-    const val kafka = "7.5.0-ce"
-    const val avro = "1.11.3"
-    const val jackson = "2.15.2"
-    const val okhttp = "4.11.0"
-    const val junit = "5.10.0"
-    const val mockito = "5.5.0"
-    const val mockitoKotlin = "5.1.0"
-    const val hamcrest = "2.2"
-    const val radarSchemas = "0.8.4"
-    const val opencsv = "5.8"
-    const val ktor = "2.3.4"
-    const val coroutines = "1.7.3"
-    const val commonsCompress = "1.26.0"
-    const val snappy = "1.1.10.5"
-    const val guava = "32.1.1-jre"
-    const val gradleVersionsPlugin = "0.50.0"
-    const val ktlint = "12.0.3"
 }
 
