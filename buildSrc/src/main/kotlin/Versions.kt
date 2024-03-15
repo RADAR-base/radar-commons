@@ -24,7 +24,7 @@ object Versions {
     const val mockito = "5.5.0"
     const val mockitoKotlin = "5.1.0"
     const val hamcrest = "2.2"
-    const val radarSchemas = "0.8.4"
+    const val radarSchemas = "0.8.7"
     const val opencsv = "5.8"
     const val ktor = "2.3.4"
     const val coroutines = "1.7.3"
