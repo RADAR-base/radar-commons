@@ -7,7 +7,7 @@ plugins {
     // Match to the versions in the bottom of this file
     kotlin("jvm") version "1.9.21"
     `maven-publish`
-    id("io.github.gradle-nexus.publish-plugin") version "2.0.0-rc-1"
+    id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
     id("org.jetbrains.dokka") version "1.9.10"
     signing
 }
