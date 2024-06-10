@@ -12,7 +12,7 @@ plugins {
     signing
 }
 
-version = "1.1.3-SNAPSHOT"
+version = Versions.project
 group = "org.radarbase"
 description = "RADAR-base common Gradle plugin setup"
 
@@ -176,7 +176,7 @@ tasks.withType<PublishToMavenRepository> {
 // They should be copied from the Versions.kt file directly to maintain consistency.
 @Suppress("ConstPropertyName", "MemberVisibilityCanBePrivate")
 object Versions {
-    const val project = "1.1.3-SNAPSHOT"
+    const val project = "1.1.3"
 
     object Plugins {
         const val licenseReport = "2.5"
@@ -196,7 +196,7 @@ object Versions {
     const val avro = "1.11.3"
     const val jackson = "2.15.3"
     const val okhttp = "4.12.0"
-    const val junit = "5.10.3"
+    const val junit = "5.10.0"
     const val mockito = "5.5.0"
     const val mockitoKotlin = "5.1.0"
     const val hamcrest = "2.2"
