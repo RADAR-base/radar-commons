@@ -205,8 +205,8 @@ open class SchemaRetriever(config: Config) {
     @RadarProducerDsl
     class Config(
         val baseUrl: String,
-        var httpClient: HttpClient? = null,
     ) {
+        var httpClient: HttpClient? = null
         var schemaTimeout: CacheConfig = DEFAULT_SCHEMA_TIMEOUT_CONFIG
         var ioContext: CoroutineContext = Dispatchers.IO
         fun httpClient(config: HttpClientConfig<*>.() -> Unit) {
