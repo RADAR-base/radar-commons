@@ -5,14 +5,14 @@ plugins {
     `kotlin-dsl`
     `java-gradle-plugin`
     // Match to the versions in the bottom of this file
-    kotlin("jvm") version "1.9.21"
+    kotlin("jvm") version "1.9.24"
     `maven-publish`
-    id("io.github.gradle-nexus.publish-plugin") version "2.0.0-rc-1"
+    id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
     id("org.jetbrains.dokka") version "1.9.10"
     signing
 }
 
-version = "1.1.2"
+version = Versions.project
 group = "org.radarbase"
 description = "RADAR-base common Gradle plugin setup"
 
@@ -176,7 +176,7 @@ tasks.withType<PublishToMavenRepository> {
 // They should be copied from the Versions.kt file directly to maintain consistency.
 @Suppress("ConstPropertyName", "MemberVisibilityCanBePrivate")
 object Versions {
-    const val project = "1.1.2"
+    const val project = "1.1.3"
 
     object Plugins {
         const val licenseReport = "2.5"
@@ -190,17 +190,17 @@ object Versions {
     }
 
     const val java = 17
-    const val slf4j = "2.0.9"
-    const val confluent = "7.5.0"
-    const val kafka = "7.5.0-ce"
+    const val slf4j = "2.0.13"
+    const val confluent = "7.6.0"
+    const val kafka = "${confluent}-ce"
     const val avro = "1.11.3"
-    const val jackson = "2.15.2"
-    const val okhttp = "4.11.0"
+    const val jackson = "2.15.3"
+    const val okhttp = "4.12.0"
     const val junit = "5.10.0"
     const val mockito = "5.5.0"
     const val mockitoKotlin = "5.1.0"
     const val hamcrest = "2.2"
-    const val radarSchemas = "0.8.4"
+    const val radarSchemas = "0.8.8"
     const val opencsv = "5.8"
     const val ktor = "2.3.4"
     const val coroutines = "1.7.3"
@@ -210,4 +210,3 @@ object Versions {
     const val gradleVersionsPlugin = "0.50.0"
     const val ktlint = "12.0.3"
 }
-

@@ -2,13 +2,10 @@ package org.radarbase.producer.schema
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.plugins.auth.*
+import io.ktor.client.plugins.auth.providers.*
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.defaultRequest
-import io.ktor.client.request.HttpRequestBuilder
-import io.ktor.client.request.accept
-import io.ktor.client.request.request
-import io.ktor.client.request.setBody
-import io.ktor.client.request.url
+import io.ktor.client.request.*
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
@@ -21,13 +18,15 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.apache.avro.Schema
 import org.radarbase.producer.rest.RestException.Companion.toRestException
+import org.slf4j.LoggerFactory
 import java.io.IOException
+import java.net.URI
 import kotlin.coroutines.CoroutineContext
 
 /** REST client for Confluent schema registry.  */
 class SchemaRestClient(
     httpClient: HttpClient,
-    baseUrl: String,
+    private val baseUrl: String,
     private val ioContext: CoroutineContext = Dispatchers.IO,
 ) {
     private val httpClient: HttpClient = httpClient.config {
@@ -38,10 +37,6 @@ class SchemaRestClient(
                     coerceInputValues = true
                 },
             )
-        }
-        defaultRequest {
-            url(baseUrl)
-            accept(ContentType.Application.Json)
         }
     }
 
@@ -88,7 +83,7 @@ class SchemaRestClient(
     @Throws(IOException::class)
     suspend fun schemaGet(path: String): SchemaMetadata = request {
         method = HttpMethod.Get
-        url(path)
+        url(URI(baseUrl).resolve(path).toString())
     }
 
     @Throws(IOException::class)
@@ -97,7 +92,7 @@ class SchemaRestClient(
         schema: Schema,
     ): SchemaMetadata = request {
         method = HttpMethod.Post
-        url(path)
+        url(URI(baseUrl).resolve(path).toString())
         contentType(ContentType.Application.Json)
         setBody(SchemaMetadata(schema = schema.toString()))
     }
@@ -132,4 +127,8 @@ class SchemaRestClient(
         schemaGet("/schemas/ids/$id")
             .toParsedSchemaMetadata(id)
             .schema
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(SchemaRestClient::class.java)
+    }
 }
