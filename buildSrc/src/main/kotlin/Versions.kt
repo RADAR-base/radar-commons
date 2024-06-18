@@ -13,7 +13,7 @@ object Versions {
         const val publishPlugin = "2.0.0-rc-1"
     }
 
-    const val java = 17
+    const val java = 11
     const val slf4j = "2.0.13"
     const val confluent = "7.6.0"
     const val kafka = "${confluent}-ce"
