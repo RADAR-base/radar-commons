@@ -30,6 +30,7 @@ dependencies {
     implementation("io.github.gradle-nexus:publish-plugin:${Versions.Plugins.publishPlugin}")
     implementation("org.jlleitschuh.gradle:ktlint-gradle:${Versions.ktlint}")
     implementation("com.github.jk1.dependency-license-report:com.github.jk1.dependency-license-report.gradle.plugin:${Versions.Plugins.licenseReport}")
+    implementation("io.sentry.jvm.gradle:io.sentry.jvm.gradle.gradle.plugin:${Versions.sentry}")
 }
 
 gradlePlugin {
@@ -209,4 +210,5 @@ object Versions {
     const val guava = "32.1.1-jre"
     const val gradleVersionsPlugin = "0.50.0"
     const val ktlint = "12.0.3"
+    const val sentry = "4.10.0"
 }
