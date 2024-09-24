@@ -16,10 +16,6 @@
 
 package org.radarbase.data;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 import junit.framework.TestCase;
 import org.apache.avro.specific.SpecificData;
 import org.radarbase.topic.AvroTopic;
@@ -29,8 +25,21 @@ import org.radarcns.passive.phone.PhoneAcceleration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
+
+import static org.junit.Assert.assertArrayEquals;
+
 public class AvroDatumEncoderTest extends TestCase {
     private static final Logger logger = LoggerFactory.getLogger(AvroDatumEncoderTest.class);
+
+    public static String byteArrayToHex(byte[] a) {
+        StringBuilder sb = new StringBuilder(a.length * 2);
+        for (byte b : a)
+            sb.append(String.format("%02x", b & 0xff));
+        return sb.toString();
+    }
 
     public void testJson() throws IOException {
         AvroDatumEncoder encoder = new AvroDatumEncoder(SpecificData.get(), false);
@@ -58,20 +67,13 @@ public class AvroDatumEncoderTest extends TestCase {
         byte[] expectedKey = {2, 8, 116, 101, 115, 116, 2, 97, 2, 98};
         System.out.println("key:      0x" + byteArrayToHex(key));
         System.out.println("expected: 0x" + byteArrayToHex(expectedKey));
-        assertTrue(Arrays.equals(expectedKey, key));
+        assertArrayEquals(expectedKey, key);
         byte[] value = valueEncoder.encode(new EmpaticaE4BloodVolumePulse(0d, 0d, 0f));
         // 8 bytes, 8 bytes, 4 bytes, all zero
         byte[] expectedValue = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
         System.out.println("value:    0x" + byteArrayToHex(value));
         System.out.println("expected: 0x" + byteArrayToHex(expectedValue));
-        assertTrue(Arrays.equals(expectedValue, value));
-    }
-
-    public static String byteArrayToHex(byte[] a) {
-        StringBuilder sb = new StringBuilder(a.length * 2);
-        for(byte b: a)
-            sb.append(String.format("%02x", b & 0xff));
-        return sb.toString();
+        assertArrayEquals(expectedValue, value);
     }
 
     public void testSize() throws IOException {

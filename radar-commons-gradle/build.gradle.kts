@@ -30,6 +30,7 @@ dependencies {
     implementation("io.github.gradle-nexus:publish-plugin:${Versions.Plugins.publishPlugin}")
     implementation("org.jlleitschuh.gradle:ktlint-gradle:${Versions.ktlint}")
     implementation("com.github.jk1.dependency-license-report:com.github.jk1.dependency-license-report.gradle.plugin:${Versions.Plugins.licenseReport}")
+    implementation("io.sentry.jvm.gradle:io.sentry.jvm.gradle.gradle.plugin:${Versions.sentry}")
 }
 
 gradlePlugin {
@@ -193,7 +194,7 @@ object Versions {
     const val slf4j = "2.0.13"
     const val confluent = "7.6.0"
     const val kafka = "${confluent}-ce"
-    const val avro = "1.11.3"
+    const val avro = "1.12.0"
     const val jackson = "2.15.3"
     const val okhttp = "4.12.0"
     const val junit = "5.10.0"
@@ -209,4 +210,5 @@ object Versions {
     const val guava = "32.1.1-jre"
     const val gradleVersionsPlugin = "0.50.0"
     const val ktlint = "12.0.3"
+    const val sentry = "4.10.0"
 }
