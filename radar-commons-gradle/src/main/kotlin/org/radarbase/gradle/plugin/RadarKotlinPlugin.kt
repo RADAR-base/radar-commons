@@ -58,7 +58,7 @@ class RadarKotlinPlugin : Plugin<Project> {
             kotlinApiVersion.convention("")
             junitVersion.convention(Versions.junit)
             ktlintVersion.convention(Versions.ktlint)
-            slf4jVersion.convention(Versions.ktlint)
+            slf4jVersion.convention(Versions.slf4j)
             sentryEnabled.convention(false)
             sentryOrganization.convention("radar-base")
             sentryProject.convention(project.name)

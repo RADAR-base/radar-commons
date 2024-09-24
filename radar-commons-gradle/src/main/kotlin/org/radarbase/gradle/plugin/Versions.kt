@@ -6,4 +6,5 @@ object Versions {
     const val ktlint = "0.50.0"
     const val java = 11
     const val junit = "5.10.0"
+    const val slf4j = "2.0.16"
 }
