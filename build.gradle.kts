@@ -26,8 +26,8 @@ val githubRepoName = "RADAR-base/radar-commons"
 val githubUrl = "https://github.com/$githubRepoName"
 
 radarRootProject {
-    projectVersion.set(Versions.project)
-    gradleVersion.set(Versions.Plugins.gradle)
+    projectVersion.set(properties["projectVersion"] as String)
+    gradleVersion.set(properties["gradleVersion"] as String)
 }
 
 subprojects {
@@ -58,10 +58,4 @@ subprojects {
         }
     }
 
-    radarKotlin {
-        javaVersion.set(Versions.java)
-        kotlinVersion.set(Versions.Plugins.kotlin)
-        junitVersion.set(Versions.junit)
-        slf4jVersion.set(Versions.slf4j)
-    }
 }

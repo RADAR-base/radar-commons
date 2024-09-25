@@ -11,7 +11,7 @@ plugins {
     alias(libs.plugins.dokka)
 }
 
-version = "1.1.3-SNAPSHOT"
+version = properties["projectVersion"] as String
 group = "org.radarbase"
 description = "RADAR-base common Gradle plugin setup"
 
