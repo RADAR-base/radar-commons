@@ -1,3 +1,5 @@
+// IMPORTANT!! Any changes to this file will have to be copied to
+// the Versions class in the radar-commons-gradle/build.gradle.kts file (see bottom).
 @Suppress("ConstPropertyName", "MemberVisibilityCanBePrivate")
 object Versions {
     const val project = "1.1.3-SNAPSHOT"
