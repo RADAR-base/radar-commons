@@ -55,7 +55,6 @@ mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mo
 mockito-kotlin = { group = "org.mockito.kotlin", name = "mockito-kotlin", version.ref = "mockitoKotlin" }
 mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "okhttp" }
 hamcrest = { group = "org.hamcrest", name = "hamcrest", version.ref = "hamcrest" }
-#kafka-clients = { group = "org.apache.kafka", name = "kafka-clients", version.ref = "kafka" }
 snappy-java = { group = "org.xerial.snappy", name = "snappy-java", version.ref = "snappy" }
 kafka-avro-serializer = { group = "io.confluent", name = "kafka-avro-serializer", version.ref = "confluent" }
 guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
