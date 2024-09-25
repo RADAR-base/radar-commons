@@ -27,7 +27,7 @@ val githubUrl = "https://github.com/$githubRepoName"
 
 radarRootProject {
     projectVersion.set(properties["projectVersion"] as String)
-    gradleVersion.set(properties["gradleVersion"] as String)
+    gradleVersion.set(libs.versions.gradle)
 }
 
 subprojects {

@@ -1,10 +1,14 @@
 # Because this project is not part of the root project build (it is an 'includeBuild') it cannot make use of the versions
-# management of the root project. As a result, it needs to define its own versions file. The versions in the '[versions]'
-# section in this file should be kept in sync with the gradle/libs.versions.toml file of the root project.
+# management of the root project. As a result, it needs to define its own versions file.
+# IMPORTANT!! The versions in the following files must be kept in sync:
+# - gradle/libs.versions.toml
+# - radar-commons-gradle/gradle/libs.versions.toml
+# - radar-commons-gradle/src/main/kotlin/org/radarbase/gradle/plugin/Versions.kt
 [versions]
 
 # platform
 java = "17"
+gradle = "8.7"
 kotlin = "1.9.21"
 ktlint = "0.50.0"
 
