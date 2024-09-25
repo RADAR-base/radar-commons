@@ -44,7 +44,7 @@ dependencies {
     }
 
     // Somehow, using version catalog for kafka-clients does not work (throws task error).
-    implementation("org.apache.kafka:kafka-clients:${Versions.kafka}") {
+    implementation("org.apache.kafka:kafka-clients:${libs.versions.kafka}") {
         implementation(libs.snappy.java)
     }
 

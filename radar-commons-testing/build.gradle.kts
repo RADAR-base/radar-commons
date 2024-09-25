@@ -47,7 +47,7 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-databind")
 
     // Somehow, using version catalog for kafka-clients does not work (throws task error).
-    implementation("org.apache.kafka:kafka-clients:${Versions.kafka}") {
+    implementation("org.apache.kafka:kafka-clients:${libs.versions.kafka}") {
         implementation(libs.snappy.java)
     }
     implementation(libs.kafka.avro.serializer)
