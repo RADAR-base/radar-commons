@@ -17,13 +17,9 @@ import org.radarbase.gradle.plugin.radarPublishing
  * limitations under the License.
  */
 plugins {
-    kotlin("plugin.serialization") version Versions.Plugins.kotlinSerialization apply false
-    kotlin("plugin.allopen") version Versions.Plugins.kotlinAllOpen apply false
-    id("com.github.davidmc24.gradle.plugin.avro") version Versions.Plugins.avro apply false
+    alias(libs.plugins.avro) apply false
     id("org.radarbase.radar-root-project")
     id("org.radarbase.radar-dependency-management")
-    id("org.radarbase.radar-kotlin") apply false
-    id("org.radarbase.radar-publishing") apply false
 }
 
 val githubRepoName = "RADAR-base/radar-commons"
@@ -40,8 +36,8 @@ subprojects {
     apply(plugin = "org.radarbase.radar-publishing")
 
     dependencies {
-        configurations["testImplementation"]("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.coroutines}")
-        configurations["testRuntimeOnly"]("org.slf4j:slf4j-simple:${Versions.slf4j}")
+        configurations["testImplementation"](rootProject.libs.coroutines.test)
+        configurations["testRuntimeOnly"](rootProject.libs.slf4j.simple)
     }
 
     radarPublishing {

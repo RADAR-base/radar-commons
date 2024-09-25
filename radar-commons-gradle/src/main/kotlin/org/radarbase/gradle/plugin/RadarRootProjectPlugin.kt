@@ -25,7 +25,7 @@ class RadarRootProjectPlugin : Plugin<Project> {
     override fun apply(project: Project) = with(project) {
         val extension = extensions.create<RadarRootProjectExtension>("radarRootProject").apply {
             group.convention("org.radarbase")
-            gradleVersion.convention(Versions.wrapper)
+            gradleVersion.convention(Versions.gradle)
         }
 
         allprojects {

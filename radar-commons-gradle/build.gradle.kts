@@ -4,15 +4,14 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     `kotlin-dsl`
     `java-gradle-plugin`
-    // Match to the versions in the bottom of this file
-    kotlin("jvm") version "1.9.24"
     `maven-publish`
-    id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
-    id("org.jetbrains.dokka") version "1.9.10"
     signing
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.nexus.publish)
+    alias(libs.plugins.dokka)
 }
 
-version = Versions.project
+version = "1.1.3-SNAPSHOT"
 group = "org.radarbase"
 description = "RADAR-base common Gradle plugin setup"
 
@@ -24,15 +23,13 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:${Versions.Plugins.kotlin}")
-    implementation("org.jetbrains.dokka:dokka-gradle-plugin:${Versions.Plugins.dokka}")
-    implementation("com.github.ben-manes:gradle-versions-plugin:${Versions.gradleVersionsPlugin}")
-    implementation("io.github.gradle-nexus:publish-plugin:${Versions.Plugins.publishPlugin}")
-    implementation("org.jlleitschuh.gradle:ktlint-gradle:${Versions.ktlint}")
-    implementation(
-        "com.github.jk1.dependency-license-report:com.github.jk1.dependency-license-report.gradle.plugin:${Versions.Plugins.licenseReport}",
-    )
-    implementation("io.sentry.jvm.gradle:io.sentry.jvm.gradle.gradle.plugin:${Versions.sentry}")
+    implementation(libs.gradle.kotlin)
+    implementation(libs.gradle.dokka)
+    implementation(libs.gradle.versions)
+    implementation(libs.gradle.nexus.publish)
+    implementation(libs.gradle.ktlint)
+    implementation(libs.gradle.sentry)
+    implementation(libs.gradle.license.report)
 }
 
 gradlePlugin {
@@ -57,12 +54,12 @@ gradlePlugin {
 }
 
 tasks.withType<JavaCompile> {
-    options.release.set(Versions.java)
+    options.release.set(libs.versions.java.get().toIntOrNull())
 }
 
 tasks.withType<KotlinCompile> {
     compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_17)
+        jvmTarget.set(JvmTarget.fromTarget(libs.versions.java.get()))
         languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9)
         apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9)
     }
@@ -175,45 +172,4 @@ tasks.withType<Sign> {
 
 tasks.withType<PublishToMavenRepository> {
     dependsOn(tasks.withType<Sign>())
-}
-
-// Because this project is an 'includeBuild' project properties cannot be read from the gradle root project.
-// All version declarations are added the dependencies separately.
-// IMPORTANT!! The values here should be identical to from the buildSrc/Versions.kt file to maintain consistency.
-@Suppress("ConstPropertyName", "MemberVisibilityCanBePrivate")
-object Versions {
-    const val project = "1.1.3-SNAPSHOT"
-
-    object Plugins {
-        const val licenseReport = "2.5"
-        const val kotlin = "1.9.21"
-        const val dokka = "1.9.10"
-        const val kotlinSerialization = kotlin
-        const val kotlinAllOpen = kotlin
-        const val avro = "1.8.0"
-        const val gradle = "8.3"
-        const val publishPlugin = "2.0.0-rc-1"
-    }
-
-    const val java = 17
-    const val slf4j = "2.0.13"
-    const val confluent = "7.6.0"
-    const val kafka = "$confluent-ce"
-    const val avro = "1.12.0"
-    const val jackson = "2.15.3"
-    const val okhttp = "4.12.0"
-    const val junit = "5.10.0"
-    const val mockito = "5.5.0"
-    const val mockitoKotlin = "5.1.0"
-    const val hamcrest = "2.2"
-    const val radarSchemas = "0.8.8"
-    const val opencsv = "5.8"
-    const val ktor = "2.3.4"
-    const val coroutines = "1.7.3"
-    const val commonsCompress = "1.26.0"
-    const val snappy = "1.1.10.5"
-    const val guava = "32.1.1-jre"
-    const val gradleVersionsPlugin = "0.50.0"
-    const val ktlint = "12.0.3"
-    const val sentry = "4.10.0"
 }
