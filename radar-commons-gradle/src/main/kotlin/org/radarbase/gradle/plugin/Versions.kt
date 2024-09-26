@@ -4,7 +4,6 @@ package org.radarbase.gradle.plugin
  Versions are defined in this object because they cannot be read from the gradle project.
  IMPORTANT!! The versions in the following files must be kept in sync:
  - gradle/libs.versions.toml
- - radar-commons-gradle/gradle/libs.versions.toml
  - radar-commons-gradle/src/main/kotlin/org/radarbase/gradle/plugin/Versions.kt
 */
 @Suppress("ktlint:standard:property-naming")

@@ -1,6 +1,5 @@
 # IMPORTANT!! The versions in the following files must be kept in sync:
 # - gradle/libs.versions.toml
-# - radar-commons-gradle/gradle/libs.versions.toml
 # - radar-commons-gradle/src/main/kotlin/org/radarbase/gradle/plugin/Versions.kt
 [versions]
 
