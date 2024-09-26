@@ -40,29 +40,27 @@ dependencies {
     api(project(":radar-commons-server"))
     api(project(":radar-commons-kotlin"))
 
-    api("org.radarbase:radar-schemas-commons:${Versions.radarSchemas}")
+    api(libs.radar.schemas.commons)
 
-    implementation("com.opencsv:opencsv:${Versions.opencsv}")
-    implementation(platform("com.fasterxml.jackson:jackson-bom:${Versions.jackson}"))
-    implementation("com.fasterxml.jackson.core:jackson-databind:${Versions.jackson}")
+    implementation(libs.opencsv)
+    implementation(platform(libs.jackson.bom))
+    implementation("com.fasterxml.jackson.core:jackson-databind")
 
-    implementation("org.apache.kafka:kafka-clients:${Versions.kafka}") {
-        implementation("org.xerial.snappy:snappy-java:${Versions.snappy}")
+    // Somehow, using version catalog for kafka-clients does not work (throws task error).
+    implementation("org.apache.kafka:kafka-clients:${libs.versions.kafka}") {
+        implementation(libs.snappy.java)
+    }
+    implementation(libs.kafka.avro.serializer)
+
+    api(libs.avro) {
+        implementation(libs.commons.compress)
     }
 
-    implementation("io.confluent:kafka-avro-serializer:${Versions.confluent}") {
-        runtimeOnly("com.google.guava:guava:${Versions.guava}")
-    }
+    implementation(platform(libs.ktor.bom))
+    implementation("io.ktor:ktor-serialization-kotlinx-json")
 
-    api("org.apache.avro:avro:${Versions.avro}") {
-        implementation("org.apache.commons:commons-compress:${Versions.commonsCompress}")
-    }
+    applicationRuntimeOnly(libs.slf4j.simple)
 
-    implementation(platform("io.ktor:ktor-bom:${Versions.ktor}"))
-    implementation("io.ktor:ktor-serialization-kotlinx-json:${Versions.ktor}")
-
-    applicationRuntimeOnly("org.slf4j:slf4j-simple:${Versions.slf4j}")
-
-    testImplementation("org.hamcrest:hamcrest:${Versions.hamcrest}")
-    testImplementation("org.mockito:mockito-core:${Versions.mockito}")
+    testImplementation(libs.hamcrest)
+    testImplementation(libs.mockito.core)
 }
