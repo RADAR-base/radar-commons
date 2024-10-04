@@ -1,6 +1,6 @@
 @Suppress("ConstPropertyName", "MemberVisibilityCanBePrivate")
 object Versions {
-    const val project = "1.1.3-SNAPSHOT"
+    const val project = "1.2.0"
 
     object Plugins {
         const val licenseReport = "2.5"

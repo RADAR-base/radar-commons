@@ -102,7 +102,7 @@ configurations.all {
 }
 
 dependencies {
-    implementation("org.radarbase:radar-commons:1.1.3-SNAPSHOT")
+    implementation("org.radarbase:radar-commons:1.2.0")
 }
 ```
 
