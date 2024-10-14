@@ -5,7 +5,7 @@ plugins {
     `kotlin-dsl`
     `java-gradle-plugin`
     // Match to the versions in the bottom of this file
-    kotlin("jvm") version "1.9.24"
+    kotlin("jvm") version "2.0.21"
     `maven-publish`
     id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
     id("org.jetbrains.dokka") version "1.9.10"
