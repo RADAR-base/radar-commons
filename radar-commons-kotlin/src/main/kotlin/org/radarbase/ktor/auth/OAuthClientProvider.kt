@@ -56,6 +56,9 @@ fun Auth.clientCredentials(
                     append("grant_type", "client_credentials")
                     append("client_id", authConfig.clientId)
                     append("client_secret", authConfig.clientSecret)
+                    authConfig.additionalParameters?.forEach { (key, value) ->
+                        append(key, value)
+                    }
                 },
             ) {
                 accept(ContentType.Application.Json)

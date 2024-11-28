@@ -6,6 +6,7 @@ data class ClientCredentialsConfig(
     val tokenUrl: String,
     val clientId: String? = null,
     val clientSecret: String? = null,
+    val additionalParameters: Map<String, String>? = null,
 ) {
     /**
      * Fill in the client ID and client secret from environment variables. The variables are
