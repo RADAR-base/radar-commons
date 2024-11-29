@@ -29,7 +29,9 @@ dependencies {
     implementation("com.github.ben-manes:gradle-versions-plugin:${Versions.gradleVersionsPlugin}")
     implementation("io.github.gradle-nexus:publish-plugin:${Versions.Plugins.publishPlugin}")
     implementation("org.jlleitschuh.gradle:ktlint-gradle:${Versions.ktlint}")
-    implementation("com.github.jk1.dependency-license-report:com.github.jk1.dependency-license-report.gradle.plugin:${Versions.Plugins.licenseReport}")
+    implementation(
+        "com.github.jk1.dependency-license-report:com.github.jk1.dependency-license-report.gradle.plugin:${Versions.Plugins.licenseReport}",
+    )
     implementation("io.sentry.jvm.gradle:io.sentry.jvm.gradle.gradle.plugin:${Versions.sentry}")
 }
 
@@ -70,7 +72,7 @@ tasks.withType<Jar> {
     manifest {
         attributes(
             "Implementation-Title" to project.name,
-            "Implementation-Version" to project.version
+            "Implementation-Version" to project.version,
         )
     }
 }
@@ -136,13 +138,15 @@ publishing {
     }
 }
 
-fun Project.propertyOrEnv(propertyName: String, envName: String): String? {
-    return if (hasProperty(propertyName)) {
+fun Project.propertyOrEnv(
+    propertyName: String,
+    envName: String,
+): String? =
+    if (hasProperty(propertyName)) {
         property(propertyName)?.toString()
     } else {
         System.getenv(envName)
     }
-}
 
 nexusPublishing {
     this.repositories {
@@ -177,7 +181,7 @@ tasks.withType<PublishToMavenRepository> {
 // They should be copied from the Versions.kt file directly to maintain consistency.
 @Suppress("ConstPropertyName", "MemberVisibilityCanBePrivate")
 object Versions {
-    const val project = "1.1.3-SNAPSHOT"
+    const val project = "1.1.4"
 
     object Plugins {
         const val licenseReport = "2.5"
@@ -193,7 +197,7 @@ object Versions {
     const val java = 17
     const val slf4j = "2.0.13"
     const val confluent = "7.6.0"
-    const val kafka = "${confluent}-ce"
+    const val kafka = "$confluent-ce"
     const val avro = "1.12.0"
     const val jackson = "2.15.3"
     const val okhttp = "4.12.0"
