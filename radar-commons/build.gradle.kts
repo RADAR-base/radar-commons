@@ -1,6 +1,6 @@
 plugins {
-    kotlin("plugin.serialization")
-    kotlin("plugin.allopen")
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kotlin.allopen)
 }
 
 description = "RADAR Common utilities library."
@@ -16,28 +16,28 @@ repositories {
 
 // In this section you declare the dependencies for your production and test code
 dependencies {
-    api("org.apache.avro:avro:${Versions.avro}") {
-        implementation("org.apache.commons:commons-compress:${Versions.commonsCompress}")
+
+    api(libs.avro) {
+        implementation(libs.commons.compress)
     }
     api(kotlin("reflect"))
+    api(platform(libs.ktor.bom))
+    api("io.ktor:ktor-client-core")
+    api("io.ktor:ktor-client-cio")
+    api("io.ktor:ktor-client-auth")
+    api(libs.coroutines.core)
 
     implementation(project(":radar-commons-kotlin"))
+    implementation("io.ktor:ktor-client-content-negotiation")
+    implementation("io.ktor:ktor-serialization-kotlinx-json")
 
-    api(platform("io.ktor:ktor-bom:${Versions.ktor}"))
-    api("io.ktor:ktor-client-core:${Versions.ktor}")
-    api("io.ktor:ktor-client-cio:${Versions.ktor}")
-    api("io.ktor:ktor-client-auth:${Versions.ktor}")
-    implementation("io.ktor:ktor-client-content-negotiation:${Versions.ktor}")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:${Versions.ktor}")
-
-    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
-
-    testImplementation(platform("com.fasterxml.jackson:jackson-bom:${Versions.jackson}"))
+    testImplementation(platform(libs.jackson.bom))
     testImplementation("com.fasterxml.jackson.core:jackson-databind")
-    testImplementation("org.radarbase:radar-schemas-commons:${Versions.radarSchemas}")
-    testImplementation("org.mockito:mockito-core:${Versions.mockito}")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:${Versions.mockitoKotlin}")
-    testImplementation("com.squareup.okhttp3:mockwebserver:${Versions.okhttp}")
+
+    testImplementation(libs.radar.schemas.commons)
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.mockito.kotlin)
+    testImplementation(libs.mockwebserver)
 }
 
 allOpen {

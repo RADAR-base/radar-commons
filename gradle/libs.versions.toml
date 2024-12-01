@@ -1,0 +1,73 @@
+# IMPORTANT!! The versions in the following files must be kept in sync:
+# - gradle/libs.versions.toml
+# - radar-commons-gradle/src/main/kotlin/org/radarbase/gradle/plugin/Versions.kt
+[versions]
+
+# platform
+java = "17"
+gradle = "8.7"
+kotlin = "1.9.21"
+ktlint = "0.50.0"
+
+# libraries
+coroutines = "1.7.3"
+ktor = "2.3.4"
+slf4j = "2.0.16"
+confluent = "7.6.0"
+kafka = "7.6.0-ce"
+avro = "1.12.0"
+jackson = "2.15.3"
+okhttp = "4.12.0"
+junit = "5.10.0"
+mockito = "5.5.0"
+mockitoKotlin = "5.1.0"
+hamcrest = "2.2"
+radarSchemas = "0.8.8"
+opencsv = "5.8"
+commonsCompress = "1.26.0"
+snappy = "1.1.10.5"
+guava = "32.1.1-jre"
+
+# gradle plugins
+gradleVersionsPlugin = "0.50.0"
+ktlintPlugin = "12.0.3"
+licenseReportPlugin = "2.5"
+dokkaPlugin = "1.9.10"
+avroPlugin = "1.8.0"
+nexusPublishPlugin = "2.0.0-rc-1"
+sentryPlugin = "4.10.0"
+
+[libraries]
+# Note: some gradle plugins are passed as API dependencies, hence appreance in the libraries section.
+gradle-kotlin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
+gradle-dokka = { group = "org.jetbrains.dokka", name = "dokka-gradle-plugin", version.ref = "dokkaPlugin" }
+gradle-versions = { group = "com.github.ben-manes", name = "gradle-versions-plugin", version.ref = "gradleVersionsPlugin" }
+gradle-nexus-publish = { group = "io.github.gradle-nexus", name = "publish-plugin", version.ref = "nexusPublishPlugin" }
+gradle-ktlint = { group = "org.jlleitschuh.gradle", name = "ktlint-gradle", version.ref = "ktlintPlugin" }
+gradle-license-report = { group = "com.github.jk1.dependency-license-report", name = "com.github.jk1.dependency-license-report.gradle.plugin", version.ref = "licenseReportPlugin" }
+gradle-sentry = { group = "io.sentry.jvm.gradle", name = "io.sentry.jvm.gradle.gradle.plugin", version.ref = "sentryPlugin" }
+avro = { group = "org.apache.avro", name = "avro", version.ref = "avro" }
+commons-compress = { group = "org.apache.commons", name = "commons-compress", version.ref = "commonsCompress" }
+ktor-bom = { group = "io.ktor", name = "ktor-bom", version.ref = "ktor" }
+coroutines-bom = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-bom", version.ref = "coroutines" }
+coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
+coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
+jackson-bom = { group = "com.fasterxml.jackson", name = "jackson-bom", version.ref = "jackson" }
+radar-schemas-commons = { group = "org.radarbase", name = "radar-schemas-commons", version.ref = "radarSchemas" }
+mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockito" }
+mockito-kotlin = { group = "org.mockito.kotlin", name = "mockito-kotlin", version.ref = "mockitoKotlin" }
+mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "okhttp" }
+hamcrest = { group = "org.hamcrest", name = "hamcrest", version.ref = "hamcrest" }
+snappy-java = { group = "org.xerial.snappy", name = "snappy-java", version.ref = "snappy" }
+kafka-avro-serializer = { group = "io.confluent", name = "kafka-avro-serializer", version.ref = "confluent" }
+guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
+opencsv = { group = "com.opencsv", name = "opencsv", version.ref = "opencsv" }
+slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kotlin-allopen = { id = "org.jetbrains.kotlin.plugin.allopen", version.ref = "kotlin" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokkaPlugin" }
+nexus-publish = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexusPublishPlugin"}
+avro = { id = "com.github.davidmc24.gradle.plugin.avro", version.ref = "avroPlugin" }
