@@ -1,6 +1,8 @@
 package org.radarbase.gradle.plugin
 
 import com.github.jk1.license.LicenseReportPlugin
+import io.sentry.android.gradle.extensions.SentryPluginExtension
+import io.sentry.jvm.gradle.SentryJvmPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.ApplicationPlugin
@@ -42,6 +44,10 @@ interface RadarKotlinExtension {
     val log4j2Version: Property<String>
     val slf4jVersion: Property<String>
     val ktlintVersion: Property<String>
+    val sentryEnabled: Property<Boolean>
+    val sentryOrganization: Property<String>
+    val sentryProject: Property<String>
+    val sentrySourceContextToken: Property<String>
 }
 
 class RadarKotlinPlugin : Plugin<Project> {
@@ -52,11 +58,18 @@ class RadarKotlinPlugin : Plugin<Project> {
             kotlinApiVersion.convention("")
             junitVersion.convention(Versions.junit)
             ktlintVersion.convention(Versions.ktlint)
-            slf4jVersion.convention(Versions.ktlint)
+            slf4jVersion.convention(Versions.slf4j)
+            sentryEnabled.convention(false)
+            sentryOrganization.convention("radar-base")
+            sentryProject.convention(project.name)
+            sentrySourceContextToken.convention("")
         }
 
         apply(plugin = "kotlin")
         apply<KtlintPlugin>()
+
+        // SentryJvmPlugin will be removed in afterEvaluate when sentryEnabled == false.
+        apply<SentryJvmPlugin>()
 
         repositories {
             mavenCentral {
@@ -162,6 +175,20 @@ class RadarKotlinPlugin : Plugin<Project> {
                     implementation("org.slf4j:slf4j-api:${extension.slf4jVersion.get()}")
                 }
             }
+            if (extension.sentryEnabled.get()) {
+                val sentry = extensions.get("sentry") as SentryPluginExtension
+                sentry.org.set(extension.sentryOrganization)
+                sentry.projectName.set(extension.sentryProject)
+                if (extension.sentrySourceContextToken.isPresent &&
+                    extension.sentrySourceContextToken.get().isNotEmpty()
+                ) {
+                    // Passing the source context token will activate upload of our source code to Sentry.
+                    sentry.includeSourceContext.set(true)
+                    sentry.authToken.set(extension.sentrySourceContextToken)
+                }
+            } else {
+                plugins.removeIf({ it is SentryJvmPlugin })
+            }
             if (extension.log4j2Version.isPresent) {
                 dependencies {
                     val log4j2Version = extension.log4j2Version.get()
@@ -171,6 +198,10 @@ class RadarKotlinPlugin : Plugin<Project> {
                         runtimeOnly("org.apache.logging.log4j:log4j-slf4j2-impl:$log4j2Version")
                         runtimeOnly("org.apache.logging.log4j:log4j-core:$log4j2Version")
                         runtimeOnly("org.apache.logging.log4j:log4j-jul:$log4j2Version")
+                        if (extension.sentryEnabled.get()) {
+                            val annotationProcessor by configurations
+                            annotationProcessor("org.apache.logging.log4j:log4j-core:$log4j2Version")
+                        }
                     } else {
                         val testRuntimeOnly by configurations
                         testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j2-impl:$log4j2Version")

@@ -1,6 +1,6 @@
 @Suppress("ConstPropertyName", "MemberVisibilityCanBePrivate")
 object Versions {
-    const val project = "1.1.2"
+    const val project = "1.1.3"
 
     object Plugins {
         const val licenseReport = "2.5"
@@ -17,7 +17,7 @@ object Versions {
     const val slf4j = "2.0.13"
     const val confluent = "7.6.0"
     const val kafka = "${confluent}-ce"
-    const val avro = "1.11.3"
+    const val avro = "1.12.0"
     const val jackson = "2.15.3"
     const val okhttp = "4.12.0"
     const val junit = "5.10.0"
