@@ -147,8 +147,8 @@ class RestKafkaSender(config: Config) : KafkaSender {
             kotlinType = null,
             reifiedType = RadarParameterizedType(
                 raw = RecordData::class.java,
-                args = arrayOf(topic.keyClass, topic.valueClass)
-            )
+                args = arrayOf(topic.keyClass, topic.valueClass),
+                ),
         )
 
         override suspend fun send(records: RecordData<K, V>) = withContext(scope.coroutineContext) {
@@ -289,7 +289,6 @@ class RestKafkaSender(config: Config) : KafkaSender {
         val KAFKA_REST_JSON_ENCODING = ContentType("application", "vnd.kafka.avro.v2+json")
         val KAFKA_REST_ACCEPT = ContentType("application", "vnd.kafka.v2+json")
         const val GZIP_CONTENT_ENCODING = "gzip"
-
 
         fun restKafkaSender(builder: Config.() -> Unit): RestKafkaSender =
             RestKafkaSender(Config().apply(builder))

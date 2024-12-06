@@ -6,7 +6,7 @@ import java.lang.reflect.Type
 class RadarParameterizedType(
     private val raw: Class<*>,
     private val args: Array<Type>,
-    private val owner: Type? = null
+    private val owner: Type? = null,
 ) : ParameterizedType {
     override fun getRawType(): Type = raw
     override fun getActualTypeArguments(): Array<Type> = args
