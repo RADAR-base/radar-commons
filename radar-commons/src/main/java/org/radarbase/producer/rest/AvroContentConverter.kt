@@ -25,17 +25,17 @@ class AvroContentConverter(
 
         return coroutineScope {
             val keySchema = async {
-                schemaRetriever.metadata(
+                schemaRetriever.getByVersion(
                     topic = value.topic.name,
                     ofValue = false,
-                    schema = value.topic.keySchema,
+                    version = -1,
                 )
             }
             val valueSchema = async {
-                schemaRetriever.metadata(
+                schemaRetriever.getByVersion(
                     topic = value.topic.name,
                     ofValue = true,
-                    schema = value.topic.valueSchema,
+                    version = -1,
                 )
             }
             val maker = if (binary) {
