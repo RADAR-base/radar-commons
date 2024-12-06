@@ -148,7 +148,7 @@ class RestKafkaSender(config: Config) : KafkaSender {
             reifiedType = RadarParameterizedType(
                 raw = RecordData::class.java,
                 args = arrayOf(topic.keyClass, topic.valueClass),
-                ),
+            ),
         )
 
         override suspend fun send(records: RecordData<K, V>) = withContext(scope.coroutineContext) {
