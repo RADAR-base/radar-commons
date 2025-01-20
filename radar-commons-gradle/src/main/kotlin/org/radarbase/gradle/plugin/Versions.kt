@@ -7,4 +7,5 @@ object Versions {
     const val java = 17
     const val junit = "5.10.0"
     const val slf4j = "2.0.16"
+    const val opentelemetry = "8.1.0"
 }

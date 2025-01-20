@@ -48,6 +48,8 @@ interface RadarKotlinExtension {
     val sentryOrganization: Property<String>
     val sentryProject: Property<String>
     val sentrySourceContextToken: Property<String>
+    val openTelemetryAgentVersion: Property<String>
+    val openTelemetryAgentEnabled: Property<Boolean>
 }
 
 class RadarKotlinPlugin : Plugin<Project> {
@@ -63,6 +65,8 @@ class RadarKotlinPlugin : Plugin<Project> {
             sentryOrganization.convention("radar-base")
             sentryProject.convention(project.name)
             sentrySourceContextToken.convention("")
+            openTelemetryAgentVersion.convention(Versions.opentelemetry)
+            openTelemetryAgentEnabled.convention(false)
         }
 
         apply(plugin = "kotlin")
@@ -150,6 +154,17 @@ class RadarKotlinPlugin : Plugin<Project> {
         tasks.register<Copy>("copyDependencies") {
             from(configurations.named("runtimeClasspath").map { it.files })
             into(layout.buildDirectory.dir("third-party"))
+//            // Rename the jar for sentry-opentelementry agent so the javaagent command is version-independent.
+//            if (extension.openTelemetryAgentEnabled.get()) {
+//                from(configurations.named("implementation").map { it.files })
+//                rename { fileName ->
+//                    if (fileName == "sentry-opentelemetry-agent-${extension.openTelemetryAgentVersion.get()}.jar") {
+//                        "sentry-opentelemetry-agent.jar"
+//                    } else {
+//                        fileName
+//                    }
+//                }
+//            }
             doLast {
                 println("Copied third-party runtime dependencies")
             }
@@ -216,6 +231,13 @@ class RadarKotlinPlugin : Plugin<Project> {
                             "java.util.logging.manager",
                             "org.apache.logging.log4j.jul.LogManager"
                         )
+                    }
+                }
+
+                if (extension.openTelemetryAgentEnabled.get() && extension.sentryEnabled.get()) {
+                    dependencies {
+                        configurations["implementation"](extension.openTelemetryAgentVersion.map {
+                            "io.sentry:sentry-opentelemetry-agent:$it" })
                     }
                 }
 
