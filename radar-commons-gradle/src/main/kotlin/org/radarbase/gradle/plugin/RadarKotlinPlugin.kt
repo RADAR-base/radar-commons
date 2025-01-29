@@ -154,17 +154,6 @@ class RadarKotlinPlugin : Plugin<Project> {
         tasks.register<Copy>("copyDependencies") {
             from(configurations.named("runtimeClasspath").map { it.files })
             into(layout.buildDirectory.dir("third-party"))
-//            // Rename the jar for sentry-opentelementry agent so the javaagent command is version-independent.
-//            if (extension.openTelemetryAgentEnabled.get()) {
-//                from(configurations.named("implementation").map { it.files })
-//                rename { fileName ->
-//                    if (fileName == "sentry-opentelemetry-agent-${extension.openTelemetryAgentVersion.get()}.jar") {
-//                        "sentry-opentelemetry-agent.jar"
-//                    } else {
-//                        fileName
-//                    }
-//                }
-//            }
             doLast {
                 println("Copied third-party runtime dependencies")
             }

@@ -69,7 +69,7 @@ subprojects {
         // sentrySourceContextToken.set("") // setting this will upload the source code context to Sentry
         // sentryOrganization.set("radar-base") // already has a default value, only needed when setting 'sentrySourceContextToken'
         // sentryProject.set("") // already has a default value, only needed when setting 'sentrySourceContextToken'
-        // openTelemetryAgent.set(false) // setting this to true, together with sentryEnabled, will enable Sentry OpenTelemetry agent with monitoring
+        // openTelemetryAgentEnabled.set(false) // setting this to true, together with sentryEnabled, will include Sentry OpenTelemetry agent jar
     }
 
     // Both values are required to be set to use radar-publishing.
