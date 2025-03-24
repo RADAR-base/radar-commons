@@ -207,7 +207,7 @@ object Versions {
     const val hamcrest = "2.2"
     const val radarSchemas = "0.8.8"
     const val opencsv = "5.8"
-    const val ktor = "2.3.4"
+    const val ktor = "2.3.13"
     const val coroutines = "1.7.3"
     const val commonsCompress = "1.26.0"
     const val snappy = "1.1.10.5"
