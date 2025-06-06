@@ -23,4 +23,3 @@ jobs:
             --fail-on=upgradable
             --org=radar-base
             --policy-path=.snyk
-
