@@ -8,10 +8,12 @@ internal class AuthTokenHolder<T>(
 ) {
     private val refreshTokensDeferred = AtomicReference<CompletableDeferred<T?>?>(null)
     private val loadTokensDeferred = AtomicReference<CompletableDeferred<T?>?>(null)
+    private val tokenCreationTime = AtomicReference<Long?>(null)
 
     internal fun clearToken() {
         loadTokensDeferred.set(null)
         refreshTokensDeferred.set(null)
+        tokenCreationTime.set(null)
     }
 
     internal suspend fun loadToken(): T? {
@@ -25,6 +27,9 @@ internal class AuthTokenHolder<T>(
             deferred.await()
         } else {
             val newTokens = loadTokens()
+            if (newTokens != null) {
+                tokenCreationTime.set(System.currentTimeMillis())
+            }
             loadTokensDeferred.get()!!.complete(newTokens)
             newTokens
         }
@@ -39,6 +44,9 @@ internal class AuthTokenHolder<T>(
 
         val newToken = if (deferred == null) {
             val newTokens = block()
+            if (newTokens != null) {
+                tokenCreationTime.set(System.currentTimeMillis())
+            }
             refreshTokensDeferred.get()!!.complete(newTokens)
             refreshTokensDeferred.set(null)
             newTokens
@@ -47,5 +55,33 @@ internal class AuthTokenHolder<T>(
         }
         loadTokensDeferred.set(CompletableDeferred(newToken))
         return newToken
+    }
+    
+    /**
+     * Check if the current token is expired based on its creation time and expires_in value.
+     * Only works for OAuth2AccessToken types.
+     */
+    internal fun isTokenExpired(bufferSeconds: Long = 30): Boolean {
+        val currentToken = loadTokensDeferred.get()?.takeIf { it.isCompleted }?.getCompleted()
+        val creationTime = tokenCreationTime.get()
+        
+        if (currentToken == null || creationTime == null) {
+            return false // No token or creation time, assume not expired
+        }
+        
+        // Check if it's an OAuth2AccessToken with expiration info
+        if (currentToken is OAuth2AccessToken) {
+            if (currentToken.expiresIn <= 0) {
+                return false // No expiration info, assume valid
+            }
+            
+            val currentTime = System.currentTimeMillis()
+            val expirationTime = creationTime + (currentToken.expiresIn * 1000) // Convert to milliseconds
+            val bufferTime = bufferSeconds * 1000 // Convert buffer to milliseconds
+            
+            return currentTime >= (expirationTime - bufferTime)
+        }
+        
+        return false // Not an OAuth2AccessToken, can't determine expiration
     }
 }

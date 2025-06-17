@@ -23,6 +23,7 @@ import io.ktor.util.KtorDsl
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.slf4j.LoggerFactory
+import kotlin.time.Duration.Companion.seconds
 
 private val logger = LoggerFactory.getLogger(Auth::class.java)
 
@@ -164,13 +165,38 @@ class ClientCredentialsAuthProvider(
      * Adds an authentication method headers and credentials.
      */
     override suspend fun addRequestHeaders(request: HttpRequestBuilder, authHeader: HttpAuthHeader?) {
+        // Check if token is expired and refresh proactively
+        if (tokensHolder.isTokenExpired()) {
+            logger.debug("Token is expired, refreshing proactively")
+            // Don't attempt proactive refresh if we're already in a token request to avoid infinite loops
+            if (request.attributes.contains(Auth.AuthCircuitBreaker)) {
+                logger.debug("Already in token request, skipping proactive refresh")
+            } else {
+                val newToken = tokensHolder.setToken {
+                    // We can't use the current client for token refresh due to circular dependency
+                    // So we'll skip proactive refresh and let the 401 handling take care of it
+                    logger.debug("Skipping proactive refresh due to client dependency, will refresh on 401")
+                    null
+                }
+                if (newToken != null) {
+                    request.headers {
+                        if (contains(HttpHeaders.Authorization)) {
+                            remove(HttpHeaders.Authorization)
+                        }
+                        append(HttpHeaders.Authorization, "Bearer ${(newToken as? OAuth2AccessToken)?.accessToken}")
+                    }
+                    return
+                }
+            }
+        }
+
         val token = tokensHolder.loadToken() ?: return
 
         request.headers {
             if (contains(HttpHeaders.Authorization)) {
                 remove(HttpHeaders.Authorization)
             }
-            append(HttpHeaders.Authorization, "Bearer ${token.accessToken}")
+            append(HttpHeaders.Authorization, "Bearer ${(token as? OAuth2AccessToken)?.accessToken}")
         }
     }
 
