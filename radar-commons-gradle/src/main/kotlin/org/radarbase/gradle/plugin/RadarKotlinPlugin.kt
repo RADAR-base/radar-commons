@@ -87,7 +87,7 @@ class RadarKotlinPlugin : Plugin<Project> {
                     releasesOnly()
                 }
             }
-            maven(url = "https://oss.sonatype.org/content/repositories/snapshots") {
+            maven(url = uri("https://central.sonatype.com/repository/maven-snapshots/")) {
                 mavenContent {
                     snapshotsOnly()
                 }
