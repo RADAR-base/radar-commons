@@ -209,7 +209,7 @@ object Versions {
     const val opencsv = "5.8"
     const val ktor = "2.3.13"
     const val coroutines = "1.7.3"
-    const val commonsCompress = "1.26.0"
+    const val commonsCompress = "1.28.0"
     const val snappy = "1.1.10.5"
     const val guava = "32.1.1-jre"
     const val gradleVersionsPlugin = "0.50.0"
