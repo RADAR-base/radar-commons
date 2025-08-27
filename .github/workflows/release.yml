@@ -14,15 +14,15 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2.8.0
+        uses: gradle/actions/setup-gradle@v3
       - name: Check version
         run: |
           projectVersion=$(./gradlew properties | grep '^version:.*$')
@@ -38,7 +38,7 @@ jobs:
 
       # Upload it to GitHub
       - name: Upload to GitHub
-        uses: AButler/upload-release-assets@v2.0.2
+        uses: AButler/upload-release-assets@v3.0
         with:
           files: "radar-commons*/build/libs/*;radar-commons*/build/reports/*.tar.gz"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
