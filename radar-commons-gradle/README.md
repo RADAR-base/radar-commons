@@ -69,6 +69,7 @@ subprojects {
         // sentrySourceContextToken.set("") // setting this will upload the source code context to Sentry
         // sentryOrganization.set("radar-base") // already has a default value, only needed when setting 'sentrySourceContextToken'
         // sentryProject.set("") // already has a default value, only needed when setting 'sentrySourceContextToken'
+        // openTelemetryAgentEnabled.set(false) // setting this to true, together with sentryEnabled, will include Sentry OpenTelemetry agent jar
     }
 
     // Both values are required to be set to use radar-publishing.
@@ -183,6 +184,33 @@ sentry {
     debug = true
     ...
 }
-... 
+```
 
 Additional information on config options: https://docs.sentry.io/platforms/java/guides/log4j2/gradle/
+
+#### Enable OpenTelemetry with Sentry
+
+OpenTelemetry can be used to trace the application and send the traces to Sentry for monitoring. 
+It can be configured by using `sentry-opentelemetry-agent`. 
+
+The precondition is that Sentry is configured with the `SENTRY_DSN` environment variable set properly (see [above](#enable-monitoring-with-sentry)).
+To enable OpenTelemetry agent, set the following values:
+
+```gradle
+...
+subprojects {
+    ...
+    radarKotlin {
+        sentryEnabled.set(true)
+        openTelemetryAgentEnabled.set(true)
+    }
+    ...
+}
+```
+
+Additionally, the sample rate for traces need to be configured to value higher than 0, where the maximum of 1.0 means that 100% of traces are sent to Sentry.
+To do that, set `SENTRY_TRACES_SAMPLE_RATE` to the desired value.
+
+If Sentry is the only OpenTelemetry exporter being used, set `OTEL_TRACES_EXPORTER=none` and `OTEL_METRICS_EXPORTER=none` as an environment variable,
+to turn off exporters and stop seeing error messages about servers not being reachable in the logs.
+

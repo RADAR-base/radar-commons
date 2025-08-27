@@ -2,6 +2,7 @@
 name: Release
 
 on:
+  workflow_dispatch:
   release:
     types: [published]
 
@@ -39,7 +40,7 @@ jobs:
       - name: Upload to GitHub
         uses: AButler/upload-release-assets@v2.0.2
         with:
-          files: 'radar-commons*/build/libs/*;radar-commons*/build/reports/*.tar.gz'
+          files: "radar-commons*/build/libs/*;radar-commons*/build/reports/*.tar.gz"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install gpg secret key
@@ -49,12 +50,12 @@ jobs:
 
       - name: Publish
         env:
-          OSSRH_USER: ${{ secrets.OSSRH_USER }}
-          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
-        run: ./gradlew -Psigning.gnupg.keyName=CBEF2CF0 -Psigning.gnupg.executable=gpg -Psigning.gnupg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }} publish closeAndReleaseSonatypeStagingRepository
+          OSSRH_USER: ${{ secrets.OSSRH_USER_TOKEN_ID }}
+          OSSRH_PASSWORD: ${{ secrets.OSSRH_USER_TOKEN_SECRET }}
+        run: ./gradlew -Psigning.gnupg.keyName=${{ secrets.OSSRH_GPG_SECRET_KEY_NAME }} -Psigning.gnupg.executable=gpg -Psigning.gnupg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }} publish closeAndReleaseSonatypeStagingRepository
 
       - name: Publish gradle plugin
         env:
-          OSSRH_USER: ${{ secrets.OSSRH_USER }}
-          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
-        run: ./gradlew -Psigning.gnupg.keyName=CBEF2CF0 -Psigning.gnupg.executable=gpg -Psigning.gnupg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }} :radar-commons-gradle:publish :radar-commons-gradle:closeAndReleaseSonatypeStagingRepository
+          OSSRH_USER: ${{ secrets.OSSRH_USER_TOKEN_ID }}
+          OSSRH_PASSWORD: ${{ secrets.OSSRH_USER_TOKEN_SECRET }}
+        run: ./gradlew -Psigning.gnupg.keyName=${{ secrets.OSSRH_GPG_SECRET_KEY_NAME }} -Psigning.gnupg.executable=gpg -Psigning.gnupg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }} :radar-commons-gradle:publish :radar-commons-gradle:closeAndReleaseSonatypeStagingRepository

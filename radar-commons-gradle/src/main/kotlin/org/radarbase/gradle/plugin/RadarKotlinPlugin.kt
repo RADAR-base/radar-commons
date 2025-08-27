@@ -48,6 +48,8 @@ interface RadarKotlinExtension {
     val sentryOrganization: Property<String>
     val sentryProject: Property<String>
     val sentrySourceContextToken: Property<String>
+    val openTelemetryAgentVersion: Property<String>
+    val openTelemetryAgentEnabled: Property<Boolean>
 }
 
 class RadarKotlinPlugin : Plugin<Project> {
@@ -63,6 +65,8 @@ class RadarKotlinPlugin : Plugin<Project> {
             sentryOrganization.convention("radar-base")
             sentryProject.convention(project.name)
             sentrySourceContextToken.convention("")
+            openTelemetryAgentVersion.convention(Versions.opentelemetry)
+            openTelemetryAgentEnabled.convention(false)
         }
 
         apply(plugin = "kotlin")
@@ -83,7 +87,7 @@ class RadarKotlinPlugin : Plugin<Project> {
                     releasesOnly()
                 }
             }
-            maven(url = "https://oss.sonatype.org/content/repositories/snapshots") {
+            maven(url = uri("https://central.sonatype.com/repository/maven-snapshots/")) {
                 mavenContent {
                     snapshotsOnly()
                 }
@@ -216,6 +220,13 @@ class RadarKotlinPlugin : Plugin<Project> {
                             "java.util.logging.manager",
                             "org.apache.logging.log4j.jul.LogManager"
                         )
+                    }
+                }
+
+                if (extension.openTelemetryAgentEnabled.get() && extension.sentryEnabled.get()) {
+                    dependencies {
+                        configurations["implementation"](extension.openTelemetryAgentVersion.map {
+                            "io.sentry:sentry-opentelemetry-agent:$it" })
                     }
                 }
 
