@@ -151,6 +151,8 @@ fun Project.propertyOrEnv(
 nexusPublishing {
     this.repositories {
         sonatype {
+            nexusUrl.set(uri("https://ossrh-staging-api.central.sonatype.com/service/local/"))
+            snapshotRepositoryUrl.set(uri("https://central.sonatype.com/repository/maven-snapshots/"))
             username.set(propertyOrEnv("ossrh.user", "OSSRH_USER"))
             password.set(propertyOrEnv("ossrh.password", "OSSRH_PASSWORD"))
         }
@@ -181,7 +183,7 @@ tasks.withType<PublishToMavenRepository> {
 // They should be copied from the Versions.kt file directly to maintain consistency.
 @Suppress("ConstPropertyName", "MemberVisibilityCanBePrivate")
 object Versions {
-    const val project = "1.2.2"
+    const val project = "1.2.3"
 
     object Plugins {
         const val licenseReport = "2.5"
@@ -209,7 +211,7 @@ object Versions {
     const val opencsv = "5.8"
     const val ktor = "2.3.13"
     const val coroutines = "1.7.3"
-    const val commonsCompress = "1.26.0"
+    const val commonsCompress = "1.28.0"
     const val snappy = "1.1.10.5"
     const val guava = "32.1.1-jre"
     const val gradleVersionsPlugin = "0.50.0"

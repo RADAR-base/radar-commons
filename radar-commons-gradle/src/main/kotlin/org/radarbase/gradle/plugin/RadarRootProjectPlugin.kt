@@ -46,8 +46,11 @@ class RadarRootProjectPlugin : Plugin<Project> {
         project.extensions.configure<NexusPublishExtension> {
             repositories {
                 sonatype {
+                    nexusUrl.set(uri("https://ossrh-staging-api.central.sonatype.com/service/local/"))
+                    snapshotRepositoryUrl.set(uri("https://central.sonatype.com/repository/maven-snapshots/"))
                     username.set(propertyOrEnv("ossrh.user", "OSSRH_USER"))
                     password.set(propertyOrEnv("ossrh.password", "OSSRH_PASSWORD"))
+
                 }
             }
         }
