@@ -12,7 +12,7 @@ repositories {
 }
 
 dependencies {
-    implementation("org.radarbase:radar-commons:1.1.2")
+    implementation("org.radarbase:radar-commons:1.2.3")
 }
 ```
 
@@ -55,6 +55,7 @@ runBlocking {
 Note that this code above does not include any flows for registering a source with the ManagementPortal.
 
 For server utilities, include `radar-commons-server`:
+
 ```gradle
 repositories {
     mavenCentral()
@@ -80,9 +81,11 @@ dependencies {
 ```
 
 To test your backend with a MockProducer, copy `testing/mock.yml.template` to `testing/mock.yml` and edit its parameters. Then run
+
 ```
 ./gradlew :testing:run
 ```
+
 to send data to your backend.
 
 To use the RADAR Gradle plugins, see the README of the `radar-commons-gradle` directory.
@@ -93,7 +96,7 @@ For latest code use `dev` branch. This is released on JFrog's OSS Artifactory. T
 
 ```gradle
 repositories {
-    maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
+    maven(url = "https://central.sonatype.com/repository/maven-snapshots/")
 }
 
 configurations.all {
@@ -102,7 +105,7 @@ configurations.all {
 }
 
 dependencies {
-    implementation("org.radarbase:radar-commons:1.2.2")
+    implementation("org.radarbase:radar-commons:1.2.3")
 }
 ```
 
