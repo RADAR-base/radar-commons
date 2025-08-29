@@ -12,7 +12,7 @@ repositories {
 }
 
 dependencies {
-    implementation("org.radarbase:radar-commons:1.2.3")
+    implementation("org.radarbase:radar-commons:1.2.4")
 }
 ```
 
@@ -105,7 +105,7 @@ configurations.all {
 }
 
 dependencies {
-    implementation("org.radarbase:radar-commons:1.2.3")
+    implementation("org.radarbase:radar-commons:1.2.4")
 }
 ```
 
