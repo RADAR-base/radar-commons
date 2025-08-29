@@ -61,8 +61,6 @@ import org.radarbase.topic.AvroTopic
 import org.radarbase.util.RadarProducerDsl
 import org.slf4j.LoggerFactory
 import java.io.IOException
-import kotlin.reflect.javaType
-import kotlin.reflect.typeOf
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -143,6 +141,16 @@ class RestKafkaSender(config: Config) : KafkaSender {
     inner class RestKafkaTopicSender<K : Any, V : Any>(
         override val topic: AvroTopic<K, V>,
     ) : KafkaTopicSender<K, V> {
+
+        val recordDataTypeInfo: TypeInfo = TypeInfo(
+            type = RecordData::class,
+            kotlinType = null,
+            reifiedType = RadarParameterizedType(
+                raw = RecordData::class.java,
+                args = arrayOf(topic.keyClass, topic.valueClass),
+            ),
+        )
+
         override suspend fun send(records: RecordData<K, V>) = withContext(scope.coroutineContext) {
             try {
                 val response: HttpResponse = restClient.post {
@@ -275,21 +283,12 @@ class RestKafkaSender(config: Config) : KafkaSender {
 
     companion object {
         private val logger = LoggerFactory.getLogger(RestKafkaSender::class.java)
-        private val recordDataTypeInfo: TypeInfo
 
         val DEFAULT_TIMEOUT: Duration = 20.seconds
         val KAFKA_REST_BINARY_ENCODING = ContentType("application", "vnd.radarbase.avro.v1+binary")
         val KAFKA_REST_JSON_ENCODING = ContentType("application", "vnd.kafka.avro.v2+json")
         val KAFKA_REST_ACCEPT = ContentType("application", "vnd.kafka.v2+json")
         const val GZIP_CONTENT_ENCODING = "gzip"
-
-        init {
-            val kType = typeOf<RecordData<Any, Any>>()
-
-            @OptIn(ExperimentalStdlibApi::class)
-            val reifiedType = kType.javaType
-            recordDataTypeInfo = TypeInfo(RecordData::class, reifiedType, kType)
-        }
 
         fun restKafkaSender(builder: Config.() -> Unit): RestKafkaSender =
             RestKafkaSender(Config().apply(builder))
