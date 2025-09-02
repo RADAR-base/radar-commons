@@ -9,7 +9,7 @@ object Versions {
         const val kotlinSerialization = kotlin
         const val kotlinAllOpen = kotlin
         const val avro = "1.8.0"
-        const val gradle = "8.3"
+        const val gradle = "8.13"
         const val publishPlugin = "2.0.0-rc-1"
     }
 
