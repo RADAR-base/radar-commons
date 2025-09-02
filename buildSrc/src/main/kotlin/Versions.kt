@@ -18,7 +18,7 @@ object Versions {
     const val confluent = "7.6.0"
     const val kafka = "${confluent}-ce"
     const val avro = "1.12.0"
-    const val jackson = "2.15.3"
+    const val jackson = "2.17.2"
     const val okhttp = "4.12.0"
     const val junit = "5.10.0"
     const val mockito = "5.5.0"

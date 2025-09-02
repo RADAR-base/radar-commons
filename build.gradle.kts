@@ -39,6 +39,16 @@ subprojects {
     apply(plugin = "org.radarbase.radar-kotlin")
     apply(plugin = "org.radarbase.radar-publishing")
 
+    configurations.all {
+        resolutionStrategy {
+            /* The entries in the block below are added here to force the version of
+            *  transitive dependencies and mitigate reported vulnerabilities */
+            force(
+                "com.fasterxml.jackson.core:jackson-databind:2.17.2"
+            )
+        }
+    }
+
     dependencies {
         configurations["testImplementation"]("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.coroutines}")
         configurations["testRuntimeOnly"]("org.slf4j:slf4j-simple:${Versions.slf4j}")
