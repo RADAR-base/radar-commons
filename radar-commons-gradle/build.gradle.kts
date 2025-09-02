@@ -4,12 +4,13 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     `kotlin-dsl`
     `java-gradle-plugin`
-    // Match to the versions in the bottom of this file
-    kotlin("jvm") version "1.9.24"
     `maven-publish`
-    id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
-    id("org.jetbrains.dokka") version "1.9.10"
     signing
+    // -- Match to the versions in below
+    kotlin("jvm") version "1.9.24"
+    id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
+    id("org.jetbrains.dokka") version "2.0.0"
+    // --
 }
 
 version = Versions.project
@@ -23,7 +24,37 @@ repositories {
     gradlePluginPortal()
 }
 
+// Because this project is where all the required plugins get built, we need to add the dependencies separately here.
+// Versions should be synced with Versions.kt file to maintain consistency.
+@Suppress("ConstPropertyName", "MemberVisibilityCanBePrivate")
+object Versions {
+    const val project = "1.2.3"
+
+    object Plugins {
+        const val licenseReport = "2.5"
+        const val kotlin = "1.9.21"
+        const val dokka = "2.0.0"
+        const val publishPlugin = "2.0.0-rc-1"
+    }
+
+    const val java = 17
+    const val gradleVersionsPlugin = "0.50.0"
+    const val ktlint = "12.0.3"
+    const val sentry = "4.10.0"
+}
+
+configurations.all {
+    resolutionStrategy {
+        /* The entries in the block below are added here to force the version of
+        *  transitive dependencies and mitigate reported vulnerabilities */
+        force(
+            "com.fasterxml.jackson.core:jackson-databind:2.17.2"
+        )
+    }
+}
+
 dependencies {
+
     implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:${Versions.Plugins.kotlin}")
     implementation("org.jetbrains.dokka:dokka-gradle-plugin:${Versions.Plugins.dokka}")
     implementation("com.github.ben-manes:gradle-versions-plugin:${Versions.gradleVersionsPlugin}")
@@ -177,44 +208,4 @@ tasks.withType<Sign> {
 
 tasks.withType<PublishToMavenRepository> {
     dependsOn(tasks.withType<Sign>())
-}
-
-// Because this project is where all the required plugins get built, we need to add the dependencies separately here.
-// They should be copied from the Versions.kt file directly to maintain consistency.
-@Suppress("ConstPropertyName", "MemberVisibilityCanBePrivate")
-object Versions {
-    const val project = "1.2.3"
-
-    object Plugins {
-        const val licenseReport = "2.5"
-        const val kotlin = "1.9.21"
-        const val dokka = "1.9.10"
-        const val kotlinSerialization = kotlin
-        const val kotlinAllOpen = kotlin
-        const val avro = "1.8.0"
-        const val gradle = "8.13"
-        const val publishPlugin = "2.0.0-rc-1"
-    }
-
-    const val java = 17
-    const val slf4j = "2.0.13"
-    const val confluent = "7.6.0"
-    const val kafka = "$confluent-ce"
-    const val avro = "1.12.0"
-    const val jackson = "2.15.3"
-    const val okhttp = "4.12.0"
-    const val junit = "5.10.0"
-    const val mockito = "5.5.0"
-    const val mockitoKotlin = "5.1.0"
-    const val hamcrest = "2.2"
-    const val radarSchemas = "0.8.8"
-    const val opencsv = "5.8"
-    const val ktor = "2.3.13"
-    const val coroutines = "1.7.3"
-    const val commonsCompress = "1.28.0"
-    const val snappy = "1.1.10.5"
-    const val guava = "32.1.1-jre"
-    const val gradleVersionsPlugin = "0.50.0"
-    const val ktlint = "12.0.3"
-    const val sentry = "4.10.0"
 }
