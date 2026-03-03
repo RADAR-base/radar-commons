@@ -116,9 +116,9 @@ tasks.withType<GenerateMavenPom> {
             }
             developers {
                 developer {
-                    id.set("bdegraaf1234")
-                    name.set("Bastiaan de Graaf")
-                    email.set("bastiaan@thehyve.nl")
+                    id.set("pvannierop")
+                    name.set("Pim van Nierop")
+                    email.set("pim@thehyve.nl")
                     organization.set("The Hyve")
                 }
             }
