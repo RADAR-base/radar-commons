@@ -1,86 +1,79 @@
 [versions]
 project = "1.2.5"
-
 java = "17"
 gradle = "8.14"
-
 # Plugins
-avroPlugin = "1.8.0"
+avroPlugin = "1.9.1"
+# @pin
 kotlin = "1.9.24"
 dokka = "2.1.0"
 publishPlugin = "2.0.0-rc-1"
 gradleVersionsPlugin = "0.50.0"
 ktlint = "12.0.3"
-licenseReport = "2.5"
+licenseReport = "3.1.1"
 nexusPublish = "2.0.0"
-sentry = "4.0.0"
+sentry = "6.1.0"
 versionCatalogUpdate = "1.1.0"
-
 # Libraries
-avro = "1.12.0"
+avro = "1.12.1"
 commonsCompress = "1.28.0"
 confluent = "7.6.0"
 kafka = "7.6.0-ce"
-jackson = "2.17.2"
-ktor = "2.3.4"
-coroutines = "1.7.3"
-radarSchemas = "0.8.8"
-mockito = "5.5.0"
-mockitoKotlin = "5.1.0"
-okhttp = "4.12.0"
-hamcrest = "2.2"
+jackson = "2.21.1"
+# @pin Upgrade to 1.10.x requires kotlin v2 minimum
+coroutines = "1.9.0"
+radarSchemas = "0.8.15"
+mockito = "5.22.0"
+mockitoKotlin = "6.2.3"
+okhttp = "5.3.2"
+hamcrest = "3.0"
+# @pin Upgrade to 3.x.x requires kotlin v2 minimum
+ktor = "2.3.13"
 opencsv = "5.12.0"
 junit = "5.10.0"
-slf4j = "2.0.13"
-guava = "32.1.1-jre"
+slf4j = "2.0.17"
+guava = "33.5.0-jre"
 
 [libraries]
 # Apache / Avro
-apache-avro = { group = "org.apache.avro", name = "avro", version.ref = "avro" }
-apache-commons-compress = { group = "org.apache.commons", name = "commons-compress", version.ref = "commonsCompress" }
-
+apache-avro = { module = "org.apache.avro:avro", version.ref = "avro" }
+apache-commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commonsCompress" }
 # Kotlin / Coroutines
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
-kotlinx-coroutines-bom = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-bom", version.ref = "coroutines" }
-kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
-
+kotlinx-coroutines-bom = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-bom", version.ref = "coroutines" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 # Ktor
-ktor-bom = { group = "io.ktor", name = "ktor-bom", version.ref = "ktor" }
-ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
-ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktor" }
-ktor-client-auth = { group = "io.ktor", name = "ktor-client-auth", version.ref = "ktor" }
-ktor-client-content-negotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
-ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
-
+ktor-bom = { module = "io.ktor:ktor-bom", version.ref = "ktor" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
+ktor-client-auth = { module = "io.ktor:ktor-client-auth", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 # Kafka / Confluent
-kafka-clients = { group = "org.apache.kafka", name = "kafka-clients", version.ref = "kafka" }
-kafka-avro-serializer = { group = "io.confluent", name = "kafka-avro-serializer", version.ref = "confluent" }
-google-guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
-
+kafka-clients = { module = "org.apache.kafka:kafka-clients", version.ref = "kafka" }
+kafka-avro-serializer = { module = "io.confluent:kafka-avro-serializer", version.ref = "confluent" }
+google-guava = { module = "com.google.guava:guava", version.ref = "guava" }
 # Jackson
-jackson-bom = { group = "com.fasterxml.jackson", name = "jackson-bom", version.ref = "jackson" }
-jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jackson" }
-jackson-dataformat-yaml = { group = "com.fasterxml.jackson.dataformat", name = "jackson-dataformat-yaml", version.ref = "jackson" }
-
+jackson-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "jackson" }
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
+jackson-dataformat-yaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml", version.ref = "jackson" }
 # Radar / Utility
-radar-schemas-commons = { group = "org.radarbase", name = "radar-schemas-commons", version.ref = "radarSchemas" }
-opencsv = { group = "com.opencsv", name = "opencsv", version.ref = "opencsv" }
-slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
-
+radar-schemas-commons = { module = "org.radarbase:radar-schemas-commons", version.ref = "radarSchemas" }
+opencsv = { module = "com.opencsv:opencsv", version.ref = "opencsv" }
+slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 # Test Dependencies
-mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockito" }
-mockito-kotlin = { group = "org.mockito.kotlin", name = "mockito-kotlin", version.ref = "mockitoKotlin" }
-okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "okhttp" }
-hamcrest = { group = "org.hamcrest", name = "hamcrest", version.ref = "hamcrest" }
-kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
-
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
+mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockitoKotlin" }
+okhttp-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "okhttp" }
+hamcrest = { module = "org.hamcrest:hamcrest", version.ref = "hamcrest" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 # Build-logic / Plugin Implementation Dependencies
-gradlePlugin-kotlin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
-gradlePlugin-dokka = { group = "org.jetbrains.dokka", name = "dokka-gradle-plugin", version.ref = "dokka" }
-gradlePlugin-dokka-javadoc = { group = "org.jetbrains.dokka", name = "javadoc-plugin", version.ref = "dokka" }
-gradlePlugin-versions = { group = "com.github.ben-manes", name = "gradle-versions-plugin", version.ref = "gradleVersionsPlugin" }
-gradlePlugin-publish = { group = "io.github.gradle-nexus", name = "publish-plugin", version.ref = "publishPlugin" }
-gradlePlugin-ktlint = { group = "org.jlleitschuh.gradle", name = "ktlint-gradle", version.ref = "ktlint" }
+gradlePlugin-kotlin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+gradlePlugin-dokka = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
+gradlePlugin-dokka-javadoc = { module = "org.jetbrains.dokka:javadoc-plugin", version.ref = "dokka" }
+gradlePlugin-versions = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "gradleVersionsPlugin" }
+gradlePlugin-publish = { module = "io.github.gradle-nexus:publish-plugin", version.ref = "publishPlugin" }
+gradlePlugin-ktlint = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "ktlint" }
 gradlePlugin-versionCatalogUpdate = { module = "nl.littlerobots.version-catalog-update:nl.littlerobots.version-catalog-update.gradle.plugin", version.ref = "versionCatalogUpdate" }
 gradlePlugin-licenseReport = { module = "com.github.jk1.dependency-license-report:com.github.jk1.dependency-license-report.gradle.plugin", version.ref = "licenseReport" }
 gradlePlugin-sentry = { module = "io.sentry.jvm.gradle:io.sentry.jvm.gradle.gradle.plugin", version.ref = "sentry" }
