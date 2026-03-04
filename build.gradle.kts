@@ -54,3 +54,11 @@ subprojects {
         slf4jVersion.set(rootProject.libs.versions.slf4j)
     }
 }
+
+versionCatalogUpdate {
+    sortByKey = false
+    keep {
+        // keep versions without any library or plugin reference when running the catalog update task.
+        keepUnusedVersions = true
+    }
+}
