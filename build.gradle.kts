@@ -20,6 +20,8 @@ plugins {
     id("org.radarbase.radar-root-project")
     id("org.radarbase.radar-dependency-management")
     alias(libs.plugins.version.catalog.update)
+    alias(libs.plugins.dokka)
+    alias(libs.plugins.dokka.javadoc)
 }
 
 val githubRepoName = "RADAR-base/radar-commons"
@@ -30,10 +32,16 @@ radarRootProject {
     gradleVersion.set(libs.versions.gradle)
 }
 
+repositories {
+    mavenCentral()
+}
+
 subprojects {
 
     apply(plugin = "org.radarbase.radar-kotlin")
     apply(plugin = "org.radarbase.radar-publishing")
+    apply(plugin = "org.jetbrains.dokka")
+    apply(plugin = "org.jetbrains.dokka-javadoc")
 
     radarPublishing {
         githubUrl.set("https://github.com/$githubRepoName")
@@ -58,7 +66,8 @@ subprojects {
 versionCatalogUpdate {
     sortByKey = false
     keep {
-        // keep versions without any library or plugin reference when running the catalog update task.
+        // keep versions without any library or plugin
+        // reference when running the catalog update task.
         keepUnusedVersions = true
     }
 }
