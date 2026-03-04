@@ -38,6 +38,16 @@ repositories {
 
 subprojects {
 
+     dependencies {
+         plugins.withType<JavaPlugin> {
+             constraints {
+                 add("implementation", rootProject.libs.jackson.bom) {
+                     because("Force safe version of Jackson across all modules")
+                 }
+             }
+         }
+    }
+
     apply(plugin = "org.radarbase.radar-kotlin")
     apply(plugin = "org.radarbase.radar-publishing")
     apply(plugin = "org.jetbrains.dokka")
