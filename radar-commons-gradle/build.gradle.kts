@@ -23,17 +23,14 @@ repositories {
     gradlePluginPortal()
 }
 
-configurations.all {
-    resolutionStrategy {
-        /* The entries in the block below are added here to force the version of
-        *  transitive dependencies and mitigate reported vulnerabilities */
-        force(
-            "com.fasterxml.jackson.core:jackson-databind:2.17.2"
-        )
-    }
-}
-
 dependencies {
+
+    constraints {
+        add("implementation", rootProject.libs.jackson.bom) {
+            because("Force safe version of Jackson across all modules")
+        }
+    }
+
     implementation(libs.gradlePlugin.kotlin)
     implementation(libs.gradlePlugin.dokka)
     implementation(libs.gradlePlugin.dokka.javadoc)
