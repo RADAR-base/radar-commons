@@ -2,6 +2,8 @@ package org.radarbase.gradle.plugin
 
 import com.github.benmanes.gradle.versions.VersionsPlugin
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
+import nl.littlerobots.vcu.plugin.VersionCatalogUpdateExtension
+import nl.littlerobots.vcu.plugin.VersionCatalogUpdatePlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
@@ -44,5 +46,15 @@ class RadarDependencyManagementPlugin : Plugin<Project> {
                         && !isStable.containsMatchIn(candidate.version)
             }
         }
+
+        apply<VersionCatalogUpdatePlugin>()
+
+        project.extensions.configure<VersionCatalogUpdateExtension>("versionCatalogUpdate") {
+            sortByKey.set(false)
+            keep {
+                keepUnusedVersions.set(true)
+            }
+        }
+
     }
 }
