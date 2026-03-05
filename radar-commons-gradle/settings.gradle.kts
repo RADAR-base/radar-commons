@@ -14,3 +14,11 @@
  * limitations under the License.
  */
 rootProject.name = "radar-commons-gradle"
+// This module is equivalent to the buildSrc module. We need to take extra effort to use the version catalog.
+dependencyResolutionManagement {
+    versionCatalogs {
+        create("libs") {
+            from(files("../gradle/libs.versions.toml"))
+        }
+    }
+}

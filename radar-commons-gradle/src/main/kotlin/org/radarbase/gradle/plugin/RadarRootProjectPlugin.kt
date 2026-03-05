@@ -50,7 +50,6 @@ class RadarRootProjectPlugin : Plugin<Project> {
                     snapshotRepositoryUrl.set(uri("https://central.sonatype.com/repository/maven-snapshots/"))
                     username.set(propertyOrEnv("ossrh.user", "OSSRH_USER"))
                     password.set(propertyOrEnv("ossrh.password", "OSSRH_PASSWORD"))
-
                 }
             }
         }
