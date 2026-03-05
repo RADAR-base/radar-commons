@@ -15,8 +15,8 @@
  */
 
 plugins {
-    id("com.github.davidmc24.gradle.plugin.avro")
-    kotlin("plugin.allopen")
+    alias(libs.plugins.kotlin.allopen)
+    alias(libs.plugins.avro)
 }
 
 description = "RADAR Common server library utilities."
@@ -35,27 +35,25 @@ dependencies {
     api(project(":radar-commons"))
 
     // For POJO classes and ConfigLoader
-    implementation(platform("com.fasterxml.jackson:jackson-bom:${Versions.jackson}"))
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${Versions.jackson}")
-    implementation("com.fasterxml.jackson.core:jackson-databind:${Versions.jackson}")
+    implementation(platform(libs.jackson.bom))
+    implementation(libs.jackson.dataformat.yaml)
+    implementation(libs.jackson.databind)
 
-    api("org.apache.avro:avro:${Versions.avro}") {
-        implementation("org.apache.commons:commons-compress:${Versions.commonsCompress}")
+    api(libs.apache.avro) {
+        implementation(libs.apache.commons.compress)
     }
 
-    implementation("org.apache.kafka:kafka-clients:${Versions.kafka}") {
-        implementation("org.xerial.snappy:snappy-java:${Versions.snappy}")
+    implementation(libs.kafka.avro.serializer) {
+        runtimeOnly(libs.google.guava)
     }
 
-    testImplementation("org.mockito:mockito-core:${Versions.mockito}")
-    // Direct producer uses KafkaAvroSerializer if initialized
-
-    implementation("io.confluent:kafka-avro-serializer:${Versions.confluent}") {
-        runtimeOnly("com.google.guava:guava:${Versions.guava}")
-    }
-    testImplementation("org.radarbase:radar-schemas-commons:${Versions.radarSchemas}")
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.radar.schemas.commons)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testRuntimeOnly(libs.slf4j.simple)
 }
 
 allOpen {
     annotation("org.radarbase.config.OpenConfig")
 }
+

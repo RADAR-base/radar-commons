@@ -40,29 +40,28 @@ dependencies {
     api(project(":radar-commons-server"))
     api(project(":radar-commons-kotlin"))
 
-    api("org.radarbase:radar-schemas-commons:${Versions.radarSchemas}")
+    api(libs.radar.schemas.commons)
 
-    implementation("com.opencsv:opencsv:${Versions.opencsv}")
-    implementation(platform("com.fasterxml.jackson:jackson-bom:${Versions.jackson}"))
-    implementation("com.fasterxml.jackson.core:jackson-databind:${Versions.jackson}")
+    implementation(libs.opencsv)
+    implementation(platform(libs.jackson.bom))
+    implementation(libs.jackson.databind)
 
-    implementation("org.apache.kafka:kafka-clients:${Versions.kafka}") {
-        implementation("org.xerial.snappy:snappy-java:${Versions.snappy}")
+    implementation(libs.kafka.avro.serializer) {
+        runtimeOnly(libs.google.guava)
     }
 
-    implementation("io.confluent:kafka-avro-serializer:${Versions.confluent}") {
-        runtimeOnly("com.google.guava:guava:${Versions.guava}")
+    api(libs.apache.avro) {
+        implementation(libs.apache.commons.compress)
     }
 
-    api("org.apache.avro:avro:${Versions.avro}") {
-        implementation("org.apache.commons:commons-compress:${Versions.commonsCompress}")
-    }
+    implementation(platform(libs.ktor.bom))
+    implementation(libs.ktor.serialization.kotlinx.json)
 
-    implementation(platform("io.ktor:ktor-bom:${Versions.ktor}"))
-    implementation("io.ktor:ktor-serialization-kotlinx-json:${Versions.ktor}")
+    applicationRuntimeOnly(libs.slf4j.simple)
 
-    applicationRuntimeOnly("org.slf4j:slf4j-simple:${Versions.slf4j}")
-
-    testImplementation("org.hamcrest:hamcrest:${Versions.hamcrest}")
-    testImplementation("org.mockito:mockito-core:${Versions.mockito}")
+    testImplementation(libs.hamcrest)
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testRuntimeOnly(libs.slf4j.simple)
 }
+

@@ -6,14 +6,13 @@ plugins {
     `java-gradle-plugin`
     `maven-publish`
     signing
-    // -- Match to the versions in below
-    kotlin("jvm") version "1.9.24"
-    id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
-    id("org.jetbrains.dokka") version "2.0.0"
-    // --
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.nexus.publish)
+    alias(libs.plugins.dokka)
+    alias(libs.plugins.dokka.javadoc)
 }
 
-version = Versions.project
+version = libs.versions.project
 group = "org.radarbase"
 description = "RADAR-base common Gradle plugin setup"
 
@@ -22,25 +21,6 @@ val githubUrl = "https://github.com/RADAR-base/radar-commons"
 repositories {
     mavenCentral()
     gradlePluginPortal()
-}
-
-// Because this project is where all the required plugins get built, we need to add the dependencies separately here.
-// Versions should be synced with Versions.kt file to maintain consistency.
-@Suppress("ConstPropertyName", "MemberVisibilityCanBePrivate")
-object Versions {
-    const val project = "1.2.4"
-
-    object Plugins {
-        const val licenseReport = "2.5"
-        const val kotlin = "1.9.21"
-        const val dokka = "2.0.0"
-        const val publishPlugin = "2.0.0-rc-1"
-    }
-
-    const val java = 17
-    const val gradleVersionsPlugin = "0.50.0"
-    const val ktlint = "12.0.3"
-    const val sentry = "4.10.0"
 }
 
 configurations.all {
@@ -54,16 +34,15 @@ configurations.all {
 }
 
 dependencies {
-
-    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:${Versions.Plugins.kotlin}")
-    implementation("org.jetbrains.dokka:dokka-gradle-plugin:${Versions.Plugins.dokka}")
-    implementation("com.github.ben-manes:gradle-versions-plugin:${Versions.gradleVersionsPlugin}")
-    implementation("io.github.gradle-nexus:publish-plugin:${Versions.Plugins.publishPlugin}")
-    implementation("org.jlleitschuh.gradle:ktlint-gradle:${Versions.ktlint}")
-    implementation(
-        "com.github.jk1.dependency-license-report:com.github.jk1.dependency-license-report.gradle.plugin:${Versions.Plugins.licenseReport}",
-    )
-    implementation("io.sentry.jvm.gradle:io.sentry.jvm.gradle.gradle.plugin:${Versions.sentry}")
+    implementation(libs.gradlePlugin.kotlin)
+    implementation(libs.gradlePlugin.dokka)
+    implementation(libs.gradlePlugin.dokka.javadoc)
+    implementation(libs.gradlePlugin.versions)
+    implementation(libs.gradlePlugin.publish)
+    implementation(libs.gradlePlugin.versionCatalogUpdate)
+    implementation(libs.gradlePlugin.licenseReport)
+    implementation(libs.gradlePlugin.sentry)
+    implementation(libs.gradlePlugin.ktlint)
 }
 
 gradlePlugin {
@@ -88,7 +67,7 @@ gradlePlugin {
 }
 
 tasks.withType<JavaCompile> {
-    options.release.set(Versions.java)
+    options.release.set(libs.versions.java.get().toInt())
 }
 
 tasks.withType<KotlinCompile> {
@@ -117,10 +96,9 @@ val sourcesJar by tasks.registering(Jar::class) {
 }
 
 val dokkaJar by tasks.registering(Jar::class) {
-    from(layout.buildDirectory.dir("dokka/javadoc"))
+    dependsOn(tasks.dokkaGenerateJavadoc)
+    from(tasks.dokkaGeneratePublicationJavadoc.flatMap { it.outputDirectory })
     archiveClassifier.set("javadoc")
-    val dokkaJavadoc by tasks
-    dependsOn(dokkaJavadoc)
 }
 
 tasks.withType<GenerateMavenPom> {

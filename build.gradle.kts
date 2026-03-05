@@ -17,42 +17,23 @@ import org.radarbase.gradle.plugin.radarPublishing
  * limitations under the License.
  */
 plugins {
-    kotlin("plugin.serialization") version Versions.Plugins.kotlinSerialization apply false
-    kotlin("plugin.allopen") version Versions.Plugins.kotlinAllOpen apply false
-    id("com.github.davidmc24.gradle.plugin.avro") version Versions.Plugins.avro apply false
     id("org.radarbase.radar-root-project")
     id("org.radarbase.radar-dependency-management")
-    id("org.radarbase.radar-kotlin") apply false
-    id("org.radarbase.radar-publishing") apply false
+    alias(libs.plugins.version.catalog.update)
 }
 
 val githubRepoName = "RADAR-base/radar-commons"
 val githubUrl = "https://github.com/$githubRepoName"
 
 radarRootProject {
-    projectVersion.set(Versions.project)
-    gradleVersion.set(Versions.Plugins.gradle)
+    projectVersion.set(libs.versions.project)
+    gradleVersion.set(libs.versions.gradle)
 }
 
 subprojects {
-    // Apply the plugins
+
     apply(plugin = "org.radarbase.radar-kotlin")
     apply(plugin = "org.radarbase.radar-publishing")
-
-    configurations.all {
-        resolutionStrategy {
-            /* The entries in the block below are added here to force the version of
-            *  transitive dependencies and mitigate reported vulnerabilities */
-            force(
-                "com.fasterxml.jackson.core:jackson-databind:2.17.2"
-            )
-        }
-    }
-
-    dependencies {
-        configurations["testImplementation"]("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.coroutines}")
-        configurations["testRuntimeOnly"]("org.slf4j:slf4j-simple:${Versions.slf4j}")
-    }
 
     radarPublishing {
         githubUrl.set("https://github.com/$githubRepoName")
@@ -67,9 +48,9 @@ subprojects {
     }
 
     radarKotlin {
-        javaVersion.set(Versions.java)
-        kotlinVersion.set(Versions.Plugins.kotlin)
-        junitVersion.set(Versions.junit)
-        slf4jVersion.set(Versions.slf4j)
+        javaVersion.set(rootProject.libs.versions.java.get().toInt())
+        kotlinVersion.set(rootProject.libs.versions.kotlin)
+        junitVersion.set(rootProject.libs.versions.junit)
+        slf4jVersion.set(rootProject.libs.versions.slf4j)
     }
 }

@@ -1,17 +1,22 @@
 plugins {
-    kotlin("plugin.serialization")
+    alias(libs.plugins.kotlin.serialization)
 }
 
 description = "Library for Kotlin utility classes and functions"
 
 dependencies {
-    api(platform("org.jetbrains.kotlinx:kotlinx-coroutines-bom:${Versions.coroutines}"))
-    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
+    // Kotlin Coroutines
+    api(platform(libs.kotlinx.coroutines.bom))
+    api(libs.kotlinx.coroutines.core)
 
-    api(platform("io.ktor:ktor-bom:${Versions.ktor}"))
-    api("io.ktor:ktor-client-auth:${Versions.ktor}")
-    implementation("io.ktor:ktor-client-content-negotiation:${Versions.ktor}")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:${Versions.ktor}")
+    // Ktor Client
+    api(platform(libs.ktor.bom))
+    api(libs.ktor.client.auth)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
 
-    testImplementation("org.hamcrest:hamcrest:${Versions.hamcrest}")
+    // Testing
+    testImplementation(libs.hamcrest)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testRuntimeOnly(libs.slf4j.simple)
 }
