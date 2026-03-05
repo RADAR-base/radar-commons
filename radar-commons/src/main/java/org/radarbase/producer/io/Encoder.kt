@@ -17,6 +17,9 @@
  */
 package org.radarbase.producer.io
 
+import org.apache.avro.AvroTypeException
+import org.apache.avro.io.Decoder
+import org.apache.avro.io.EncoderFactory
 import org.apache.avro.util.Utf8
 import java.io.Closeable
 import java.io.IOException
@@ -28,7 +31,7 @@ import java.nio.ByteBuffer
  *
  * This class has two types of methods. One type of methods support the writing
  * of leaf values (for example, [.writeLong] and [.writeString]).
- * These methods have analogs in [Decoder].
+ * These methods have analogs in [org.apache.avro.io.Decoder].
  *
  *
  * The other type of methods support the writing of maps and arrays. These
@@ -39,19 +42,19 @@ import java.nio.ByteBuffer
  * streaming. (See [.writeArrayStart] for details on these methods.)
  *
  *
- * [EncoderFactory] contains Encoder construction and configuration
+ * [org.apache.avro.io.EncoderFactory] contains Encoder construction and configuration
  * facilities.
  *
- * @see EncoderFactory
+ * @see org.apache.avro.io.EncoderFactory
  *
- * @see Decoder
+ * @see org.apache.avro.io.Decoder
  */
 interface Encoder : Closeable {
     /**
      * "Writes" a null value. (Doesn't actually write anything, but advances the
      * state of the parser if this class is stateful.)
      *
-     * @throws AvroTypeException If this is a stateful writer and a null is not
+     * @throws org.apache.avro.AvroTypeException If this is a stateful writer and a null is not
      * expected
      */
     @Throws(IOException::class)
@@ -60,7 +63,7 @@ interface Encoder : Closeable {
     /**
      * Write a boolean value.
      *
-     * @throws AvroTypeException If this is a stateful writer and a boolean is not
+     * @throws org.apache.avro.AvroTypeException If this is a stateful writer and a boolean is not
      * expected
      */
     @Throws(IOException::class)
@@ -69,7 +72,7 @@ interface Encoder : Closeable {
     /**
      * Writes a 32-bit integer.
      *
-     * @throws AvroTypeException If this is a stateful writer and an integer is not
+     * @throws org.apache.avro.AvroTypeException If this is a stateful writer and an integer is not
      * expected
      */
     @Throws(IOException::class)
@@ -78,7 +81,7 @@ interface Encoder : Closeable {
     /**
      * Write a 64-bit integer.
      *
-     * @throws AvroTypeException If this is a stateful writer and a long is not
+     * @throws org.apache.avro.AvroTypeException If this is a stateful writer and a long is not
      * expected
      */
     @Throws(IOException::class)
@@ -88,7 +91,7 @@ interface Encoder : Closeable {
      * Write a float.
      *
      * @throws IOException
-     * @throws AvroTypeException If this is a stateful writer and a float is not
+     * @throws org.apache.avro.AvroTypeException If this is a stateful writer and a float is not
      * expected
      */
     @Throws(IOException::class)
@@ -97,7 +100,7 @@ interface Encoder : Closeable {
     /**
      * Write a double.
      *
-     * @throws AvroTypeException If this is a stateful writer and a double is not
+     * @throws org.apache.avro.AvroTypeException If this is a stateful writer and a double is not
      * expected
      */
     @Throws(IOException::class)
@@ -106,7 +109,7 @@ interface Encoder : Closeable {
     /**
      * Write a Unicode character string.
      *
-     * @throws AvroTypeException If this is a stateful writer and a char-string is
+     * @throws org.apache.avro.AvroTypeException If this is a stateful writer and a char-string is
      * not expected
      */
     @Throws(IOException::class)
@@ -117,7 +120,7 @@ interface Encoder : Closeable {
      * String to a [Utf8]. Some Encoder implementations
      * may want to do something different as a performance optimization.
      *
-     * @throws AvroTypeException If this is a stateful writer and a char-string is
+     * @throws org.apache.avro.AvroTypeException If this is a stateful writer and a char-string is
      * not expected
      */
     @Throws(IOException::class)
@@ -130,7 +133,7 @@ interface Encoder : Closeable {
      * [Utf8] it writes this directly, otherwise the
      * CharSequence is converted to a String via toString() and written.
      *
-     * @throws AvroTypeException If this is a stateful writer and a char-string is
+     * @throws org.apache.avro.AvroTypeException If this is a stateful writer and a char-string is
      * not expected
      */
     @Throws(IOException::class)
@@ -141,7 +144,7 @@ interface Encoder : Closeable {
     /**
      * Write a byte string.
      *
-     * @throws AvroTypeException If this is a stateful writer and a byte-string is
+     * @throws org.apache.avro.AvroTypeException If this is a stateful writer and a byte-string is
      * not expected
      */
     @Throws(IOException::class)
@@ -150,7 +153,7 @@ interface Encoder : Closeable {
     /**
      * Write a byte string.
      *
-     * @throws AvroTypeException If this is a stateful writer and a byte-string is
+     * @throws org.apache.avro.AvroTypeException If this is a stateful writer and a byte-string is
      * not expected
      */
     @Throws(IOException::class)
@@ -161,7 +164,7 @@ interface Encoder : Closeable {
      * <tt>writeBytes(bytes, 0, bytes.length)</tt>
      *
      * @throws IOException
-     * @throws AvroTypeException If this is a stateful writer and a byte-string is
+     * @throws org.apache.avro.AvroTypeException If this is a stateful writer and a byte-string is
      * not expected
      */
     @Throws(IOException::class)
@@ -175,7 +178,7 @@ interface Encoder : Closeable {
      * @param bytes The contents to write
      * @param start The position within <tt>bytes</tt> where the contents start.
      * @param len   The number of bytes to write.
-     * @throws AvroTypeException If this is a stateful writer and a byte-string is
+     * @throws org.apache.avro.AvroTypeException If this is a stateful writer and a byte-string is
      * not expected
      * @throws IOException
      */
@@ -210,7 +213,7 @@ interface Encoder : Closeable {
      * Writes an enumeration.
      *
      * @param e
-     * @throws AvroTypeException If this is a stateful writer and an enumeration is
+     * @throws org.apache.avro.AvroTypeException If this is a stateful writer and an enumeration is
      * not expected or the <tt>e</tt> is out of range.
      * @throws IOException
      */
@@ -243,7 +246,7 @@ interface Encoder : Closeable {
      * out.writeArrayEnd();
      </pre> *
      *
-     * @throws AvroTypeException If this is a stateful writer and an array is not
+     * @throws org.apache.avro.AvroTypeException If this is a stateful writer and an array is not
      * expected
      */
     @Throws(IOException::class)
@@ -266,7 +269,7 @@ interface Encoder : Closeable {
      * Start a new item of an array or map. See [.writeArrayStart] for usage
      * information.
      *
-     * @throws AvroTypeException If called outside of an array or map context
+     * @throws org.apache.avro.AvroTypeException If called outside of an array or map context
      */
     @Throws(IOException::class)
     suspend fun startItem()
@@ -275,9 +278,9 @@ interface Encoder : Closeable {
      * Call this method to finish writing an array. See [.writeArrayStart] for
      * usage information.
      *
-     * @throws AvroTypeException If items written does not match count provided to
+     * @throws org.apache.avro.AvroTypeException If items written does not match count provided to
      * [.writeArrayStart]
-     * @throws AvroTypeException If not currently inside an array
+     * @throws org.apache.avro.AvroTypeException If not currently inside an array
      */
     @Throws(IOException::class)
     suspend fun writeArrayEnd()
@@ -293,7 +296,7 @@ interface Encoder : Closeable {
      * <pre>
      * out.writeMapStart();
      * out.setItemCount(list.size());
-     * for (Map.Entry<String></String>, Record> entry : map.entrySet()) {
+     * for (Map.Entry<String, Record> entry : map.entrySet()) {
      * out.startItem();
      * out.writeString(entry.getKey());
      * out.writeLong(entry.getValue().longField);
@@ -302,7 +305,7 @@ interface Encoder : Closeable {
      * out.writeMapEnd();
      </pre> *
      *
-     * @throws AvroTypeException If this is a stateful writer and a map is not
+     * @throws org.apache.avro.AvroTypeException If this is a stateful writer and a map is not
      * expected
      */
     @Throws(IOException::class)
@@ -312,9 +315,9 @@ interface Encoder : Closeable {
      * Call this method to terminate the inner-most, currently-opened map. See
      * [.writeArrayStart] for more details.
      *
-     * @throws AvroTypeException If items written does not match count provided to
+     * @throws org.apache.avro.AvroTypeException If items written does not match count provided to
      * [.writeMapStart]
-     * @throws AvroTypeException If not currently inside a map
+     * @throws org.apache.avro.AvroTypeException If not currently inside a map
      */
     @Throws(IOException::class)
     suspend fun writeMapEnd()
@@ -332,7 +335,7 @@ interface Encoder : Closeable {
      * out.writeBoolean(record.boolField);
      </pre> *
      *
-     * @throws AvroTypeException If this is a stateful writer and a map is not
+     * @throws org.apache.avro.AvroTypeException If this is a stateful writer and a map is not
      * expected
      */
     @Throws(IOException::class)

@@ -61,9 +61,6 @@ subprojects {
 
     apply(plugin = "org.radarbase.radar-kotlin")
     apply(plugin = "org.radarbase.radar-publishing")
-    apply(plugin = "org.jetbrains.dokka")
-    apply(plugin = "org.jetbrains.dokka-javadoc")
-
     radarPublishing {
         githubUrl.set("https://github.com/$githubRepoName")
         developers {
@@ -81,6 +78,35 @@ subprojects {
         kotlinVersion.set(rootProject.libs.versions.kotlin)
         junitVersion.set(rootProject.libs.versions.junit)
         slf4jVersion.set(rootProject.libs.versions.slf4j)
+    }
+
+    if (project.name != "radar-commons-gradle") {
+        apply(plugin = "org.jetbrains.dokka")
+        apply(plugin = "org.jetbrains.dokka-javadoc")
+
+        dokka {
+            dokkaSourceSets.configureEach {
+                externalDocumentationLinks.register("avro") {
+                    val baseUrl = "https://javadoc.io/doc/org.apache.avro/avro/${libs.versions.avro.get()}/"
+                    url.set(project.uri(baseUrl))
+                    packageListUrl.set(project.uri("${baseUrl}element-list"))
+                }
+                externalDocumentationLinks.register("kotlinx.coroutines") {
+                    val baseUrl = "https://kotlinlang.org/api/kotlinx.coroutines/"
+                    url.set(project.uri(baseUrl))
+                    packageListUrl.set(project.uri("${baseUrl}package-list"))
+                }
+                externalDocumentationLinks.register("ktor") {
+                    val baseUrl = "https://api.ktor.io/"
+                    url.set(project.uri(baseUrl))
+                    packageListUrl.set(project.uri("${baseUrl}package-list"))
+                }
+                externalDocumentationLinks.register("java") {
+                    url.set(project.uri("https://docs.oracle.com/en/java/javase/17/docs/api/"))
+                    packageListUrl.set(project.uri("https://docs.oracle.com/en/java/javase/17/docs/api/element-list"))
+                }
+            }
+        }
     }
 }
 
