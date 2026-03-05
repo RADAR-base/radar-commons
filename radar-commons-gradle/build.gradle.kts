@@ -12,7 +12,7 @@ plugins {
     alias(libs.plugins.dokka.javadoc)
 }
 
-version = libs.versions.project
+version = libs.versions.project.get()
 group = "org.radarbase"
 description = "RADAR-base common Gradle plugin setup"
 
