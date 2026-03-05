@@ -38,6 +38,7 @@ repositories {
 
 subprojects {
 
+     // --- Vulnerability fixes start ---
      dependencies {
          plugins.withType<JavaPlugin> {
              constraints {
@@ -47,6 +48,16 @@ subprojects {
              }
          }
     }
+
+    configurations.all {
+        resolutionStrategy.dependencySubstitution {
+            // Substitute the old group/module with the new one
+            substitute(module("org.lz4:lz4-java"))
+                .using(module(rootProject.libs.lz4.get().toString()))
+                .because("Force safe version of LZ4 across all modules")
+        }
+    }
+    // --- Vulnerability fixes end ---
 
     apply(plugin = "org.radarbase.radar-kotlin")
     apply(plugin = "org.radarbase.radar-publishing")
