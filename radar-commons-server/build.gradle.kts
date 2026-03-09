@@ -56,4 +56,3 @@ dependencies {
 allOpen {
     annotation("org.radarbase.config.OpenConfig")
 }
-
