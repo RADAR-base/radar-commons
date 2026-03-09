@@ -64,4 +64,3 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testRuntimeOnly(libs.slf4j.simple)
 }
-
