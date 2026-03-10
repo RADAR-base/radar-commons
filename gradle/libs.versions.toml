@@ -19,7 +19,8 @@ avro = "1.12.1"
 commonsCompress = "1.28.0"
 confluent = "7.6.0"
 kafka = "7.6.0-ce"
-jackson = "2.21.1"
+# @pin Upgrade to 2.21.x requires kotlin v2 minimum
+jackson = "2.20.2"
 # @pin Upgrade to 1.10.x requires kotlin v2 minimum
 coroutines = "1.9.0"
 radarSchemas = "0.8.15"
