@@ -19,6 +19,8 @@ fun Project.radarDependencyManagement(block: RadarDependencyManagementExtension.
 interface RadarDependencyManagementExtension {
     val regex: Property<String>
     val rejectMajorVersionUpdates: Property<Boolean>
+    val versionCatalogSortKeys: Property<Boolean>
+    val versionCatalogKeepUnusedVersions: Property<Boolean>
 }
 
 class RadarDependencyManagementPlugin : Plugin<Project> {
@@ -26,6 +28,8 @@ class RadarDependencyManagementPlugin : Plugin<Project> {
         val extension = extensions.create<RadarDependencyManagementExtension>("radarDependencies").apply {
             regex.convention("(^[0-9,.v-]+(-r)?|RELEASE|FINAL|GA|-CE|-JRE|-ANDROID)$")
             rejectMajorVersionUpdates.convention(false)
+            versionCatalogSortKeys.convention(false)
+            versionCatalogKeepUnusedVersions.convention(true)
         }
 
         apply<VersionsPlugin>()
@@ -50,9 +54,9 @@ class RadarDependencyManagementPlugin : Plugin<Project> {
         apply<VersionCatalogUpdatePlugin>()
 
         project.extensions.configure<VersionCatalogUpdateExtension>("versionCatalogUpdate") {
-            sortByKey.set(false)
+            sortByKey.set(extension.versionCatalogSortKeys.get())
             keep {
-                keepUnusedVersions.set(true)
+                keepUnusedVersions.set(extension.versionCatalogKeepUnusedVersions.get())
             }
         }
 
