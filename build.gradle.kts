@@ -19,7 +19,6 @@ import org.radarbase.gradle.plugin.radarPublishing
 plugins {
     id("org.radarbase.radar-root-project")
     id("org.radarbase.radar-dependency-management")
-    alias(libs.plugins.version.catalog.update)
     alias(libs.plugins.dokka)
     alias(libs.plugins.dokka.javadoc)
 }
@@ -107,14 +106,5 @@ subprojects {
                 }
             }
         }
-    }
-}
-
-versionCatalogUpdate {
-    sortByKey = false
-    keep {
-        // keep versions without any library or plugin
-        // reference when running the catalog update task.
-        keepUnusedVersions = true
     }
 }
