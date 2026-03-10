@@ -17,43 +17,49 @@ import org.radarbase.gradle.plugin.radarPublishing
  * limitations under the License.
  */
 plugins {
-    kotlin("plugin.serialization") version Versions.Plugins.kotlinSerialization apply false
-    kotlin("plugin.allopen") version Versions.Plugins.kotlinAllOpen apply false
-    id("com.github.davidmc24.gradle.plugin.avro") version Versions.Plugins.avro apply false
     id("org.radarbase.radar-root-project")
     id("org.radarbase.radar-dependency-management")
-    id("org.radarbase.radar-kotlin") apply false
-    id("org.radarbase.radar-publishing") apply false
+    alias(libs.plugins.dokka)
+    alias(libs.plugins.dokka.javadoc)
 }
 
 val githubRepoName = "RADAR-base/radar-commons"
 val githubUrl = "https://github.com/$githubRepoName"
 
 radarRootProject {
-    projectVersion.set(Versions.project)
-    gradleVersion.set(Versions.Plugins.gradle)
+    projectVersion.set(libs.versions.project)
+    gradleVersion.set(libs.versions.gradle)
+}
+
+repositories {
+    mavenCentral()
 }
 
 subprojects {
-    // Apply the plugins
-    apply(plugin = "org.radarbase.radar-kotlin")
-    apply(plugin = "org.radarbase.radar-publishing")
 
-    configurations.all {
-        resolutionStrategy {
-            /* The entries in the block below are added here to force the version of
-            *  transitive dependencies and mitigate reported vulnerabilities */
-            force(
-                "com.fasterxml.jackson.core:jackson-databind:2.17.2"
-            )
+    // --- Vulnerability fixes start ---
+    dependencies {
+        plugins.withType<JavaPlugin> {
+            constraints {
+                add("implementation", rootProject.libs.jackson.bom) {
+                    because("Force safe version of Jackson across all modules")
+                }
+            }
         }
     }
 
-    dependencies {
-        configurations["testImplementation"]("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.coroutines}")
-        configurations["testRuntimeOnly"]("org.slf4j:slf4j-simple:${Versions.slf4j}")
+    configurations.all {
+        resolutionStrategy.dependencySubstitution {
+            // Substitute the old group/module with the new one
+            substitute(module("org.lz4:lz4-java"))
+                .using(module(rootProject.libs.lz4.get().toString()))
+                .because("Force safe version of LZ4 across all modules")
+        }
     }
+    // --- Vulnerability fixes end ---
 
+    apply(plugin = "org.radarbase.radar-kotlin")
+    apply(plugin = "org.radarbase.radar-publishing")
     radarPublishing {
         githubUrl.set("https://github.com/$githubRepoName")
         developers {
@@ -67,9 +73,36 @@ subprojects {
     }
 
     radarKotlin {
-        javaVersion.set(Versions.java)
-        kotlinVersion.set(Versions.Plugins.kotlin)
-        junitVersion.set(Versions.junit)
-        slf4jVersion.set(Versions.slf4j)
+        javaVersion.set(rootProject.libs.versions.java.get().toInt())
+        kotlinVersion.set(rootProject.libs.versions.kotlin)
+        junitVersion.set(rootProject.libs.versions.junit)
+        slf4jVersion.set(rootProject.libs.versions.slf4j)
+    }
+
+    apply(plugin = "org.jetbrains.dokka")
+    apply(plugin = "org.jetbrains.dokka-javadoc")
+
+    dokka {
+        dokkaSourceSets.configureEach {
+            externalDocumentationLinks.register("avro") {
+                val baseUrl = "https://javadoc.io/doc/org.apache.avro/avro/${libs.versions.avro.get()}/"
+                url.set(project.uri(baseUrl))
+                packageListUrl.set(project.uri("${baseUrl}element-list"))
+            }
+            externalDocumentationLinks.register("kotlinx.coroutines") {
+                val baseUrl = "https://kotlinlang.org/api/kotlinx.coroutines/"
+                url.set(project.uri(baseUrl))
+                packageListUrl.set(project.uri("${baseUrl}package-list"))
+            }
+            externalDocumentationLinks.register("ktor") {
+                val baseUrl = "https://api.ktor.io/"
+                url.set(project.uri(baseUrl))
+                packageListUrl.set(project.uri("${baseUrl}package-list"))
+            }
+            externalDocumentationLinks.register("java") {
+                url.set(project.uri("https://docs.oracle.com/en/java/javase/17/docs/api/"))
+                packageListUrl.set(project.uri("https://docs.oracle.com/en/java/javase/17/docs/api/element-list"))
+            }
+        }
     }
 }

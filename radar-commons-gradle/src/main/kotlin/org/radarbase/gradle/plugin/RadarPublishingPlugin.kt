@@ -26,6 +26,8 @@ import org.gradle.plugins.signing.Sign
 import org.gradle.plugins.signing.SigningExtension
 import org.gradle.plugins.signing.SigningPlugin
 import org.jetbrains.dokka.gradle.DokkaPlugin
+import org.jetbrains.dokka.gradle.formats.DokkaJavadocPlugin
+import org.jetbrains.dokka.gradle.tasks.DokkaGenerateTask
 
 fun Project.radarPublishing(configure: RadarPublishingExtension.() -> Unit) {
     configure(configure)
@@ -53,12 +55,14 @@ class RadarPublishingPlugin : Plugin<Project> {
         }
 
         apply<DokkaPlugin>()
+        apply<DokkaJavadocPlugin>()
 
         val dokkaJar by tasks.registering(Jar::class) {
-            from(layout.buildDirectory.dir("javadoc"))
+            val dokkaGenerateJavadocTask = tasks.named("dokkaGenerateJavadoc")
+            val dokkaGeneratePublicationJavadocTask = tasks.named("dokkaGeneratePublicationJavadoc", DokkaGenerateTask::class.java)
+            dependsOn(dokkaGenerateJavadocTask)
+            from(dokkaGeneratePublicationJavadocTask.flatMap { it.outputDirectory })
             archiveClassifier.set("javadoc")
-            val dokkaJavadoc by tasks
-            dependsOn(dokkaJavadoc)
         }
 
         tasks.withType<Jar> {

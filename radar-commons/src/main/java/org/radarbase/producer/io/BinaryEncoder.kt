@@ -26,19 +26,19 @@ import java.nio.charset.StandardCharsets
  * An abstract [Encoder] for Avro's binary encoding.
  *
  *
- * To construct and configure instances, use [EncoderFactory]
+ * To construct and configure instances, use [org.apache.avro.io.EncoderFactory]
  *
- * @see EncoderFactory
+ * @see org.apache.avro.io.EncoderFactory
  *
- * @see BufferedBinaryEncoder
+ * @see org.apache.avro.io.BufferedBinaryEncoder
  *
- * @see DirectBinaryEncoder
+ * @see org.apache.avro.io.DirectBinaryEncoder
  *
- * @see BlockingBinaryEncoder
+ * @see org.apache.avro.io.BlockingBinaryEncoder
  *
  * @see Encoder
  *
- * @see Decoder
+ * @see org.apache.avro.io.Decoder
  */
 abstract class BinaryEncoder : Encoder {
     @Throws(IOException::class)
