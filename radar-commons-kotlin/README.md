@@ -100,6 +100,22 @@ if (resource == null) {
 }
 ```
 
+### `Mutex.withReentrantLock`
+
+Allows reentrant locking on a [Mutex](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.sync/-mutex/) within the same coroutine using a coroutine context marker.
+
+```kotlin
+val mutex = Mutex()
+
+suspend fun safeRecursiveOperation() = mutex.withReentrantLock {
+    println("Outer lock acquired")
+    mutex.withReentrantLock {
+        println("Inner lock acquired safely")
+    }
+}
+```
+
+
 ## Ktor helpers
 
 The methods and classes in `org.radarbase.ktor.auth` help setup client credentials authentication in Ktor as used in RADAR-base.
