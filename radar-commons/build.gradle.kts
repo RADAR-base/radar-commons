@@ -1,6 +1,6 @@
 plugins {
-    kotlin("plugin.serialization")
-    kotlin("plugin.allopen")
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kotlin.allopen)
 }
 
 description = "RADAR Common utilities library."
@@ -14,30 +14,31 @@ repositories {
     maven(url = "https://jitpack.io")
 }
 
-// In this section you declare the dependencies for your production and test code
 dependencies {
-    api("org.apache.avro:avro:${Versions.avro}") {
-        implementation("org.apache.commons:commons-compress:${Versions.commonsCompress}")
+    api(libs.apache.avro) {
+        implementation(libs.apache.commons.compress)
     }
-    api(kotlin("reflect"))
+    api(libs.kotlin.reflect)
 
     implementation(project(":radar-commons-kotlin"))
 
-    api(platform("io.ktor:ktor-bom:${Versions.ktor}"))
-    api("io.ktor:ktor-client-core:${Versions.ktor}")
-    api("io.ktor:ktor-client-cio:${Versions.ktor}")
-    api("io.ktor:ktor-client-auth:${Versions.ktor}")
-    implementation("io.ktor:ktor-client-content-negotiation:${Versions.ktor}")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:${Versions.ktor}")
+    api(platform(libs.ktor.bom))
+    api(libs.ktor.client.core)
+    api(libs.ktor.client.cio)
+    api(libs.ktor.client.auth)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
 
-    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
+    api(libs.kotlinx.coroutines.core)
 
-    testImplementation(platform("com.fasterxml.jackson:jackson-bom:${Versions.jackson}"))
-    testImplementation("com.fasterxml.jackson.core:jackson-databind")
-    testImplementation("org.radarbase:radar-schemas-commons:${Versions.radarSchemas}")
-    testImplementation("org.mockito:mockito-core:${Versions.mockito}")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:${Versions.mockitoKotlin}")
-    testImplementation("com.squareup.okhttp3:mockwebserver:${Versions.okhttp}")
+    testImplementation(platform(libs.jackson.bom))
+    testImplementation(libs.jackson.databind)
+    testImplementation(libs.radar.schemas.commons)
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.mockito.kotlin)
+    testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testRuntimeOnly(libs.slf4j.simple)
 }
 
 allOpen {

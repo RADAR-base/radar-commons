@@ -51,6 +51,15 @@ radarDependencies {
     // default value, if set to true then disregard major version
     // updates, e.g. 5.0.0 -> 6.0.0 is not allowed but 1.6.0 -> 1.7.0 is allowed.
     rejectMajorVersionUpdates.set(false)
+    
+    //- Properties for the Version Catalog Update plugin
+    // When updating the version catalog, sort the entries by key
+    // default: false
+    versionCatalogSortKeys.set(true)
+    // When updating the version catalog, remove versions not linked to any dependency in the catalog itself
+    // Note: versions may be used in gradle build files directly.
+    // default :true
+    versionCatalogKeepUnusedVersion.set(false)
 }
 
 subprojects {

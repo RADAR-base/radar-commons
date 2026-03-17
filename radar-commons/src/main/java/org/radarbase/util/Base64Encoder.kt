@@ -55,17 +55,17 @@ object Base64Encoder {
      * the Base64 encoding scheme as specified in RFC 4648 and RFC 2045.
      *
      *
-     * Instances of [Encoder] class are safe for use by
+     * Instances of [java.util.Base64.Encoder] class are safe for use by
      * multiple concurrent threads.
      *
      *
      * Unless otherwise noted, passing a `null` argument to
      * a method of this class will cause a
-     * [NullPointerException][java.lang.NullPointerException] to
+     * [java.lang.NullPointerException][java.lang.NullPointerException] to
      * be thrown.
      *
      * Encodes all bytes from the specified byte array into a newly-allocated
-     * byte array using the [Base64] encoding scheme. The returned byte
+     * byte array using the [java.util.Base64] encoding scheme. The returned byte
      * array is of the length of the resulting bytes.
      *
      * @param src
