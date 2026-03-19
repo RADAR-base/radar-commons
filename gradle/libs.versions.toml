@@ -1,5 +1,5 @@
 [versions]
-project = "1.2.5"
+project = "1.2.6"
 java = "17"
 gradle = "8.14"
 # Plugins
