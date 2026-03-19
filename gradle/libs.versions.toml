@@ -23,7 +23,11 @@ kafka = "7.6.0-ce"
 jackson = "2.20.2"
 # @pin Upgrade to 1.10.x requires kotlin v2 minimum
 coroutines = "1.9.0"
-radarSchemas = "0.8.15"
+# radar-schemas depends on radar-commons creating a circular dependency reference. We make
+# two almost identical releases of radar-commons, say prerelease A and release B (e.g., 1.2.5 and 1.2.6).
+# radar-jersey and radar-schemas use prerelease A. radar-commons is then upgraded to release B while
+# referencing the new radar-schemas release. All other radar-base repos will use radar-commons release B.
+radarSchemas = "0.8.16"
 mockito = "5.22.0"
 mockitoKotlin = "5.1.0"
 # @pin Upgrade to >5.x.x requires kotlin v2 minimum
