@@ -22,11 +22,17 @@ plugins {
 description = "RADAR Common server library utilities."
 
 val generateAvroJava by tasks
+val generateTestAvroJava by tasks
 
 sourceSets {
     main {
         java {
             srcDirs(generateAvroJava.outputs)
+        }
+    }
+    test {
+        java {
+            srcDirs(generateTestAvroJava.outputs)
         }
     }
 }

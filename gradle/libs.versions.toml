@@ -1,11 +1,11 @@
 [versions]
 project = "1.2.6"
 java = "17"
-gradle = "8.14"
+gradle = "9.0"
 # Plugins
 avroPlugin = "1.9.1"
 # @pin
-kotlin = "1.9.24"
+kotlin = "2.3.20"
 dokka = "2.1.0"
 publishPlugin = "2.0.0-rc-1"
 gradleVersionsPlugin = "0.50.0"
