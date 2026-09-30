@@ -1,7 +1,7 @@
 [versions]
 project = "1.2.6"
 java = "17"
-gradle = "9.0"
+gradle = "9.6.0"
 # Plugins
 avroPlugin = "1.9.1"
 # @pin
