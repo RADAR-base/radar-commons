@@ -70,8 +70,8 @@ tasks.withType<JavaCompile> {
 tasks.withType<KotlinCompile> {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_17)
-        languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9)
-        apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9)
+        languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_3)
+        apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_3)
     }
 }
 

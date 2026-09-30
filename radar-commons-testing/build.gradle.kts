@@ -27,7 +27,7 @@ application {
 tasks.named<JavaExec>("run") {
     classpath += applicationRuntimeOnly
     if (project.hasProperty("mockConfig")) {
-        args(project.property("mockConfig"))
+        args(project.property("mockConfig")!!)
     } else {
         args("mock.yml")
     }
