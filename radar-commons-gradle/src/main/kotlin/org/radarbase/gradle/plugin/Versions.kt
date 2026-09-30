@@ -1,9 +1,10 @@
 package org.radarbase.gradle.plugin
 
 object Versions {
-    const val wrapper = "8.14"
-    const val kotlin = "1.9.24"
+    const val wrapper = "9.6.0"
+    const val kotlin = "2.3.20"
     const val ktlint = "0.50.0"
+    const val ktlintLogback = "1.3.16"
     const val java = 17
     const val junit = "5.10.0"
     const val slf4j = "2.0.16"

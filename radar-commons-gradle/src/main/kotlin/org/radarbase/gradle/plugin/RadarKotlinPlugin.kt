@@ -122,6 +122,17 @@ class RadarKotlinPlugin : Plugin<Project> {
             version.set(extension.ktlintVersion)
         }
 
+        // ktlint 0.50.x pulls in logback 1.3.5 (CVE-2023-6378). Force a patched 1.3.x
+        // release on the ktlint tool classpath only. Remove when moving to ktlint 1.x.
+        configurations.matching { it.name == "ktlint" }.configureEach {
+            resolutionStrategy.eachDependency {
+                if (requested.group == "ch.qos.logback") {
+                    useVersion(Versions.ktlintLogback)
+                    because("CVE-2023-6378")
+                }
+            }
+        }
+
         dependencies {
             configurations["testImplementation"](extension.junitVersion.map { "org.junit.jupiter:junit-jupiter-api:$it" })
             configurations["testRuntimeOnly"](extension.junitVersion.map { "org.junit.jupiter:junit-jupiter-engine:$it" })

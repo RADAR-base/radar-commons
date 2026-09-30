@@ -1,11 +1,11 @@
 [versions]
 project = "1.2.6"
 java = "17"
-gradle = "8.14"
+gradle = "9.6.0"
 # Plugins
 avroPlugin = "1.9.1"
 # @pin
-kotlin = "1.9.24"
+kotlin = "2.3.20"
 dokka = "2.1.0"
 publishPlugin = "2.0.0-rc-1"
 gradleVersionsPlugin = "0.50.0"
@@ -19,8 +19,7 @@ avro = "1.12.1"
 commonsCompress = "1.28.0"
 confluent = "7.6.0"
 kafka = "7.6.0-ce"
-# @pin Upgrade to 2.21.x requires kotlin v2 minimum
-jackson = "2.20.2"
+jackson = "2.21.4"
 # @pin Upgrade to 1.10.x requires kotlin v2 minimum
 coroutines = "1.9.0"
 # radar-schemas depends on radar-commons creating a circular dependency reference. We make
