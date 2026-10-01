@@ -165,6 +165,12 @@ class RadarKotlinPlugin : Plugin<Project> {
         tasks.register<Copy>("copyDependencies") {
             from(configurations.named("runtimeClasspath").map { it.files })
             into(layout.buildDirectory.dir("third-party"))
+            // Gradle 9 stores downloaded dependencies as owner-only (0600), and Copy keeps those
+            // permissions. Make the copies world-readable, so Docker images that run as a
+            // non-root user can read them.
+            filePermissions {
+                unix("rw-r--r--")
+            }
             doLast {
                 println("Copied third-party runtime dependencies")
             }
