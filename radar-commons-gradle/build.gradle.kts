@@ -29,6 +29,9 @@ dependencies {
         add("implementation", rootProject.libs.jackson.bom) {
             because("Force safe version of Jackson across all modules")
         }
+        add("implementation", rootProject.libs.freemarker) {
+            because("Dokka brings freemarker 2.3.32 (CVE-2026-84939, CRITICAL), fixed in 2.3.35")
+        }
     }
 
     implementation(libs.gradlePlugin.kotlin)
