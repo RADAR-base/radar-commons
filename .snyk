@@ -7,45 +7,6 @@ ignore:
         reason: Not using Kotlin Files API
         expires: 2025-10-06T13:21:34.435Z
         created: 2023-09-06T13:21:34.439Z
-  SNYK-JAVA-COMFASTERXMLJACKSONCORE-17972608:
-    - '*':
-        reason: >
-          Incorrect Authorization in com.fasterxml.jackson.core:jackson-databind@2.21.4 (through
-          org.apache.avro:avro@1.12.1). Fixed by upgrading org.apache.avro:avro@1.12.1 to 1.12.2,
-          which is not part of this change. Ignored while dependency scanning moves from Snyk to
-          Trivy, which will report it from then on.
-        expires: 2027-01-01T00:00:00.000Z
-        created: 2026-10-01T00:00:00.000Z
-  SNYK-JAVA-COMFASTERXMLJACKSONCORE-20059683:
-    - '*':
-        reason: >
-          Allocation of Resources Without Limits or Throttling in
-          com.fasterxml.jackson.core:jackson-databind@2.21.4 (through org.apache.avro:avro@1.12.1).
-          Fixed by upgrading com.fasterxml.jackson.core:jackson-databind@2.21.4 to 2.21.7, which is
-          not part of this change. Ignored while dependency scanning moves from Snyk to Trivy, which
-          will report it from then on.
-        expires: 2027-01-01T00:00:00.000Z
-        created: 2026-10-01T00:00:00.000Z
-  SNYK-JAVA-COMFASTERXMLJACKSONCORE-19778370:
-    - '*':
-        reason: >
-          Allocation of Resources Without Limits or Throttling in
-          com.fasterxml.jackson.core:jackson-databind@2.21.4 (through org.apache.avro:avro@1.12.1).
-          Fixed by upgrading com.fasterxml.jackson.core:jackson-databind@2.21.4 to 2.21.7, which is
-          not part of this change. Ignored while dependency scanning moves from Snyk to Trivy, which
-          will report it from then on.
-        expires: 2027-01-01T00:00:00.000Z
-        created: 2026-10-01T00:00:00.000Z
-  SNYK-JAVA-COMFASTERXMLJACKSONCORE-20059179:
-    - '*':
-        reason: >
-          Allocation of Resources Without Limits or Throttling in
-          com.fasterxml.jackson.core:jackson-core@2.21.4 (through org.apache.avro:avro@1.12.1).
-          Fixed by upgrading com.fasterxml.jackson.core:jackson-databind@2.21.4 to 2.21.7, which is
-          not part of this change. Ignored while dependency scanning moves from Snyk to Trivy, which
-          will report it from then on.
-        expires: 2027-01-01T00:00:00.000Z
-        created: 2026-10-01T00:00:00.000Z
   SNYK-JAVA-COMGITHUBLUBEN-19659571:
     - '*':
         reason: >
