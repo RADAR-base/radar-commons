@@ -25,6 +25,11 @@ jobs:
       - name: Lock the runtime classpath for Trivy
         run: ./gradlew -I .github/trivy-lock.init.gradle trivyLock --write-locks
 
+      # radar-commons-gradle is an included build (the published org.radarbase.radar-* plugins), so the lock
+      # step above doesn't reach it. Its runtime classpath ends up on the build classpath of every consumer.
+      - name: Lock the radar-commons-gradle plugin's runtime classpath for Trivy
+        run: ./gradlew -p radar-commons-gradle -I ../.github/trivy-lock.init.gradle trivyLock --write-locks
+
       - uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
         with:
           version: v0.74.0
