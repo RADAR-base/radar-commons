@@ -22,6 +22,8 @@ kafka = "7.6.0-ce"
 jackson = "2.21.7"
 # Forced transitive override for Dokka (dokka-base 2.1.0 and 2.2.0 bring freemarker 2.3.32), see radar-commons-gradle.
 freemarker = "2.3.35"
+# Forced transitive override for Dokka (analysis-markdown 2.1.0 and 2.2.0 bring jsoup 1.16.1), see radar-commons-gradle.
+jsoup = "1.23.2"
 # @pin Upgrade to 1.10.x requires kotlin v2 minimum
 coroutines = "1.9.0"
 # radar-schemas depends on radar-commons creating a circular dependency reference. We make
@@ -64,6 +66,7 @@ google-guava = { module = "com.google.guava:guava", version.ref = "guava" }
 # Jackson
 jackson-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "jackson" }
 freemarker = { module = "org.freemarker:freemarker", version.ref = "freemarker" }
+jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
 jackson-dataformat-yaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml", version.ref = "jackson" }
 # Radar / Utility
