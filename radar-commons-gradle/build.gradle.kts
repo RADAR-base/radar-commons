@@ -32,6 +32,9 @@ dependencies {
         add("implementation", rootProject.libs.freemarker) {
             because("Dokka brings freemarker 2.3.32 (CVE-2026-84939, CRITICAL), fixed in 2.3.35")
         }
+        add("implementation", rootProject.libs.jsoup) {
+            because("Dokka brings jsoup 1.16.1 (CVE-2026-75140, HIGH), fixed in 1.23.2")
+        }
     }
 
     implementation(libs.gradlePlugin.kotlin)
