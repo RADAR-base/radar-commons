@@ -101,15 +101,15 @@ class RestKafkaSenderTest {
         val keySchemaMetadata = ParsedSchemaMetadata(10, 2, keySchema)
         val valueSchemaMetadata = ParsedSchemaMetadata(10, 2, valueSchema)
         retriever.stub {
-            onBlocking { metadata("test", false, keySchema) }.doReturn(keySchemaMetadata)
-            onBlocking { metadata("test", true, valueSchema) }.doReturn(valueSchemaMetadata)
+            onBlocking { getByVersion("test", false, -1) }.doReturn(keySchemaMetadata)
+            onBlocking { getByVersion("test", true, -1) }.doReturn(valueSchemaMetadata)
         }
         webServer.enqueueJson("{\"offset\": 100}")
         topicSender.send(key, value)
         verify(retriever, times(1))
-            .metadata("test", false, keySchema)
+            .getByVersion("test", false, -1)
         verify(retriever, times(1))
-            .metadata("test", true, valueSchema)
+            .getByVersion("test", true, -1)
         val request = webServer.takeRequest()
         assertEquals("/topics/test", request.path)
         val body = READER.readTree(request.body.inputStream())
@@ -145,15 +145,15 @@ class RestKafkaSenderTest {
         val keySchemaMetadata = ParsedSchemaMetadata(10, 2, keySchema)
         val valueSchemaMetadata = ParsedSchemaMetadata(10, 2, valueSchema)
         retriever.stub {
-            onBlocking { metadata("test", false, keySchema) }.doReturn(keySchemaMetadata)
-            onBlocking { metadata("test", true, valueSchema) }.doReturn(valueSchemaMetadata)
+            onBlocking { getByVersion("test", false, -1) }.doReturn(keySchemaMetadata)
+            onBlocking { getByVersion("test", true, -1) }.doReturn(valueSchemaMetadata)
         }
         webServer.enqueueJson("{\"offset\": 100}")
         topicSender.send(key, value)
         verify(retriever, times(1))
-            .metadata("test", false, keySchema)
+            .getByVersion("test", false, -1)
         verify(retriever, times(1))
-            .metadata("test", true, valueSchema)
+            .getByVersion("test", true, -1)
         val request = webServer.takeRequest()
         assertEquals("/topics/test", request.path)
         var decoder = DecoderFactory.get().directBinaryDecoder(request.body.inputStream(), null)
@@ -192,15 +192,15 @@ class RestKafkaSenderTest {
         val valueSchemaMetadata = ParsedSchemaMetadata(10, 2, valueSchema)
 
         retriever.stub {
-            onBlocking { metadata("test", false, keySchema) }.doReturn(keySchemaMetadata)
-            onBlocking { metadata("test", true, valueSchema) }.doReturn(valueSchemaMetadata)
+            onBlocking { getByVersion("test", false, -1) }.doReturn(keySchemaMetadata)
+            onBlocking { getByVersion("test", true, -1) }.doReturn(valueSchemaMetadata)
         }
         webServer.enqueueJson("{\"offset\": 100}")
         topicSender.send(AvroRecordData(topic, key, listOf(value, value)))
         verify(retriever, times(1))
-            .metadata("test", false, keySchema)
+            .getByVersion("test", false, -1)
         verify(retriever, times(1))
-            .metadata("test", true, valueSchema)
+            .getByVersion("test", true, -1)
         val request = webServer.takeRequest()
         assertEquals("/topics/test", request.path)
         val bodyString = request.body.readString(StandardCharsets.UTF_8)
@@ -293,8 +293,8 @@ class RestKafkaSenderTest {
         val keySchemaMetadata = ParsedSchemaMetadata(10, 2, keySchema)
         val valueSchemaMetadata = ParsedSchemaMetadata(10, 2, valueSchema)
         retriever.stub {
-            onBlocking { metadata("test", false, keySchema) }.doReturn(keySchemaMetadata)
-            onBlocking { metadata("test", true, valueSchema) }.doReturn(valueSchemaMetadata)
+            onBlocking { getByVersion("test", false, -1) }.doReturn(keySchemaMetadata)
+            onBlocking { getByVersion("test", true, -1) }.doReturn(valueSchemaMetadata)
         }
         topicSender.send(key, value)
 
